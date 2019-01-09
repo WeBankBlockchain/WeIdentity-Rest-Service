@@ -87,13 +87,10 @@ List jackson = [
 // In this section you declare the dependencies for your production and test code
 dependencies {
     compile logger, spring, lombok, apache_commons, jackson, spring_boot
-    runtime logger, spring, lombok, apache_commons, jackson, spring_boot
-    testCompile logger, spring, lombok, junit, jmockit
+    testCompile logger, spring, lombok, junit
     compile files('lib/web3sdk.jar')
-    runtime files('lib/web3sdk.jar')
-    
-    compile files('lib/weidentity-java-sdk-1.0.3.jar')
-    runtime files('lib/weidentity-java-sdk-1.0.3.jar')
+    compile files('lib/weidentity-contract-java-1.0.0.jar')
+    compile files('lib/weidentity-java-sdk-1.0.4.jar')
 }
 
 configurations {
