@@ -1,6 +1,6 @@
 package com.webank.weid.http.protocol.request;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import lombok.Data;
 
@@ -17,6 +17,6 @@ public class ReqRegisterCptArgs {
      */
     private String cptPublisherPrivateKey;
 
-    private HashMap<String, Object> cptJsonSchema;
+    private LinkedHashMap<String, Object> cptJsonSchema;
 
 }

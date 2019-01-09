@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.webank.weid.http.constant.HttpErrorCode;
 import com.webank.weid.http.protocol.request.ReqRegisterCptArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptArgs;
-import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.protocol.base.Cpt;
 import com.webank.weid.protocol.base.CptBaseInfo;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -40,7 +39,7 @@ public class InvokerCptService {
             RegisterCptArgs registerCptArgs = new RegisterCptArgs();
             registerCptArgs.setCptPublisher(reqRegisterCptArgs.getCptPublisher());
             registerCptArgs.setCptPublisherPrivateKey(cptPublisherPrivateKey);
-            registerCptArgs.setCptJsonSchema(JsonUtil.objToJsonStr(reqRegisterCptArgs.getCptJsonSchema()));
+            registerCptArgs.setCptJsonSchema(reqRegisterCptArgs.getCptJsonSchema());
 
             response = cptService.registerCpt(registerCptArgs);
         } catch (Exception e) {
