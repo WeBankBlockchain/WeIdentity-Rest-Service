@@ -1,6 +1,6 @@
 package com.webank.weid.http.protocol.request;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -25,7 +25,7 @@ public class ReqCreateCredentialArgs {
     /**
      * Required: The claim data.
      */
-    private LinkedHashMap<String, Object> claim;
+    private Map<String, Object> claim;
 
     /**
      * Required: The private key structure used for signing.

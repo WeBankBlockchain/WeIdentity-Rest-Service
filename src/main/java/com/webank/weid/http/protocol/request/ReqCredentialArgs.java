@@ -1,6 +1,6 @@
 package com.webank.weid.http.protocol.request;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -40,7 +40,7 @@ public class ReqCredentialArgs {
     /**
      * Required: The claim data.
      */
-    private LinkedHashMap<String, Object> claim;
+    private Map<String, Object> claim;
 
     /**
      * Required: The signature of the Credential. Selective Disclosure is supported together with

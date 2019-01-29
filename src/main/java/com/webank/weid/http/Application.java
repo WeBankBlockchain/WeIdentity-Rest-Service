@@ -9,7 +9,8 @@ import org.springframework.context.annotation.ComponentScan;
 
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.webank.weid.service","com.webank.weid.http"})
+//@ComponentScan(basePackages = {"com.webank.weid.service","com.webank.weid.http"})
+@ComponentScan
 public class Application {
 
 	private static Logger logger = LoggerFactory.getLogger(Application.class);
