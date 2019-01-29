@@ -1,11 +1,9 @@
 package com.webank.weid.http.protocol.request;
 
-import java.util.Map;
-
 import lombok.Data;
 
 @Data
-public class ReqUpdateCptArgs {
+public class ReqUpdateCptStringArgs {
 
     /**
      * Required: the id for the CPT.
@@ -15,7 +13,7 @@ public class ReqUpdateCptArgs {
     /**
      * Required: the json schema content defined for this CPT.
      */
-    private Map<String, Object> cptJsonSchema;
+    private String cptJsonSchema;
 
     /**
      * Required: the WeIdentity DID of the publisher who register this CPT.

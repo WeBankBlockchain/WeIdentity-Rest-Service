@@ -1,22 +1,23 @@
 package com.webank.weid.http.protocol.request;
 
-import java.util.LinkedHashMap;
-
 import lombok.Data;
 
 @Data
-public class ReqRegisterCptArgs {
+public class ReqRegisterCptStringArgs {
 
     /**
      * Required: The weIdentity DID of the publisher who register this CPT.
      */
-    private String cptPublisher;
+    private String weId;
 
     /**
      * Required: The private key for the publisher who register this CPT.
      */
-    private String cptPublisherPrivateKey;
+    private String weIdPrivateKey;
 
-    private LinkedHashMap<String, Object> cptJsonSchema;
+    /**
+     * Required: The weIdentity DID of the cptJsonSchema.
+     */
+    private String cptJsonSchema;
 
 }

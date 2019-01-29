@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.util.JsonUtil;
 
 @Aspect
 @Component
