@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.webank.weid.http.protocol.request.ReqRegisterCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqRegisterCptStringArgs;
-import com.webank.weid.http.protocol.request.ReqRegisterTranCptMapArgs;
+import com.webank.weid.http.protocol.request.ReqRegisterSignCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptStringArgs;
 import com.webank.weid.http.service.InvokerCptService;
@@ -35,10 +35,16 @@ public class CptController {
         return invokerCptService.registerCpt(reqRegisterCptArgs);
     }
 
-    @RequestMapping(value = "registerTranCpt", method = RequestMethod.POST)
-    public ResponseData<CptBaseInfo> registerTranCpt(
-        @RequestBody ReqRegisterTranCptMapArgs reqRegisterTranCptMapArgs) {
-        return invokerCptService.registerTranCpt(reqRegisterTranCptMapArgs);
+    @RequestMapping(value = "getEncodedTransaction", method = RequestMethod.POST)
+    public ResponseData<byte[]> getEncodedTransaction(
+        @RequestBody ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
+        return invokerCptService.getEncodedTransaction(reqRegisterSignCptMapArgs);
+    }
+
+    @RequestMapping(value = "registerSignCpt", method = RequestMethod.POST)
+    public ResponseData<CptBaseInfo> registerSignCpt(
+        @RequestBody ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
+        return invokerCptService.registerSignCpt(reqRegisterSignCptMapArgs);
     }
 
     /**

@@ -1,16 +1,40 @@
 package com.webank.weid.http.service;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.common.base.Splitter;
+import org.bcos.web3j.abi.FunctionEncoder;
+import org.bcos.web3j.abi.datatypes.Address;
+import org.bcos.web3j.abi.datatypes.Function;
+import org.bcos.web3j.abi.datatypes.StaticArray;
+import org.bcos.web3j.abi.datatypes.Type;
+import org.bcos.web3j.abi.datatypes.generated.Bytes32;
+import org.bcos.web3j.abi.datatypes.generated.Int256;
+import org.bcos.web3j.abi.datatypes.generated.Uint8;
+import org.bcos.web3j.crypto.Sign.SignatureData;
+import org.bcos.web3j.crypto.TransactionEncoder;
+import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
+import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.webank.weid.constant.JsonSchemaConstant;
+import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.constant.HttpErrorCode;
+import com.webank.weid.http.exception.BizException;
 import com.webank.weid.http.protocol.request.ReqRegisterCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqRegisterCptStringArgs;
-import com.webank.weid.http.protocol.request.ReqRegisterTranCptMapArgs;
+import com.webank.weid.http.protocol.request.ReqRegisterSignCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptStringArgs;
+import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.protocol.base.Cpt;
 import com.webank.weid.protocol.base.CptBaseInfo;
 import com.webank.weid.protocol.base.WeIdAuthentication;
@@ -18,7 +42,11 @@ import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CptMapArgs;
 import com.webank.weid.protocol.request.CptStringArgs;
 import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.rpc.CptService;
+import com.webank.weid.util.DataTypetUtils;
+import com.webank.weid.util.JsonUtil;
+import com.webank.weid.util.WeIdUtils;
 
 @Service
 public class InvokerCptService {
@@ -27,6 +55,8 @@ public class InvokerCptService {
 
     @Autowired
     private CptService cptService;
+    @Autowired
+    private InvokerWeb3jService invokerWeb3jService;
 
     /**
      * This is used to register a new CPT to the blockchain.
@@ -60,23 +90,48 @@ public class InvokerCptService {
         return response;
     }
 
-    public ResponseData<CptBaseInfo> registerTranCpt(
-        ReqRegisterTranCptMapArgs reqRegisterTranCptMapArgs) {
+    public ResponseData<byte[]> getEncodedTransaction(ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
+
+        try {
+            RawTransaction rawTransaction  = this.getRawTransaction(
+                reqRegisterSignCptMapArgs.getDataJson(),
+                reqRegisterSignCptMapArgs.getSignatureData());
+
+            byte[] result = TransactionEncoder.encode(rawTransaction);
+
+            ResponseData<byte[]> response = new ResponseData<byte[]>();
+            response.setResult(result);
+            return response;
+        } catch (Exception e) {
+            throw new BizException("[getEncodedTransaction] error", e);
+        }
+    }
+
+    public ResponseData<CptBaseInfo> registerSignCpt(
+        ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
 
         ResponseData<CptBaseInfo> response = new ResponseData<CptBaseInfo>();
         try {
-            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-            weIdPrivateKey.setPrivateKey(reqRegisterTranCptMapArgs.getWeIdPrivateKey());
+            Map<String, Object> dataJsonMap = reqRegisterSignCptMapArgs.getDataJson();
+            Map<String, Object> cptJsonSchema = (HashMap<String, Object>)dataJsonMap.get("cptJsonSchema");
 
-            WeIdAuthentication weIdAuthentication = null;
+            String weId = dataJsonMap.get("weId").toString();
+            WeIdAuthentication weIdAuthentication = this.buildWeIdAuthority(null, weId);
 
             CptMapArgs cptMapArgs = new CptMapArgs();
-            cptMapArgs.setCptJsonSchema(reqRegisterTranCptMapArgs.getCptJsonSchema());
+            cptMapArgs.setCptJsonSchema(cptJsonSchema);
+            cptMapArgs.setWeIdAuthentication(weIdAuthentication);
 
-            response = cptService.registerCpt(cptMapArgs, reqRegisterTranCptMapArgs.getBodySigned());
+            byte[] signedMessage = TransactionEncoderUtil.encodeEx(
+                this.getRawTransaction(dataJsonMap, reqRegisterSignCptMapArgs.getSignatureData()),
+                reqRegisterSignCptMapArgs.getBodySigned());
+
+            String hexValue = Hex.toHexString(signedMessage);
+            response = cptService.registerCpt(cptMapArgs, hexValue);
+            System.out.println("=====response:" + JsonUtil.objToJsonStr(response));
         } catch (Exception e) {
             logger.error("[registerCpt]: unknow error. reqRegisterCptArgs:{}",
-                reqRegisterTranCptMapArgs,
+                reqRegisterSignCptMapArgs,
                 e);
             response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
             response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
@@ -198,5 +253,98 @@ public class InvokerCptService {
             response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
         }
         return response;
+    }
+
+    private RawTransaction getRawTransaction(
+        Map<String, Object> jsonSchemaMap,
+        SignatureData signatureData) throws Exception {
+
+        String data = this.createFuntionRegisterCpt(jsonSchemaMap, signatureData);
+
+        return RawTransaction.createTransaction(
+            invokerWeb3jService.getNonce().getResult(),
+            new BigInteger("99999999999"),
+            new BigInteger("99999999999"),
+            invokerWeb3jService.getBlockLimit().getResult(),
+            "0xd7a617780dd61be1c599f2462667a26cbb9fd6bf",
+            new BigInteger("0"),
+            data,
+            BigInteger.ZERO,
+            false);
+    }
+
+
+    private String createFuntionRegisterCpt(
+        Map<String, Object> map,
+        SignatureData signatureData) throws Exception {
+
+        String weId = map.get("weId").toString();
+        Map<String, Object> cptJsonSchema = (Map<String, Object>) map.get("cptJsonSchema");
+        String cptJsonSchemaNew = this.cptSchemaToString(cptJsonSchema);
+        RsvSignature rsvSignature = sign(
+            weId,
+            cptJsonSchemaNew,
+            signatureData);
+
+        StaticArray<Bytes32> bytes32Array = DataTypetUtils.stringArrayToBytes32StaticArray(
+            new String[WeIdConstant.STRING_ARRAY_LENGTH]
+        );
+
+        List<Type> inputParameters = Arrays.<Type>asList(
+            new Address(WeIdUtils.convertWeIdToAddress(weId)),
+            this.getParamCreated(),
+            bytes32Array,
+            this.getParamJsonSchema(cptJsonSchemaNew),
+            rsvSignature.getV(),
+            rsvSignature.getR(),
+            rsvSignature.getS());
+
+        Function function = new Function("registerCpt", inputParameters, Collections.emptyList());
+        return FunctionEncoder.encode(function);
+    }
+
+    private RsvSignature sign(
+        String cptPublisher,
+        String jsonSchema,
+        SignatureData signatureData) throws Exception {
+
+        Uint8 v = DataTypetUtils.intToUnt8(Integer.valueOf(signatureData.getV()));
+        Bytes32 r = DataTypetUtils.bytesArrayToBytes32(signatureData.getR());
+        Bytes32 s = DataTypetUtils.bytesArrayToBytes32(signatureData.getS());
+
+        RsvSignature rsvSignature = new RsvSignature();
+        rsvSignature.setV(v);
+        rsvSignature.setR(r);
+        rsvSignature.setS(s);
+        return rsvSignature;
+    }
+
+    private String cptSchemaToString(Map<String, Object> cptJsonSchema) throws Exception {
+
+        Map<String, Object> cptJsonSchemaNew = new HashMap<String, Object>();
+        cptJsonSchemaNew.put(JsonSchemaConstant.SCHEMA_KEY, JsonSchemaConstant.SCHEMA_VALUE);
+        cptJsonSchemaNew.put(JsonSchemaConstant.TYPE_KEY, JsonSchemaConstant.DATE_TYPE_OBJECT);
+        cptJsonSchemaNew.putAll(cptJsonSchema);
+        return JsonUtil.objToJsonStr(cptJsonSchemaNew);
+    }
+
+    private StaticArray<Int256> getParamCreated() {
+
+        long[] longArray = new long[WeIdConstant.LONG_ARRAY_LENGTH];
+        long created = System.currentTimeMillis();
+        longArray[1] = created;
+        return DataTypetUtils.longArrayToInt256StaticArray(longArray);
+    }
+
+    private StaticArray<Bytes32> getParamJsonSchema(String cptJsonSchemaNew) {
+
+        List<String> stringList = Splitter
+            .fixedLength(WeIdConstant.BYTES32_FIXED_LENGTH)
+            .splitToList(cptJsonSchemaNew);
+        String[] jsonSchemaArray = new String[WeIdConstant.JSON_SCHEMA_ARRAY_LENGTH];
+        for (int i = 0; i < stringList.size(); i++) {
+            jsonSchemaArray[i] = stringList.get(i);
+        }
+        return DataTypetUtils.stringArrayToBytes32StaticArray(jsonSchemaArray);
     }
 }
