@@ -13,8 +13,8 @@ targetCompatibility = 1.8
 // In this section you declare where to find the dependencies of your project
 repositories {
     maven {
-        //url "http://maven.aliyun.com/nexus/content/groups/public/"
         url "http://maven.aliyun.com/nexus/content/groups/public/"
+        //url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
 
     mavenLocal()
@@ -38,7 +38,6 @@ List spring = [
         "org.springframework:spring-tx:$spring_version",
         "org.springframework:spring-jdbc:$spring_version",
         "org.springframework:spring-test:$spring_version",
-        "org.springframework:spring-test:$spring_version",
         "org.springframework:spring-context-support:$spring_version",
         "org.springframework:spring-web:$spring_version",
         "org.springframework:spring-webmvc:$spring_version"
@@ -51,6 +50,10 @@ List spring_boot =[
     "org.springframework.boot:spring-boot-configuration-processor:$spring_boot_version",
     "org.springframework.boot:spring-boot-starter-log4j2:$spring_boot_version",
     "org.springframework.boot:spring-boot-starter-aop:$spring_boot_version"
+]
+
+List spring_boot_test =[
+    "org.springframework.boot:spring-boot-starter-test:$spring_boot_version"
 ]
 
 // junit test
@@ -83,7 +86,7 @@ List jackson = [
 // In this section you declare the dependencies for your production and test code
 dependencies {
     compile logger, spring, lombok, apache_commons, jackson, spring_boot
-    testCompile logger, spring, lombok, junit
+    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test
     compile files('lib/web3sdk.jar')
     compile files('lib/weidentity-contract-java-1.0.0.jar')
     compile files('lib/weidentity-java-sdk-1.0.4.jar')

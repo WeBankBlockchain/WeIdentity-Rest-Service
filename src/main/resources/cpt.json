@@ -1,0 +1,23 @@
+{
+ "weId":"did:weid:0x1202577890076397e5ca661b37620ff5174f5605",
+ "cptJsonSchema":{
+  "title": "cpt", 
+        "description": "this is cpt", 
+        "properties" : {
+      "name": {
+          "type": "string", 
+          "description": "the name of certificate owner"
+      }, 
+      "gender": {
+          "enum": ["F", "M"],
+          "type": "string", 
+          "description": "the gender of certificate owner"
+      }, 
+      "age": {
+          "type": "number", 
+          "description": "the age of certificate owner"
+      }
+  },
+  "required": ["name", "age"]
+ }
+}

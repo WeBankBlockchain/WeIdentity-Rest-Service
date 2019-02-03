@@ -33,6 +33,7 @@
         <prop key="weId.contractaddress">0x9216757a91607668cf8a7a38f8ae56206a6e9f6b</prop>
         <prop key="cpt.contractaddress">0xd7a617780dd61be1c599f2462667a26cbb9fd6bf</prop>
         <prop key="issuer.contractaddress">0xe9a842aacbdbb1da485aa014642b0711dbf94e05</prop>
+        <prop key="evidence.contractaddress">0x0</prop>
       </props>
     </property>
     <!--  <property name="location" value="classpath:application.properties" />-->
