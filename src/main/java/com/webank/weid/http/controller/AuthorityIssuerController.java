@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.request.ReqRegisterAuthorityIssuerArgs;
 import com.webank.weid.http.protocol.request.ReqRemoveAuthorityIssuerArgs;
 import com.webank.weid.http.service.InvokerAuthorityIssuerService;
@@ -14,17 +15,19 @@ import com.webank.weid.protocol.base.AuthorityIssuer;
 import com.webank.weid.protocol.response.ResponseData;
 
 @RestController
-@RequestMapping(value = "weIdentity")
+@RequestMapping(value = WeIdentityServiceEndpoint.API_ROOT)
 public class AuthorityIssuerController {
 
     @Autowired
     private InvokerAuthorityIssuerService invokerAuthorityIssuerService;
 
     /**
+     * @fixme
      * Register a new Authority Issuer on Chain.
      * @param reqRegisterAuthorityIssuerArgs the args
      * @return the Boolean response data
      */
+
     @RequestMapping(value = "registerAuthorityIssuer", method = RequestMethod.POST)
     public ResponseData<Boolean> registerAuthorityIssuer(
         @RequestBody ReqRegisterAuthorityIssuerArgs reqRegisterAuthorityIssuerArgs) {
@@ -33,6 +36,7 @@ public class AuthorityIssuerController {
     }
 
     /**
+     * @fixme
      * Remove a new Authority Issuer on Chain.
      * @param reqRemoveAuthorityIssuerArgs the args
      * @return the Boolean response data
@@ -44,6 +48,7 @@ public class AuthorityIssuerController {
     }
 
     /**
+     * @fixme
      * Check whether the given weId is an authority issuer.
      * @param weId the WeIdentity DID
      * @return the Boolean response data
@@ -54,6 +59,7 @@ public class AuthorityIssuerController {
     }
 
     /**
+     * @fixme
      * Query the authority issuer information given weId.
      * @param weId the WeIdentity DID
      * @return the AuthorityIssuer response data

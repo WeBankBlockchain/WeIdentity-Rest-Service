@@ -1,17 +1,22 @@
 package com.webank.weid.http.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.webank.weid.http.constant.HttpErrorCode;
+import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.constant.ParamKeyConstant;
+import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.protocol.request.ReqCreateWeIdArgs;
 import com.webank.weid.http.protocol.request.ReqSetAuthenticationArgs;
 import com.webank.weid.http.protocol.request.ReqSetPublicKeyArgs;
 import com.webank.weid.http.protocol.request.ReqSetServiceArgs;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.base.WeIdDocument;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CreateWeIdArgs;
@@ -21,16 +26,18 @@ import com.webank.weid.protocol.request.SetServiceArgs;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.WeIdService;
+import com.webank.weid.service.impl.WeIdServiceImpl;
 
 @Service
-public class InvokerWeIdService {
+public class InvokerWeIdService extends BaseService {
 
     private Logger logger = LoggerFactory.getLogger(InvokerWeIdService.class);
-    @Autowired
-    private WeIdService weIdService;
+
+    private WeIdService weIdService = new WeIdServiceImpl();
 
     /**
      * createEcKeyPair.
+     *
      * @return publicKey and privateKey
      */
     public ResponseData<CreateWeIdArgs> createEcKeyPair() {
@@ -51,14 +58,14 @@ public class InvokerWeIdService {
             response.setResult(createWeIdArgs);
         } catch (Exception e) {
             logger.error("[createEcKeyPair]: unknow error, please check the error log.", e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Create WeIdentity DID
+     *
      * @return the response data
      */
     public ResponseData<CreateWeIdDataResult> createWeId() {
@@ -68,14 +75,14 @@ public class InvokerWeIdService {
             response = weIdService.createWeId();
         } catch (Exception e) {
             logger.error("[createWeId]: unknow error, please check the error log.", e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Create a WeIdentity DID.
+     *
      * @param reqCreateWeIdArgs the create WeIdentity DID args
      * @return the response data
      */
@@ -96,14 +103,14 @@ public class InvokerWeIdService {
                 "[weIdService]: unknow error. reqCreateWeIdArgs:{}.",
                 reqCreateWeIdArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(StringUtils.EMPTY, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Get a WeIdentity DID Document.
+     *
      * @param weId the WeIdentity DID
      * @return the WeIdentity DID document
      */
@@ -117,14 +124,14 @@ public class InvokerWeIdService {
                 "[getWeIdDocument]: unknow error. weId:{}.",
                 weId,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Get a WeIdentity DID Document Json.
+     *
      * @param weId the WeIdentity DID
      * @return the WeIdentity DID document json
      */
@@ -138,14 +145,14 @@ public class InvokerWeIdService {
                 "[getWeIdDocumentJson]: unknow error. weId:{}.",
                 weId,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(StringUtils.EMPTY, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Set Public Key.
+     *
      * @param reqSetPublicKeyArgs the set public key args
      * @return the response data
      */
@@ -169,14 +176,14 @@ public class InvokerWeIdService {
                 "[setPublicKey]: unknow error. reqSetPublicKeyArgs:{}.",
                 reqSetPublicKeyArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(false, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Set Service.
+     *
      * @param reqSetServiceArgs the set service args
      * @return the response data
      */
@@ -200,18 +207,19 @@ public class InvokerWeIdService {
                 "[setService]: unknow error. reqSetServiceArgs:{}.",
                 reqSetServiceArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(false, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Set Authentication.
+     *
      * @param reqSetAuthenticationArgs the set authentication args
      * @return the response data
      */
-    public ResponseData<Boolean> setAuthentication(ReqSetAuthenticationArgs reqSetAuthenticationArgs) {
+    public ResponseData<Boolean> setAuthentication(
+        ReqSetAuthenticationArgs reqSetAuthenticationArgs) {
 
         ResponseData<Boolean> response = new ResponseData<Boolean>();
         try {
@@ -231,14 +239,14 @@ public class InvokerWeIdService {
                 "[setAuthentication]: unknow error. reqSetAuthenticationArgs:{}.",
                 reqSetAuthenticationArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(false, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * Check if WeIdentity DID exists on Chain.
+     *
      * @param weId the WeIdentity DID
      * @return true if exists, false otherwise
      */
@@ -252,9 +260,56 @@ public class InvokerWeIdService {
                 "[isWeIdExist]: unknow error. weId:{}.",
                 weId,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(false, ErrorCode.BASE_ERROR);
         }
         return response;
+    }
+
+    /**
+     * Call to WeID SDK with direct transaction hex String, to create WeID.
+     *
+     * @param transactionHex the transactionHex value
+     * @return String in ResponseData
+     */
+    public HttpResponseData<String> createWeIdWithTransactionHex(String transactionHex) {
+        try {
+            ResponseData<String> responseData = weIdService.createWeId(transactionHex);
+            if (responseData.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
+                logger.error("[createWeId]: error occurred: {}, {}", responseData.getErrorCode(),
+                    responseData.getErrorMessage());
+            }
+            return new HttpResponseData<>(responseData.getResult(), responseData.getErrorCode(),
+                responseData.getErrorMessage());
+        } catch (Exception e) {
+            logger.error("[createWeId]: unknown error, input arguments:{}",
+                transactionHex,
+                e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+        }
+    }
+
+    /**
+     * Get a WeIdentity DID Document Json via the InvokeFunction API.
+     *
+     * @param getWeIdDocumentJsonArgs the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    public HttpResponseData<String> getWeIdDocumentJsonInvoke(String getWeIdDocumentJsonArgs) {
+        try {
+            JsonNode weIdNode = new ObjectMapper().readTree(getWeIdDocumentJsonArgs)
+                .get(ParamKeyConstant.WEID);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_NULL);
+            }
+            ResponseData response = weIdService.getWeIdDocumentJson(weIdNode.textValue());
+            return new HttpResponseData<>(response.getResult().toString(), response.getErrorCode(),
+                response.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(
+                "[getWeIdDocumentJson]: unknow error. weId:{}.",
+                getWeIdDocumentJsonArgs,
+                e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+        }
     }
 }
