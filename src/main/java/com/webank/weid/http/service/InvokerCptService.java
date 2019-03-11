@@ -7,7 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
+import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.abi.FunctionEncoder;
 import org.bcos.web3j.abi.datatypes.Address;
 import org.bcos.web3j.abi.datatypes.Function;
@@ -25,15 +28,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.JsonSchemaConstant;
+import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
-import com.webank.weid.http.constant.HttpErrorCode;
+import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.exception.BizException;
 import com.webank.weid.http.protocol.request.ReqRegisterCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqRegisterCptStringArgs;
 import com.webank.weid.http.protocol.request.ReqRegisterSignCptMapArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptArgs;
 import com.webank.weid.http.protocol.request.ReqUpdateCptStringArgs;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.InputUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.protocol.base.Cpt;
 import com.webank.weid.protocol.base.CptBaseInfo;
@@ -44,22 +51,21 @@ import com.webank.weid.protocol.request.CptStringArgs;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.rpc.CptService;
+import com.webank.weid.service.impl.CptServiceImpl;
 import com.webank.weid.util.DataTypetUtils;
 import com.webank.weid.util.JsonUtil;
 import com.webank.weid.util.WeIdUtils;
 
 @Service
-public class InvokerCptService {
+public class InvokerCptService extends BaseService {
 
     private Logger logger = LoggerFactory.getLogger(InvokerCptService.class);
 
-    @Autowired
-    private CptService cptService;
-    @Autowired
-    private InvokerWeb3jService invokerWeb3jService;
+    private CptService cptService = new CptServiceImpl();
 
     /**
      * This is used to register a new CPT to the blockchain.
+     *
      * @param reqRegisterCptMapArgs the args
      * @return the response data
      */
@@ -84,16 +90,16 @@ public class InvokerCptService {
             logger.error("[registerCpt]: unknow error. reqRegisterCptArgs:{}",
                 reqRegisterCptMapArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
-    public ResponseData<byte[]> getEncodedTransaction(ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
+    public ResponseData<byte[]> getEncodedTransaction(
+        ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
 
         try {
-            RawTransaction rawTransaction  = this.getRawTransaction(
+            RawTransaction rawTransaction = this.getRawTransaction(
                 reqRegisterSignCptMapArgs.getDataJson(),
                 reqRegisterSignCptMapArgs.getSignatureData());
 
@@ -110,10 +116,10 @@ public class InvokerCptService {
     public ResponseData<CptBaseInfo> registerSignCpt(
         ReqRegisterSignCptMapArgs reqRegisterSignCptMapArgs) {
 
-        ResponseData<CptBaseInfo> response = new ResponseData<CptBaseInfo>();
         try {
             Map<String, Object> dataJsonMap = reqRegisterSignCptMapArgs.getDataJson();
-            Map<String, Object> cptJsonSchema = (HashMap<String, Object>)dataJsonMap.get("cptJsonSchema");
+            Map<String, Object> cptJsonSchema = (HashMap<String, Object>) dataJsonMap
+                .get("cptJsonSchema");
 
             String weId = dataJsonMap.get("weId").toString();
             WeIdAuthentication weIdAuthentication = this.buildWeIdAuthority(null, weId);
@@ -122,28 +128,52 @@ public class InvokerCptService {
             cptMapArgs.setCptJsonSchema(cptJsonSchema);
             cptMapArgs.setWeIdAuthentication(weIdAuthentication);
 
-            byte[] signedMessage = TransactionEncoderUtil.encodeEx(
+            byte[] signedMessage = TransactionEncoderUtil.encodeTransactionWithSignature(
                 this.getRawTransaction(dataJsonMap, reqRegisterSignCptMapArgs.getSignatureData()),
                 reqRegisterSignCptMapArgs.getBodySigned());
 
             String hexValue = Hex.toHexString(signedMessage);
-            response = cptService.registerCpt(cptMapArgs, hexValue);
-            System.out.println("=====response:" + JsonUtil.objToJsonStr(response));
+            String result = cptService.registerCpt(hexValue).getResult();
+            ObjectMapper mapper = new ObjectMapper();
+            CptBaseInfo cptBaseInfo = mapper.readValue(result, CptBaseInfo.class);
+            System.out.println("=====response:" + result);
+            return new ResponseData<>(cptBaseInfo, ErrorCode.SUCCESS);
         } catch (Exception e) {
             logger.error("[registerCpt]: unknow error. reqRegisterCptArgs:{}",
                 reqRegisterSignCptMapArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
-        return response;
+    }
+
+    /**
+     * Call to WeID SDK with direct transaction hex String, to register CPT.
+     *
+     * @param transactionHex the transactionHex value
+     * @return String in ResponseData
+     */
+    public HttpResponseData<String> registerCptWithTransactionHex(String transactionHex) {
+        try {
+            ResponseData<String> responseData = cptService.registerCpt(transactionHex);
+            if (responseData.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
+                logger.error("[registerCpt]: error occurred: {}, {}", responseData.getErrorCode(),
+                    responseData.getErrorMessage());
+            }
+            return new HttpResponseData<>(responseData.getResult(), responseData.getErrorCode(),
+                responseData.getErrorMessage());
+        } catch (Exception e) {
+            logger.error("[registerCpt]: unknown error, input arguments:{}",
+                transactionHex,
+                e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+        }
     }
 
     /**
      * build WeIdAuthority
+     *
      * @param weIdPrivateKeyStr this is String
      * @param weId this is String
-     * @return
      */
     private WeIdAuthentication buildWeIdAuthority(String weIdPrivateKeyStr, String weId) {
 
@@ -158,6 +188,7 @@ public class InvokerCptService {
 
     /**
      * This is used to register a new CPT to the blockchain.
+     *
      * @param reqRegisterCptStringArgs the args
      * @return the response data
      */
@@ -179,14 +210,14 @@ public class InvokerCptService {
             logger.error("[registerCpt]: unknow error. reqRegisterCptArgs:{}",
                 reqRegisterCptStringArgs,
                 e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * this is used to query cpt with the latest version which has been registered.
+     *
      * @param cptId the cpt id
      * @return the response data
      */
@@ -197,14 +228,43 @@ public class InvokerCptService {
             response = cptService.queryCpt(cptId);
         } catch (Exception e) {
             logger.error("[queryCpt]: unknow error. cptId:{}", cptId, e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
+     * Query CPT via the InvokeFunction API.
+     *
+     * @param queryArgs the query arg
+     * @return the CPT data
+     */
+    public HttpResponseData<String> queryCptInvoke(String queryArgs) {
+        try {
+            JsonNode cptIdNode = new ObjectMapper().readTree(queryArgs)
+                .get(ParamKeyConstant.CPT_ID);
+            if (cptIdNode == null || StringUtils
+                .isEmpty(InputUtil.removeDoubleQuotes(cptIdNode.toString()))) {
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_NULL);
+            }
+            ResponseData response = cptService
+                .queryCpt(Integer.valueOf(InputUtil.removeDoubleQuotes(cptIdNode.toString())));
+            return new HttpResponseData<>(
+                JsonUtil.objToJsonStr(response.getResult()),
+                response.getErrorCode(),
+                response.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(
+                "[queryCpt]: unknow error. cptId:{}.",
+                queryArgs,
+                e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+        }
+    }
+
+    /**
      * This is used to update a CPT data which has been register.
+     *
      * @param reqUpdateCptArgs the args
      * @return the response data
      */
@@ -223,14 +283,14 @@ public class InvokerCptService {
             response = cptService.updateCpt(cptMapArgs, reqUpdateCptArgs.getCptId());
         } catch (Exception e) {
             logger.error("[updateCpt]: unknow error. reqUpdateCptArgs:{}", reqUpdateCptArgs, e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
 
     /**
      * This is used to update a CPT data which has been register.
+     *
      * @param reqUpdateCptStringArgs the args
      * @return the response data
      */
@@ -248,9 +308,9 @@ public class InvokerCptService {
 
             response = cptService.updateCpt(cptStringArgs, reqUpdateCptStringArgs.getCptId());
         } catch (Exception e) {
-            logger.error("[updateCpt]: unknow error. reqUpdateCptArgs:{}", reqUpdateCptStringArgs, e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
+            logger
+                .error("[updateCpt]: unknow error. reqUpdateCptArgs:{}", reqUpdateCptStringArgs, e);
+            return new ResponseData<>(null, ErrorCode.BASE_ERROR);
         }
         return response;
     }
@@ -262,11 +322,11 @@ public class InvokerCptService {
         String data = this.createFuntionRegisterCpt(jsonSchemaMap, signatureData);
 
         return RawTransaction.createTransaction(
-            invokerWeb3jService.getNonce().getResult(),
+            TransactionEncoderUtil.getNonce(),
             new BigInteger("99999999999"),
             new BigInteger("99999999999"),
-            invokerWeb3jService.getBlockLimit().getResult(),
-            "0xd7a617780dd61be1c599f2462667a26cbb9fd6bf",
+            TransactionEncoderUtil.getBlockLimit(),
+            "0xfcd14ed03e6d94ca127d557a1883dd042a81ea11",
             new BigInteger("0"),
             data,
             BigInteger.ZERO,
@@ -347,4 +407,6 @@ public class InvokerCptService {
         }
         return DataTypetUtils.stringArrayToBytes32StaticArray(jsonSchemaArray);
     }
+
+
 }

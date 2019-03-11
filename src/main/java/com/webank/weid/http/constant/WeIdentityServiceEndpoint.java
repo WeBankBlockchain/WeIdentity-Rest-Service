@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2018-2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -17,29 +17,22 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+package com.webank.weid.http.constant;
 
 /**
- * @author darwindu
+ * Define function names to be picked for calls to WeIdentity Java SDK
+ *
+ * @author chaoxinhu
  **/
-@SpringBootTest
-@RunWith(SpringRunner.class)
-public abstract class BaseTest {
 
-    @Before
-    public void init() {
-        System.out.println("====start testing");
-    }
+public final class WeIdentityServiceEndpoint {
 
-    @After
-    public void after() {
-        System.out.println("====ent testing");
-    }
+    /**
+     * API endpoint.
+     */
+    public static final String API_ROOT = "weIdentity";
+    public static final String ENCODE_TRANSACTION = "encodeTransaction";
+    public static final String SEND_TRANSACTION = "sendTransaction";
+    public static final String INVOKE_FUNCTION = "invokeFunction";
+
 }

@@ -1,0 +1,280 @@
+/*
+ *       Copyright© (2018) WeBank Co., Ltd.
+ *
+ *       This file is part of weidentity-java-sdk.
+ *
+ *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *
+ *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.webank.weid.http.service;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bcos.contract.tools.ToolConf;
+import org.bcos.web3j.crypto.Credentials;
+import org.bcos.web3j.crypto.ECKeyPair;
+import org.bcos.web3j.crypto.GenCredential;
+import org.bcos.web3j.crypto.Keys;
+import org.bcos.web3j.crypto.Sign;
+import org.bcos.web3j.crypto.Sign.SignatureData;
+import org.junit.Assert;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Component;
+
+import com.webank.weid.http.BaseTest;
+import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.TransactionEncoderUtil;
+import com.webank.weid.util.JsonUtil;
+import com.webank.weid.util.SignatureUtils;
+import com.webank.weid.util.WeIdUtils;
+
+@Component
+public class TransactionTest extends BaseTest {
+
+    @Autowired
+    TransactionService transactionService;
+    @Autowired
+    InvokerWeIdService invokerWeIdService;
+
+    @Test
+    public void TestWeIdAll() throws Exception {
+
+        ECKeyPair ecKeyPair = Keys.createEcKeyPair();
+        String newPublicKey = ecKeyPair.getPublicKey().toString();
+        String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
+        Assert.assertFalse(invokerWeIdService.isWeIdExist(weId).getResult());
+        String nonceVal = TransactionEncoderUtil.getNonce().toString();
+
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("publicKey", newPublicKey);
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        Map<String, Object> inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_WEID);
+        HttpResponseData<String> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp1);
+
+        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        String data = encodeResult.get("data").textValue();
+        byte[] encodedTransaction = SignatureUtils
+            .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
+        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        String signedMsg = new String(
+            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_WEID);
+        HttpResponseData<String> resp2 =
+            transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp2);
+        Assert.assertTrue(invokerWeIdService.isWeIdExist(weId).getResult());
+        System.out.println(invokerWeIdService.getWeIdDocumentJson(weId));
+        System.out.println("txn hex check done, step 2 done");
+
+        //test getweiddocument w/ invoke
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", weId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT);
+        HttpResponseData<String> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp3);
+        System.out.println("invoke done, step 3 done");
+    }
+
+    @Test
+    public void TestAuthorityIssuerAll() throws Exception {
+        //step 1: create a WeID as the issuer
+        String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
+        Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
+
+        // step 2: prepare param
+        String nonceVal = TransactionEncoderUtil.getNonce().toString();
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        funcArgMap.put("name", "Sample College");
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        Map<String, Object> inputParamMap;
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
+        HttpResponseData<String> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println("step 1 done: " + resp1);
+
+        // step 3: sign via SDK privKey
+        // note that the authorityIssuer creation can only be done by god account - for now
+        ApplicationContext context = new ClassPathXmlApplicationContext(
+            "applicationContext.xml");
+        ToolConf toolConf = (ToolConf) context.getBean("toolConf");
+        Credentials credentials = GenCredential.create(toolConf.getPrivKey());
+        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        String data = encodeResult.get("data").textValue();
+        byte[] encodedTransaction = SignatureUtils
+            .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
+        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        String signedMsg = new String(
+            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+        System.out.println("step 2 done, sig: " + signedMsg);
+
+        // step 4: send
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
+        HttpResponseData<String> resp2 =
+            transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp2);
+
+        // step 5: query
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_QUERY_AUTHORITY_ISSUER);
+        HttpResponseData<String> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp3);
+        System.out.println("invoke done, step 3 done");
+    }
+
+    @Test
+    public void TestCptAll() throws Exception {
+        //step 1: create a WeID as the cpt creator (we let alone the authority issuer business)
+        String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
+        Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
+
+        // step 2: prepare param
+        // note that the authorityIssuer creation can only be done by god account - for now
+        String nonceVal = TransactionEncoderUtil.getNonce().toString();
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        String cptSignature = "HJPbDmoi39xgZBGi/aj1zB6VQL5QLyt4qTV6GOvQwzfgUJEZTazKZXe1dRg5aCt8Q44GwNF2k+l1rfhpY1hc/ls=";
+        funcArgMap.put("cptSignature", cptSignature);
+        Map<String, Object> cptJsonSchemaMap = new LinkedHashMap<>();
+        cptJsonSchemaMap.put("title", "a CPT schema");
+        funcArgMap.put("cptJsonSchema", cptJsonSchemaMap);
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        Map<String, Object> inputParamMap;
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
+        HttpResponseData<String> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println("step 1 done: " + resp1);
+
+        // step 3: sign via SDK privKey
+        // let us use god account for low-bit cptId for good
+        ApplicationContext context = new ClassPathXmlApplicationContext(
+            "applicationContext.xml");
+        ToolConf toolConf = (ToolConf) context.getBean("toolConf");
+        Credentials credentials = GenCredential.create(toolConf.getPrivKey());
+        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        String data = encodeResult.get("data").textValue();
+        byte[] encodedTransaction = SignatureUtils
+            .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
+        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        String signedMsg = new String(
+            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+        System.out.println("step 2 done, sig: " + signedMsg);
+
+        // step 4: send
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
+        HttpResponseData<String> resp2 =
+            transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp2);
+
+        // step 5: queryCpt
+        JsonNode jsonNode = new ObjectMapper().readTree(resp2.getRespBody());
+        Integer cptId = Integer.valueOf(jsonNode.get("cptId").toString());
+        System.out.println("cptId is: " + cptId);
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("cptId", cptId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_QUERY_CPT);
+        HttpResponseData<String> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp3);
+        System.out.println("invoke done, step 3 done");
+    }
+}

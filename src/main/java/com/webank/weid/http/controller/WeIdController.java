@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.request.ReqCreateWeIdArgs;
 import com.webank.weid.http.protocol.request.ReqSetAuthenticationArgs;
 import com.webank.weid.http.protocol.request.ReqSetPublicKeyArgs;
@@ -18,13 +19,14 @@ import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 
 @RestController
-@RequestMapping(value = "weIdentity")
+@RequestMapping(value = WeIdentityServiceEndpoint.API_ROOT)
 public class WeIdController {
 
     @Autowired
     private InvokerWeIdService invokerWeIdService;
 
     /**
+     * @fixme
      * createEcKeyPair.
      * @return publicKey and privateKey
      */
@@ -34,6 +36,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Create WeIdentity DID.
      * @return the response data
      */
@@ -43,6 +46,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Create a WeIdentity DID.
      * @param reqCreateWeIdArgs the create WeIdentity DID args
      * @return the response data
@@ -53,6 +57,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Get a WeIdentity DID Document.
      * @param weId response WeIdentity DID.
      * @return the WeIdentity DID document.
@@ -63,6 +68,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Get a WeIdentity DID Document.
      * @param weId response WeIdentity DID.
      * @return the WeIdentity DID document json.
@@ -73,6 +79,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Set Public Key.
      * @param reqSetPublicKeyArgs the set public key args
      * @return the response data
@@ -83,6 +90,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Set Service.
      * @param reqSetServiceArgs the set service args
      * @return the response data
@@ -93,6 +101,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Set Authentication.
      * @param reqSetAuthenticationArgs the set authentication args
      * @return the response data
@@ -103,6 +112,7 @@ public class WeIdController {
     }
 
     /**
+     * @fixme
      * Check if WeIdentity DID exists on Chain.
      * @param weId the WeIdentity DID
      * @return true if exists, false otherwise

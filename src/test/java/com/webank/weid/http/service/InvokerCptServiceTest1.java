@@ -20,6 +20,7 @@
 package com.webank.weid.http.service;
 
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.interfaces.ECPrivateKey;
@@ -33,6 +34,7 @@ import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.Sign;
 import org.bcos.web3j.crypto.Sign.SignatureData;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,24 +51,14 @@ import com.webank.weid.util.SignatureUtils;
  * @author darwindu
  **/
 @Component
-public class InvokerCptServiceTest1 extends BaseTest {
+public abstract class InvokerCptServiceTest1 extends BaseTest {
 
-    @Autowired
-    private InvokerWeb3jService invokerWeb3jService;
+    private InvokerCptService invokerCptService = new InvokerCptService();
 
-    @Autowired
-    private InvokerCptService invokerCptService;
-
-    @Test
+    //@Test
     public void registerTranCpt() throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        InputStream ksInputStream =
-            InvokerCptServiceTest1.class.getClassLoader().getResourceAsStream("tb.jks");
-        ks.load(ksInputStream, "123456".toCharArray());
-        Key key = ks.getKey("ec", "123456".toCharArray());
-        ECPrivateKey privateKey = (ECPrivateKey) key;
-        Credentials credentials = Credentials.create(ECKeyPair.create(privateKey.getS()));
+        Credentials credentials = Credentials.create(ECKeyPair.create(new BigInteger("1111")));
 
         JsonNode jsonNode = JsonLoader.fromResource("/cpt.json");
         String jsonSchema = jsonNode.toString();
@@ -85,11 +77,10 @@ public class InvokerCptServiceTest1 extends BaseTest {
         reqRegisterSignCptMapArgs.setSignatureData(signatureData);
         reqRegisterSignCptMapArgs.setDataJson(jsonSchemaMap);
         ResponseData<byte[]> responseData =  invokerCptService.getEncodedTransaction(reqRegisterSignCptMapArgs);
-
-        System.out.println("==responseData:" + JsonUtil.objToJsonStr(responseData));
+        String baseenc = new String(SignatureUtils.base64Encode(responseData.getResult()));
+        System.out.println("==responseData:" + JsonUtil.objToJsonStr(responseData) + "; base 64: " +  baseenc);
 
         byte[] encodedTransaction = responseData.getResult();
-
 
         SignatureData bodySigned = Sign.signMessage(encodedTransaction, credentials.getEcKeyPair());
         reqRegisterSignCptMapArgs = new ReqRegisterSignCptMapArgs();

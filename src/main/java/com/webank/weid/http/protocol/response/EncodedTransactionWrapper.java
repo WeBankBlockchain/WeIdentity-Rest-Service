@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2018-2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -17,42 +17,27 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http.service;
+package com.webank.weid.http.protocol.response;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.Random;
-
-import org.springframework.stereotype.Service;
-
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.service.BaseService;
+import lombok.Data;
+import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
 
 /**
- * @author darwindu
- **/
-@Service
-public class InvokerWeb3jService {
+ * The result of EncodedTransaction. A wrapper class with both encoded String, and rawTransaction.
+ *
+ * @author chaoxinhu
+ */
 
-
-    /**
-     * get nonce
-     * @return
-     */
-    public ResponseData<BigInteger> getNonce() {
-
-        ResponseData<BigInteger> responseData = new ResponseData<BigInteger>();
-        Random r = new SecureRandom();
-        BigInteger nonce = new BigInteger(250, r);
-        responseData.setResult(nonce);
-        return responseData;
-    }
+@Data
+public class EncodedTransactionWrapper {
 
     /**
-     * get block limit
-     * @return
+     * The Encoded Transaction in String. This MUST be in Base64 format.
      */
-    public ResponseData<BigInteger> getBlockLimit() {
-        return BaseService.getBlockLimit();
-    }
+    private String encodedTransaction;
+
+    /**
+     * The data segment instance in RawTransaction. Client needs this for future sendTransaction.
+     */
+    private String data;
 }

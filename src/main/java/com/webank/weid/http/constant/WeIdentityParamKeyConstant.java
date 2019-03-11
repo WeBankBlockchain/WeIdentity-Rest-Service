@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2018-2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -17,29 +17,27 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+package com.webank.weid.http.constant;
 
 /**
- * @author darwindu
+ * Define param key names to be allowed to enable calls to WeIdentity Java SDK
+ *
+ * @author chaoxinhu
  **/
-@SpringBootTest
-@RunWith(SpringRunner.class)
-public abstract class BaseTest {
+public final class WeIdentityParamKeyConstant {
 
-    @Before
-    public void init() {
-        System.out.println("====start testing");
-    }
+    /**
+     * Universal param key names.
+     */
+    public static final String FUNCTION_NAME = "functionName";
+    public static final String TRANSACTION_DATA = "data";
+    public static final String SIGNED_MESSAGE = "signedMessage";
+    public static final String API_VERSION = "v";
+    public static final String NONCE = "nonce";
+    public static final String FUNCTION_ARG = "functionArg";
+    public static final String TRANSACTION_ARG = "transactionArg";
+    public static final String CLIAM_HASH = "claimHash";
 
-    @After
-    public void after() {
-        System.out.println("====ent testing");
-    }
+    public static final String DEFAULT_API_VERSION = "1.0.0";
+
 }

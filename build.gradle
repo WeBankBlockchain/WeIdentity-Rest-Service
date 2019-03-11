@@ -13,8 +13,8 @@ targetCompatibility = 1.8
 // In this section you declare where to find the dependencies of your project
 repositories {
     maven {
-        url "http://maven.aliyun.com/nexus/content/groups/public/"
-        //url "http://maven.weoa.com/nexus/content/groups/public/"
+        //url "http://maven.aliyun.com/nexus/content/groups/public/"
+        url "http://maven.weoa.com/nexus/content/groups/public/"
     }
 
     mavenLocal()
@@ -30,7 +30,7 @@ List logger = [
         "com.lmax:disruptor:3.3.7"
 ]
 
-def spring_version = "4.1.8.RELEASE"
+def spring_version = "4.3.16.RELEASE"
 List spring = [
         "org.springframework:spring-core:$spring_version",
         "org.springframework:spring-beans:$spring_version",
@@ -88,8 +88,8 @@ dependencies {
     compile logger, spring, lombok, apache_commons, jackson, spring_boot
     testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test
     compile files('lib/web3sdk.jar')
-    compile files('lib/weidentity-contract-java-1.0.0.jar')
-    compile files('lib/weidentity-java-sdk-1.0.4.jar')
+    compile files('lib/weidentity-contract-java-1.1.0.jar')
+    compile files('lib/weidentity-java-sdk-1.1.0.jar')
 }
 
 configurations {
