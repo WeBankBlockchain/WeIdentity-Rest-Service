@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018-2019) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -27,7 +27,7 @@ package com.webank.weid.http.constant;
 public final class WeIdentityParamKeyConstant {
 
     /**
-     * Universal param key names.
+     * Universal param key names. Treated as case-INSENSITIVE when being checked.
      */
     public static final String FUNCTION_NAME = "functionName";
     public static final String TRANSACTION_DATA = "data";
@@ -36,7 +36,8 @@ public final class WeIdentityParamKeyConstant {
     public static final String NONCE = "nonce";
     public static final String FUNCTION_ARG = "functionArg";
     public static final String TRANSACTION_ARG = "transactionArg";
-    public static final String CLIAM_HASH = "claimHash";
+    public static final String CLAIM_HASH = "claimHash";
+    public static final String KEY_INDEX = "invokerWeId";
 
     public static final String DEFAULT_API_VERSION = "1.0.0";
 

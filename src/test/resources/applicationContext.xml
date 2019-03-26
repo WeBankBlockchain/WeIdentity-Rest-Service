@@ -30,10 +30,10 @@
     id="appConfig">
     <property name="properties">
       <props>
-        <prop key="weId.contractaddress">0x23df89a2893120f686a4aa03b41acf6836d11e5d</prop>
-        <prop key="cpt.contractaddress">0xfcd14ed03e6d94ca127d557a1883dd042a81ea11</prop>
-        <prop key="issuer.contractaddress">0x60d4ee5c461677840ab3552a6845fdf7db4a5317</prop>
-        <prop key="evidence.contractaddress">0x73479ed8162e198b9627b962eb4aae7098bdc770</prop>
+        <prop key="weId.contractaddress">0xedfe29997c7783d618510f2da6510010ad5253f4</prop>
+        <prop key="cpt.contractaddress">0x8984cab94b7c3add9c56e6c21d4329e0020d73ad</prop>
+        <prop key="issuer.contractaddress">0xb5346fd29ac75e7bb682c548f2951b6f8bf7d754</prop>
+        <prop key="evidence.contractaddress">0xddddd42da68a40784f5f63ada7ead9b36a38d2e3</prop>
       </props>
     </property>
     <!--  <property name="location" value="classpath:application.properties" />-->
@@ -83,7 +83,7 @@
             <property name="clientCertPassWord" value="123456"/>
             <property name="connectionsStr">
               <list>
-                <value>WeIdentity@127.0.0.1:8900</value>
+                <value>WeIdentity@127.0.0.1:8812</value>
               </list>
             </property>
           </bean>

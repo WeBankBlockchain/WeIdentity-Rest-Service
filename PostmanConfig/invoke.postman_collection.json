@@ -1,0 +1,257 @@
+{
+	"info": {
+		"_postman_id": "f8c538d0-70cb-4777-a24f-b6d947639596",
+		"name": "invoke",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "createWeId",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {},\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"createWeId\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getWeIdDocument",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"getWeIdDocument\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "registerCpt",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"cptJsonSchema\": {\n        \t\"title\": \"a CPT schema\"\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerCpt\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "queryCpt",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"cptId\": 2000019\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryCpt\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "registerAuthorityIssuer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"name\": \"Sample College\"\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xffffffff\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerAuthorityIssuer\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "queryAuthorityIssuerInfo",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryAuthorityIssuer\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createCredential",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"issuer\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"cptId\": 2000019,\n        \"expirationDate\": \"2400-04-18T21:12:33Z\",\n        \"claim\": {\n            \"name\": \"zhang san\",\n            \"gender\": \"F\",\n            \"age\": 18\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"createCredential\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "verifyCredential",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"@context\": \"https://www.w3.org/2018/credentials/v1\",\n        \"claim\": {\n            \"age\": 18,\n            \"gender\": \"F\",\n            \"name\": \"zhang san\"\n        },\n        \"cptId\": 2000019,\n        \"expirationDate\": \"2400-04-18T21:12:33Z\",\n        \"id\": \"ae9d67a2-5b77-401e-b8b8-282e5429fc33\",\n        \"issuer\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"issuranceDate\": \"2019-04-02T18:57:47Z\",\n        \"signature\": \"HEb/aY4P7gYsuUXJAF6qQB9k5fHg8iOqwS0hfA2Pr+MneWa/8BzTSD8EpKCZTWGFXlfmwvoE4YbvW2x0dNkMOnY=\"\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"verifyCredential\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
