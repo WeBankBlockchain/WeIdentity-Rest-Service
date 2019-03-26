@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -21,14 +21,8 @@ package com.webank.weid.http.util;
 
 import java.nio.charset.StandardCharsets;
 
-import org.bcos.web3j.abi.datatypes.generated.Bytes32;
-import org.bcos.web3j.abi.datatypes.generated.Uint8;
 import org.bcos.web3j.crypto.Sign.SignatureData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.webank.weid.protocol.response.RsvSignature;
-import com.webank.weid.util.DataTypetUtils;
 import com.webank.weid.util.SignatureUtils;
 
 /**
@@ -37,28 +31,6 @@ import com.webank.weid.util.SignatureUtils;
  * @author chaoxinhu
  */
 public class SignatureUtil {
-
-    private static Logger logger = LoggerFactory.getLogger(SignatureUtil.class);
-
-    /**
-     * Convert SignatureData to blockchain-ready RSV format
-     *
-     * @param signatureData the signature data
-     * @return rsvSignature the rsv signature structure
-     */
-    public static RsvSignature convertSignatureDataToRsv(
-        SignatureData signatureData) {
-
-        Uint8 v = DataTypetUtils.intToUnt8(Integer.valueOf(signatureData.getV()));
-        Bytes32 r = DataTypetUtils.bytesArrayToBytes32(signatureData.getR());
-        Bytes32 s = DataTypetUtils.bytesArrayToBytes32(signatureData.getS());
-
-        RsvSignature rsvSignature = new RsvSignature();
-        rsvSignature.setV(v);
-        rsvSignature.setR(r);
-        rsvSignature.setS(s);
-        return rsvSignature;
-    }
 
     /**
      * Convert an off-chain Base64 signature String to signatureData format

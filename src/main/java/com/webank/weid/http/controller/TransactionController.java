@@ -1,3 +1,22 @@
+/*
+ *       Copyright© (2019) WeBank Co., Ltd.
+ *
+ *       This file is part of weidentity-java-sdk.
+ *
+ *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *
+ *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.webank.weid.http.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +52,7 @@ public class TransactionController {
      *   array in Base64 format, and the rawTransaction related params for future encoding.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.ENCODE_TRANSACTION, method = RequestMethod.POST)
-    public HttpResponseData<String> encodeTransaction(
+    public HttpResponseData<Object> encodeTransaction(
         @RequestBody String encodeTransactionJsonArgs) {
         return transactionService.encodeTransaction(encodeTransactionJsonArgs);
     }
@@ -47,7 +66,7 @@ public class TransactionController {
      * @return the json string from SDK response.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.SEND_TRANSACTION, method = RequestMethod.POST)
-    public HttpResponseData<String> sendTransaction(
+    public HttpResponseData<Object> sendTransaction(
         @RequestBody String sendTransactionJsonArgs) {
         return transactionService.sendTransaction(sendTransactionJsonArgs);
     }
@@ -61,7 +80,7 @@ public class TransactionController {
      * @return the json string from SDK response.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.INVOKE_FUNCTION, method = RequestMethod.POST)
-    public HttpResponseData<String> invokeFunction(
+    public HttpResponseData<Object> invokeFunction(
         @RequestBody String invokeFunctionJsonArgs) {
         return transactionService.invokeFunction(invokeFunctionJsonArgs);
     }

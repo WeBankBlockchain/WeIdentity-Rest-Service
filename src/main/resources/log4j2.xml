@@ -30,19 +30,19 @@
 
 	<Loggers>
 	    
-	    <AsyncLogger name="org.bcos.channel" level="debug" additivity="false" includeLocation="true">
+	    <AsyncLogger name="org.bcos.channel" level="info" additivity="false" includeLocation="true">
 	      <AppenderRef ref="fileAppender" />
 	    </AsyncLogger>
 
-	    <AsyncLogger name="org.bcos.contract" level="debug" additivity="false" includeLocation="true">
+	    <AsyncLogger name="org.bcos.contract" level="info" additivity="false" includeLocation="true">
 	      <AppenderRef ref="fileAppender" />
 	    </AsyncLogger>
 
-	    <AsyncLogger name="org.bcos.web3j" level="debug" additivity="false" includeLocation="true">
+	    <AsyncLogger name="org.bcos.web3j" level="info" additivity="false" includeLocation="true">
 	      <AppenderRef ref="fileAppender" />
 	    </AsyncLogger>
 	    
-	    <AsyncLogger name="com.webank.weid" level="debug" additivity="false" includeLocation="true">
+	    <AsyncLogger name="com.webank.weid" level="info" additivity="false" includeLocation="true">
 	      <AppenderRef ref="fileAppender" />
 	    </AsyncLogger>
 	    
@@ -50,7 +50,7 @@
 			<AppenderRef ref="errorLog" />
 		</AsyncLogger>
 		
-		<AsyncRoot level="debug">
+		<AsyncRoot level="info">
 			<AppenderRef ref="fileAppender" />
 			<AppenderRef ref="console" />
         </AsyncRoot>

@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -51,6 +51,7 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.util.JsonUtil;
 import com.webank.weid.util.SignatureUtils;
 import com.webank.weid.util.TransactionUtils;
@@ -78,16 +79,17 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> inputParameters = TransactionUtils
+            ResponseData<List<Type>> responseData = TransactionUtils
                 .buildRegisterCptInputParameters(inputParam);
-            if (inputParameters == null) {
+            if (responseData.getResult() == null) {
                 logger.error("[RegisterCpt] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
+                    responseData.getErrorMessage());
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
-                inputParameters,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -95,8 +97,8 @@ public class TransactionEncoderUtil {
                 getEncodeOutput(encodedTransaction, rawTransaction),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
-            logger.error("Failed to resolve input arguments for registerCpt: ", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+            logger.error("[RegisterCpt] Failed to get encoder for unknown reason: ", e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
         }
     }
 
@@ -113,16 +115,17 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> inputParameters = TransactionUtils
+            ResponseData<List<Type>> responseData = TransactionUtils
                 .buildCreateWeIdInputParameters(inputParam);
-            if (inputParameters == null) {
+            if (responseData.getResult() == null) {
                 logger.error("[CreateWeId] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
+                    responseData.getErrorMessage());
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
-                inputParameters,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -130,8 +133,8 @@ public class TransactionEncoderUtil {
                 getEncodeOutput(encodedTransaction, rawTransaction),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
-            logger.error("Failed to resolve input arguments for createWeId:", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+            logger.error("[createWeId] Failed to get encoder for unknown reason:", e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
         }
     }
 
@@ -148,17 +151,18 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> inputParameters = TransactionUtils
+            ResponseData<List<Type>> responseData = TransactionUtils
                 .buildAuthorityIssuerInputParameters(inputParam);
-            if (inputParameters == null) {
+            if (responseData.getResult() == null) {
                 logger.error(
                     "[RegisterAuthorityIssuer] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
+                    responseData.getErrorMessage());
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
-                inputParameters,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -166,8 +170,8 @@ public class TransactionEncoderUtil {
                 getEncodeOutput(encodedTransaction, rawTransaction),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
-            logger.error("Failed to resolve input arguments for registerAuthorityIssuer:", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.UNKNOWN_ERROR);
+            logger.error("[registerAuthorityIssuer] Failed to get encoder for unknown reason:", e);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
         }
     }
 
@@ -178,15 +182,6 @@ public class TransactionEncoderUtil {
      */
     public static BigInteger getNonce() {
         return TransactionUtils.getNonce();
-    }
-
-    /**
-     * Get a default blocklimit for a transaction.
-     *
-     * @return blocklimit in BigInt.
-     */
-    public static BigInteger getBlockLimit() {
-        return TransactionUtils.getBlockLimit();
     }
 
     /**
@@ -208,6 +203,86 @@ public class TransactionEncoderUtil {
     }
 
     /**
+     * Extract and build Input arg for all Service APIs.
+     *
+     * @param inputJson the inputJson String
+     * @return An InputArg instance
+     */
+    public static HttpResponseData<InputArg> buildInputArg(String inputJson) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(inputJson);
+            if (jsonNode == null) {
+                logger.error("Null input within: {}", inputJson);
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode functionNameNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_NAME);
+            JsonNode versionNode = jsonNode.get(WeIdentityParamKeyConstant.API_VERSION);
+            if (functionNameNode == null || StringUtils.isEmpty(functionNameNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            }
+            if (versionNode == null || StringUtils.isEmpty(versionNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.VER_ILLEGAL);
+            }
+            // Need to use toString() for pure Objects and textValue() for pure String
+            JsonNode functionArgNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_ARG);
+            if (functionArgNode == null || StringUtils.isEmpty(functionArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCARG_ILLEGAL);
+            }
+            JsonNode txnArgNode = jsonNode.get(WeIdentityParamKeyConstant.TRANSACTION_ARG);
+            if (txnArgNode == null || StringUtils.isEmpty(txnArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.TXNARG_ILLEGAL);
+            }
+
+            String functionArg = functionArgNode.toString();
+            String txnArg = txnArgNode.toString();
+            InputArg inputArg = new InputArg();
+            inputArg.setFunctionArg(functionArg);
+            inputArg.setTransactionArg(txnArg);
+            inputArg.setFunctionName(functionNameNode.textValue());
+            inputArg.setV(versionNode.textValue());
+            return new HttpResponseData<>(inputArg, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Json Extraction error within: {}", inputJson);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a rawTransaction instance, based on pre-defined parameters.
+     *
+     * @param nonce the nonce value
+     * @param data the data segment
+     * @param to contract address
+     */
+    public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
+        return RawTransaction.createTransaction(
+            new BigInteger(nonce),
+            new BigInteger("99999999999"),
+            new BigInteger("99999999999"),
+            getBlockLimit(),
+            to,
+            new BigInteger("0"),
+            data,
+            BigInteger.ZERO,
+            false);
+    }
+
+    /**
+     * Get a default blocklimit for a transaction.
+     *
+     * @return blocklimit in BigInt.
+     */
+    private static BigInteger getBlockLimit() {
+        return TransactionUtils.getBlockLimit();
+    }
+
+    /**
      * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires
      * the previous rawTransaction and the signed Message from client side. todo change to private
      *
@@ -215,7 +290,7 @@ public class TransactionEncoderUtil {
      * @param signatureData the signatureData
      * @return transaction byte array
      */
-    public static byte[] encodeTransactionWithSignature(
+    private static byte[] encodeTransactionWithSignature(
         RawTransaction rawTransaction,
         SignatureData signatureData) {
         List<RlpType> values = asRlpValues(rawTransaction, signatureData);
@@ -246,72 +321,6 @@ public class TransactionEncoderUtil {
             data,
             BigInteger.ZERO,
             false);
-    }
-
-    /**
-     * Get a rawTransaction instance, based on pre-defined parameters.
-     *
-     * @param nonce the nonce value
-     * @param data the data segment
-     * @param to contract address
-     */
-    public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
-        return RawTransaction.createTransaction(
-            new BigInteger(nonce),
-            new BigInteger("99999999999"),
-            new BigInteger("99999999999"),
-            getBlockLimit(),
-            to,
-            new BigInteger("0"),
-            data,
-            BigInteger.ZERO,
-            false);
-    }
-
-    /**
-     * Extract and build Input arg for all Service APIs.
-     *
-     * @param inputJson the inputJson String
-     * @return An InputArg instance
-     */
-    public static InputArg buildInputArg(String inputJson) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readTree(inputJson);
-            if (jsonNode == null) {
-                logger.error("Null input within: {}", inputJson);
-                return null;
-            }
-            JsonNode functionArgNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_ARG);
-            JsonNode functionNameNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_NAME);
-            JsonNode versionNode = jsonNode.get(WeIdentityParamKeyConstant.API_VERSION);
-            // TransactionArg can be non-existent here
-            if (functionNameNode == null || functionArgNode == null || versionNode == null) {
-                logger.error("Null input within: {}", jsonNode.toString());
-                return null;
-            }
-            // Need to use toString() for pure Objects and textValue() for pure String
-            String functionName = functionNameNode.textValue();
-            String functionArg = functionArgNode.toString();
-            JsonNode txnArgNode = jsonNode.get(WeIdentityParamKeyConstant.TRANSACTION_ARG);
-            String txnArg = StringUtils.EMPTY;
-            if (txnArgNode != null) {
-                txnArg = txnArgNode.toString();
-            }
-            if (StringUtils.isEmpty(functionName) || StringUtils.isEmpty(functionArg)) {
-                logger.error("Null input within: {}", jsonNode.toString());
-                return null;
-            }
-            InputArg inputArg = new InputArg();
-            inputArg.setFunctionArg(functionArg);
-            inputArg.setTransactionArg(txnArg);
-            inputArg.setFunctionName(functionName);
-            inputArg.setV(versionNode.textValue());
-            return inputArg;
-        } catch (Exception e) {
-            logger.error("Json Extraction error within: {}", inputJson);
-            return null;
-        }
     }
 
     /**

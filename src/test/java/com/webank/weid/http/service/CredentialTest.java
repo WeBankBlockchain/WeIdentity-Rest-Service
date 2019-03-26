@@ -1,3 +1,22 @@
+/*
+ *       Copyright© (2019) WeBank Co., Ltd.
+ *
+ *       This file is part of weidentity-java-sdk.
+ *
+ *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *
+ *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.webank.weid.http.service;
 
 import java.util.HashMap;
@@ -8,11 +27,11 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.util.JsonUtil;
 
 @Component
@@ -42,13 +61,14 @@ public class CredentialTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIAL);
-        HttpResponseData<String> resp1 =
+        HttpResponseData<Object> resp1 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
-        System.out.println(resp1);
+        System.out.println("intermediate result: " + resp1);
 
         // simulate client side sign
         Map<String, Object> credMap = (Map<String, Object>) JsonUtil
-            .jsonStrToObj(new HashMap<String, Object>(), resp1.getRespBody());
+            .jsonStrToObj(new HashMap<String, Object>(),
+                JsonUtil.mapToCompactJson((Map<String, Object>) resp1.getRespBody()));
         String claimHash = credMap.get("claimHash").toString();
         credMap.remove("claimHash");
         Map<String, Object> credForSigMap = new HashMap<>(credMap);
@@ -59,23 +79,12 @@ public class CredentialTest extends BaseTest {
         String sign = "FeB5";
         credMap.replace("signature", sign);
         String credentialAfterSign = JsonUtil.mapToCompactJson(credMap);
-        System.out.println(credentialAfterSign);
-
-        //test getCredJson
-        inputParamMap = new LinkedHashMap<>();
-        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, credMap);
-        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
-        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
-            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
-        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
-            WeIdentityFunctionNames.FUNCNAME_GET_CREDENTIAL_JSON);
-        HttpResponseData<String> resp2 =
-            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
-        System.out.println(resp2);
+        Credential credential = (Credential) JsonUtil
+            .jsonStrToObj(new Credential(), credentialAfterSign);
+        System.out.println("after sign: " + credential);
 
         //test verify
-        Map<String, Object> credJsonMap = (Map<String, Object>) JsonUtil
-            .jsonStrToObj(new HashMap<String, Object>(), resp2.getRespBody());
+        Map<String, Object> credJsonMap = JsonUtil.objToMap(credential);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, credJsonMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -83,7 +92,7 @@ public class CredentialTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIAL);
-        HttpResponseData<String> resp3 =
+        HttpResponseData<Object> resp3 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
     }

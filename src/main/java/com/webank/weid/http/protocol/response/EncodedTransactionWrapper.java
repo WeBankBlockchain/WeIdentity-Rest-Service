@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018-2019) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -20,7 +20,6 @@
 package com.webank.weid.http.protocol.response;
 
 import lombok.Data;
-import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
 
 /**
  * The result of EncodedTransaction. A wrapper class with both encoded String, and rawTransaction.

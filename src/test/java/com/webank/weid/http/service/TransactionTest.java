@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -75,11 +75,12 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_CREATE_WEID);
-        HttpResponseData<String> resp1 =
+        HttpResponseData<Object> resp1 =
             transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp1);
 
-        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        JsonNode encodeResult = new ObjectMapper()
+            .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = SignatureUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
@@ -88,10 +89,10 @@ public class TransactionTest extends BaseTest {
             SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
 
         funcArgMap = new LinkedHashMap<>();
-        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -99,11 +100,10 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_CREATE_WEID);
-        HttpResponseData<String> resp2 =
+        HttpResponseData<Object> resp2 =
             transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp2);
         Assert.assertTrue(invokerWeIdService.isWeIdExist(weId).getResult());
-        System.out.println(invokerWeIdService.getWeIdDocumentJson(weId));
         System.out.println("txn hex check done, step 2 done");
 
         //test getweiddocument w/ invoke
@@ -116,7 +116,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT);
-        HttpResponseData<String> resp3 =
+        HttpResponseData<Object> resp3 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
         System.out.println("invoke done, step 3 done");
@@ -126,7 +126,6 @@ public class TransactionTest extends BaseTest {
     public void TestAuthorityIssuerAll() throws Exception {
         //step 1: create a WeID as the issuer
         String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
-        Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
 
         // step 2: prepare param
         String nonceVal = TransactionEncoderUtil.getNonce().toString();
@@ -143,7 +142,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
-        HttpResponseData<String> resp1 =
+        HttpResponseData<Object> resp1 =
             transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println("step 1 done: " + resp1);
 
@@ -154,7 +153,8 @@ public class TransactionTest extends BaseTest {
         ToolConf toolConf = (ToolConf) context.getBean("toolConf");
         Credentials credentials = GenCredential.create(toolConf.getPrivKey());
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();
-        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        JsonNode encodeResult = new ObjectMapper()
+            .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = SignatureUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
@@ -165,10 +165,10 @@ public class TransactionTest extends BaseTest {
 
         // step 4: send
         funcArgMap = new LinkedHashMap<>();
-        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -176,7 +176,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
-        HttpResponseData<String> resp2 =
+        HttpResponseData<Object> resp2 =
             transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp2);
 
@@ -190,7 +190,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_QUERY_AUTHORITY_ISSUER);
-        HttpResponseData<String> resp3 =
+        HttpResponseData<Object> resp3 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
         System.out.println("invoke done, step 3 done");
@@ -222,7 +222,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
-        HttpResponseData<String> resp1 =
+        HttpResponseData<Object> resp1 =
             transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println("step 1 done: " + resp1);
 
@@ -233,7 +233,8 @@ public class TransactionTest extends BaseTest {
         ToolConf toolConf = (ToolConf) context.getBean("toolConf");
         Credentials credentials = GenCredential.create(toolConf.getPrivKey());
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();
-        JsonNode encodeResult = new ObjectMapper().readTree(resp1.getRespBody());
+        JsonNode encodeResult = new ObjectMapper()
+            .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = SignatureUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
@@ -244,10 +245,10 @@ public class TransactionTest extends BaseTest {
 
         // step 4: send
         funcArgMap = new LinkedHashMap<>();
-        funcArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, signedMsg);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -255,12 +256,12 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
-        HttpResponseData<String> resp2 =
+        HttpResponseData<Object> resp2 =
             transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp2);
 
         // step 5: queryCpt
-        JsonNode jsonNode = new ObjectMapper().readTree(resp2.getRespBody());
+        JsonNode jsonNode = new ObjectMapper().readTree(JsonUtil.objToJsonStr(resp2.getRespBody()));
         Integer cptId = Integer.valueOf(jsonNode.get("cptId").toString());
         System.out.println("cptId is: " + cptId);
         funcArgMap = new LinkedHashMap<>();
@@ -272,7 +273,7 @@ public class TransactionTest extends BaseTest {
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
             WeIdentityFunctionNames.FUNCNAME_QUERY_CPT);
-        HttpResponseData<String> resp3 =
+        HttpResponseData<Object> resp3 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
         System.out.println("invoke done, step 3 done");

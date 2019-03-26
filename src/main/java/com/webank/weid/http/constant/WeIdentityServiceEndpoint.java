@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018-2019) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -30,9 +30,9 @@ public final class WeIdentityServiceEndpoint {
     /**
      * API endpoint.
      */
-    public static final String API_ROOT = "weIdentity";
-    public static final String ENCODE_TRANSACTION = "encodeTransaction";
-    public static final String SEND_TRANSACTION = "sendTransaction";
-    public static final String INVOKE_FUNCTION = "invokeFunction";
+    public static final String API_ROOT = "weid/api";
+    public static final String ENCODE_TRANSACTION = "encode";
+    public static final String SEND_TRANSACTION = "transact";
+    public static final String INVOKE_FUNCTION = "invoke";
 
 }

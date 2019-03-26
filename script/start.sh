@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # get JAVA_HOME conf from server.env
-TEMP_JAVA_HOME=`cat server.env | grep JAVA_HOME | cut -d':' -f4`
+#TEMP_JAVA_HOME=`cat server.env | grep JAVA_HOME | cut -d':' -f4`
 # jdk path
-JAVA_HOME="${TEMP_JAVA_HOME}"
+JAVA_HOME="$JAVA_HOME"
 
 CURRENT_DIR=`pwd`
 APP_NAME=`basename ${CURRENT_DIR}`

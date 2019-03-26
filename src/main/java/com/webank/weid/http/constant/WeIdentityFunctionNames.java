@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018-2019) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -26,22 +26,23 @@ package com.webank.weid.http.constant;
  **/
 
 public final class WeIdentityFunctionNames {
+
     /**
-     * Function names to be compared against the passed in encode/send transaction parameters.
+     * Function names to be compared against the passed in encode/send transaction parameters. Case
+     * insensitive.
      */
     public static final String FUNCNAME_CREATE_WEID = "createWeId";
     public static final String FUNCNAME_REGISTER_AUTHORITY_ISSUER = "registerAuthorityIssuer";
     public static final String FUNCNAME_REGISTER_CPT = "registerCpt";
-    public static final String FUNCNAME_CREATE_CREDENTIAL = "createCredentialInvoke";
-    public static final String FUNCNAME_VERIFY_CREDENTIAL = "verifyCredentialInvoke";
+    public static final String FUNCNAME_CREATE_CREDENTIAL = "createCredential";
+    public static final String FUNCNAME_VERIFY_CREDENTIAL = "verifyCredential";
     public static final String FUNCNAME_GET_WEID_DOCUMENT = "getWeIdDocument";
     public static final String FUNCNAME_GET_WEID_DOCUMENT_JSON = "getWeIdDocumentJson";
     public static final String FUNCNAME_QUERY_AUTHORITY_ISSUER = "queryAuthorityIssuer";
-    public static final String FUNCNAME_GET_CREDENTIAL_JSON = "getCredentialJsonInvoke";
     public static final String FUNCNAME_QUERY_CPT = "queryCpt";
 
     /**
-     * Function names to be assembled in SDK Function call.
+     * Function names to be assembled in SDK Function call. Case sensitive.
      */
     public static final String FUNCCALL_SET_ATTRIBUTE = "setAttribute";
     public static final String FUNCCALL_ADD_AUTHORITY_ISSUER = "addAuthorityIssuer";
