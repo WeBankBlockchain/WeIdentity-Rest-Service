@@ -19,35 +19,25 @@
 
 package com.webank.weid.http.service;
 
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import com.webank.weid.http.protocol.request.InputArg;
-import com.webank.weid.http.protocol.response.HttpResponseData;
+public abstract class BaseService {
 
-@Service
-public interface InvokerCptService {
-
-    /**
-     * Register a new CPT to blockchain via Invoke function.
-     *
-     * @param registerArgs the args
-     * @return the resp data
-     */
-    HttpResponseData<Object> registerCptInvoke(InputArg registerArgs);
+    private static final Logger logger = LoggerFactory.getLogger(BaseService.class);
 
     /**
-     * Call to WeID SDK with direct transaction hex String, to register CPT.
-     *
-     * @param transactionHex the transactionHex value
-     * @return String in ResponseData
+     * spring context.
      */
-    HttpResponseData<String> registerCptWithTransactionHex(String transactionHex);
+    protected static final ApplicationContext context;
 
-    /**
-     * Query CPT via the InvokeFunction API.
-     *
-     * @param queryArgs the query arg
-     * @return the CPT data
-     */
-    HttpResponseData<Object> queryCptInvoke(InputArg queryArgs);
+    static {
+        // initializing spring containers
+        context = new ClassPathXmlApplicationContext(new String[]{
+            "classpath:SpringApplicationContext.xml"});
+        logger.info("initializing spring containers finish...");
+
+    }
 }

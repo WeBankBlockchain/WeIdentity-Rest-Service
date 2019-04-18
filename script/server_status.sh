@@ -19,27 +19,16 @@ getTradeProtalPID(){
     fi
 }
 
-shutdown(){
+getServerStatus(){
     getTradeProtalPID
     echo "==============================================================================================="
     if [ $tradePortalPID -ne 0 ]; then
-        echo -n "Stopping $APP_MAIN(PID=$tradePortalPID)..."
-        kill -9 $tradePortalPID
-        if [ $? -eq 0 ]; then
-            echo "[Success]"
-            echo "==============================================================================================="
-        else
-            echo "[Failed]"
-            echo "==============================================================================================="
-        fi
-        getTradeProtalPID
-        if [ $tradePortalPID -ne 0 ]; then
-            shutdown
-        fi
+        echo "$APP_MAIN is running(PID=$tradePortalPID)"
+        echo "==============================================================================================="
     else
         echo "$APP_MAIN is not running"
         echo "==============================================================================================="
     fi
 }
 
-shutdown
+getServerStatus
