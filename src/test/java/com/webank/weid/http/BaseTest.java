@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2018) WeBank Co., Ltd.
+ *       Copyright© (2019) WeBank Co., Ltd.
  *
  *       This file is part of weidentity-java-sdk.
  *
@@ -30,7 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
  **/
 @SpringBootTest
 @RunWith(SpringRunner.class)
-public class BaseTest {
+public abstract class BaseTest {
 
     @Before
     public void init() {

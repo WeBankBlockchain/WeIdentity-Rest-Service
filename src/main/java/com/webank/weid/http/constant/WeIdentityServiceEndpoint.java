@@ -17,22 +17,22 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.constant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
+/**
+ * Define function names to be picked for calls to WeIdentity Java SDK
+ *
+ * @author chaoxinhu
+ **/
 
-@SpringBootApplication
-//@ComponentScan(basePackages = {"com.webank.weid.service","com.webank.weid.http"})
-@ComponentScan
-public class Application {
+public final class WeIdentityServiceEndpoint {
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
-    }
+    /**
+     * API endpoint.
+     */
+    public static final String API_ROOT = "weid/api";
+    public static final String ENCODE_TRANSACTION = "encode";
+    public static final String SEND_TRANSACTION = "transact";
+    public static final String INVOKE_FUNCTION = "invoke";
+
 }

@@ -17,22 +17,26 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.protocol.response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
+import lombok.Data;
 
-@SpringBootApplication
-//@ComponentScan(basePackages = {"com.webank.weid.service","com.webank.weid.http"})
-@ComponentScan
-public class Application {
+/**
+ * The result of EncodedTransaction. A wrapper class with both encoded String, and rawTransaction.
+ *
+ * @author chaoxinhu
+ */
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
-    }
+@Data
+public class EncodedTransactionWrapper {
+
+    /**
+     * The Encoded Transaction in String. This MUST be in Base64 format.
+     */
+    private String encodedTransaction;
+
+    /**
+     * The data segment instance in RawTransaction. Client needs this for future sendTransaction.
+     */
+    private String data;
 }

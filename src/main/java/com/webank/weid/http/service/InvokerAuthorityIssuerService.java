@@ -1,128 +1,54 @@
+/*
+ *       Copyright© (2019) WeBank Co., Ltd.
+ *
+ *       This file is part of weidentity-java-sdk.
+ *
+ *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *
+ *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.webank.weid.http.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.webank.weid.http.constant.HttpErrorCode;
-import com.webank.weid.http.protocol.request.ReqRegisterAuthorityIssuerArgs;
-import com.webank.weid.http.protocol.request.ReqRemoveAuthorityIssuerArgs;
-import com.webank.weid.protocol.base.AuthorityIssuer;
-import com.webank.weid.protocol.base.WeIdPrivateKey;
-import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
-import com.webank.weid.protocol.request.RemoveAuthorityIssuerArgs;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.AuthorityIssuerService;
+import com.webank.weid.http.protocol.request.InputArg;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 
 @Service
-public class InvokerAuthorityIssuerService {
-
-    private Logger logger = LoggerFactory.getLogger(InvokerAuthorityIssuerService.class);
-
-    @Autowired
-    private AuthorityIssuerService authorityIssuerService;
+public interface InvokerAuthorityIssuerService {
 
     /**
-     * Register a new Authority Issuer on Chain.
-     * @param reqRegisterAuthorityIssuerArgs the args
+     * Register a new Authority Issuer on Chain via Invoke function.
+     *
+     * @param registerArgs the args
      * @return the Boolean response data
      */
-    public ResponseData<Boolean> registerAuthorityIssuer(
-        ReqRegisterAuthorityIssuerArgs reqRegisterAuthorityIssuerArgs) {
-
-        ResponseData<Boolean> response = new ResponseData<Boolean>();
-        try {
-            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-            weIdPrivateKey.setPrivateKey(reqRegisterAuthorityIssuerArgs.getWeIdPrivateKey());
-
-            AuthorityIssuer authorityIssuer = new AuthorityIssuer();
-            authorityIssuer.setAccValue(reqRegisterAuthorityIssuerArgs.getAccValue());
-            authorityIssuer.setCreated(reqRegisterAuthorityIssuerArgs.getCreated());
-            authorityIssuer.setName(reqRegisterAuthorityIssuerArgs.getName());
-            authorityIssuer.setWeId(reqRegisterAuthorityIssuerArgs.getWeId());
-
-            RegisterAuthorityIssuerArgs registerAuthorityIssuerArgs = new RegisterAuthorityIssuerArgs();
-            registerAuthorityIssuerArgs.setWeIdPrivateKey(weIdPrivateKey);
-            registerAuthorityIssuerArgs.setAuthorityIssuer(authorityIssuer);
-            response = authorityIssuerService.registerAuthorityIssuer(registerAuthorityIssuerArgs);
-
-        } catch (Exception e) {
-            logger.error("[registerAuthorityIssuer]: unknow error. registerAuthorityIssuerArgs:{}",
-                reqRegisterAuthorityIssuerArgs,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
+    HttpResponseData<Object> registerAuthorityIssuerInvoke(InputArg registerArgs);
 
     /**
-     * Remove a new Authority Issuer on Chain.
-     * @param reqRemoveAuthorityIssuerArgs the args
-     * @return the Boolean response data
+     * Call to WeID SDK with direct transaction hex String, to register AuthorityIssuer.
+     *
+     * @param transactionHex the transactionHex value
+     * @return String in ResponseData
      */
-    public ResponseData<Boolean> removeAuthorityIssuer(
-        ReqRemoveAuthorityIssuerArgs reqRemoveAuthorityIssuerArgs) {
-
-        ResponseData<Boolean> response = new ResponseData<Boolean>();
-        try {
-            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-            weIdPrivateKey.setPrivateKey(reqRemoveAuthorityIssuerArgs.getWeIdPrivateKey());
-
-            RemoveAuthorityIssuerArgs removeAuthorityIssuerArgs = new RemoveAuthorityIssuerArgs();
-            removeAuthorityIssuerArgs.setWeId(reqRemoveAuthorityIssuerArgs.getWeId());
-            removeAuthorityIssuerArgs.setWeIdPrivateKey(weIdPrivateKey);
-
-            response = authorityIssuerService.removeAuthorityIssuer(removeAuthorityIssuerArgs);
-        } catch (Exception e) {
-            logger.error("[removeAuthorityIssuer]: unknow error. reqRemoveAuthorityIssuerArgs:{}",
-                reqRemoveAuthorityIssuerArgs,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
+    HttpResponseData<String> registerAuthorityIssuerWithTransactionHex(
+        String transactionHex);
 
     /**
-     * Check whether the given weId is an authority issuer.
-     * @param weId the WeIdentity DID
-     * @return the Boolean response data
+     * Query Authority Issuer via the InvokeFunction API.
+     *
+     * @param queryArgs the query WeID
+     * @return the authorityIssuer
      */
-    public ResponseData<Boolean> isAuthorityIssuer(String weId) {
-
-        ResponseData<Boolean> response = new ResponseData<Boolean>();
-        try {
-            response = authorityIssuerService.isAuthorityIssuer(weId);
-        } catch (Exception e) {
-            logger.error("[isAuthorityIssuer]: unknow error. weId:{}",
-                weId,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
-
-    /**
-     * Query the authority issuer information given weId.
-     * @param weId the WeIdentity DID
-     * @return the AuthorityIssuer response data
-     */
-    public ResponseData<AuthorityIssuer> queryAuthorityIssuerInfo(String weId) {
-
-        ResponseData<AuthorityIssuer> response = new ResponseData<AuthorityIssuer>();
-        try {
-            response = authorityIssuerService.queryAuthorityIssuerInfo(weId);
-        } catch (Exception e) {
-            logger.error("[queryAuthorityIssuerInfo]: unknow error. weId:{}",
-                weId,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
-
+    HttpResponseData<Object> queryAuthorityIssuerInfoInvoke(InputArg queryArgs);
 }

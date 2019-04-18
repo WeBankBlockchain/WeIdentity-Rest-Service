@@ -1,125 +1,46 @@
+/*
+ *       Copyright© (2019) WeBank Co., Ltd.
+ *
+ *       This file is part of weidentity-java-sdk.
+ *
+ *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *
+ *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.webank.weid.http.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.webank.weid.http.constant.HttpErrorCode;
-import com.webank.weid.http.protocol.request.ReqCreateCredentialArgs;
-import com.webank.weid.http.protocol.request.ReqCredentialArgs;
-import com.webank.weid.http.protocol.request.ReqVerifyCredentialArgs;
-import com.webank.weid.protocol.base.Credential;
-import com.webank.weid.protocol.base.WeIdPrivateKey;
-import com.webank.weid.protocol.base.WeIdPublicKey;
-import com.webank.weid.protocol.request.CreateCredentialArgs;
-import com.webank.weid.protocol.request.VerifyCredentialArgs;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.CredentialService;
+import com.webank.weid.http.protocol.request.InputArg;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 
 @Service
-public class InvokerCredentialService {
-
-    private Logger logger = LoggerFactory.getLogger(InvokerCredentialService.class);
-
-    @Autowired
-    private CredentialService credentialService;
+public interface InvokerCredentialService {
 
     /**
-     * Generate a credential.
-     * @param reqCreateCredentialArgs the args
-     * @return the Credential response data
+     * Generate a credential for client to sign. The signature field is null, and both full claim
+     * and claimHash will be returned. The returned json String is an key-ordered compact json.
+     *
+     * @param createCredentialFuncArgs the functionArgs
+     * @return the Map contains Credential content and claimHash.
      */
-    public ResponseData<Credential> createCredential(ReqCreateCredentialArgs reqCreateCredentialArgs) {
-
-        ResponseData<Credential> response = new ResponseData<Credential>();
-        try {
-            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-            weIdPrivateKey.setPrivateKey(reqCreateCredentialArgs.getWeIdPrivateKey());
-
-            CreateCredentialArgs createCredentialArgs = new CreateCredentialArgs();
-            createCredentialArgs.setCptId(reqCreateCredentialArgs.getCptId());
-            createCredentialArgs.setIssuer(reqCreateCredentialArgs.getIssuer());
-            createCredentialArgs.setExpirationDate(reqCreateCredentialArgs.getExpirationDate());
-            createCredentialArgs.setWeIdPrivateKey(weIdPrivateKey);
-            createCredentialArgs.setClaim(reqCreateCredentialArgs.getClaim());
-
-            response = credentialService.createCredential(createCredentialArgs);
-        } catch (Exception e) {
-            logger.error("[createCredential]: unknow error. reqCreateCredentialArgs:{}",
-                reqCreateCredentialArgs,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
+    HttpResponseData<Object> createCredentialInvoke(InputArg createCredentialFuncArgs);
 
     /**
-     * Verify the validity of a credential without public key provided.
-     * @param reqCredentialArgs the args
+     * Verify the validity of a credential. Need format conversion (UTC date and @context)
+     *
+     * @param verifyCredentialFuncArgs the credential json args
      * @return the Boolean response data
      */
-    public ResponseData<Boolean> verifyCredential(ReqCredentialArgs reqCredentialArgs) {
-
-        ResponseData<Boolean> response = new ResponseData<Boolean>();
-        try {
-
-            Credential credential = new Credential();
-            credential.setContext(reqCredentialArgs.getContext());
-            credential.setId(reqCredentialArgs.getId());
-            credential.setCptId(reqCredentialArgs.getCptId());
-            credential.setExpirationDate(reqCredentialArgs.getExpirationDate());
-            credential.setIssuranceDate(reqCredentialArgs.getIssuranceDate());
-            credential.setIssuer(reqCredentialArgs.getIssuer());
-            credential.setSignature(reqCredentialArgs.getSignature());
-            credential.setClaim(reqCredentialArgs.getClaim());
-
-            response = credentialService.verifyCredential(credential);
-        } catch (Exception e) {
-            logger.error("[verifyCredential]: unknow error. reqCredentialArgs:{}",
-                reqCredentialArgs,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
-
-    /**
-     * Verify the validity of a credential with public key provided.
-     * @param reqVerifyCredentialArgs the args
-     * @return the Boolean response data
-     */
-    public ResponseData<Boolean> verifyCredentialWithSpecifiedPubKey(
-        ReqVerifyCredentialArgs reqVerifyCredentialArgs) {
-
-        ResponseData<Boolean> response = new ResponseData<Boolean>();
-        try {
-            Credential credential = new Credential();
-            credential.setContext(reqVerifyCredentialArgs.getContext());
-            credential.setId(reqVerifyCredentialArgs.getId());
-            credential.setCptId(reqVerifyCredentialArgs.getCptId());
-            credential.setExpirationDate(reqVerifyCredentialArgs.getExpirationDate());
-            credential.setIssuranceDate(reqVerifyCredentialArgs.getIssuranceDate());
-            credential.setIssuer(reqVerifyCredentialArgs.getIssuer());
-            credential.setSignature(reqVerifyCredentialArgs.getSignature());
-            credential.setClaim(reqVerifyCredentialArgs.getClaim());
-
-            VerifyCredentialArgs verifyCredentialArgs = new VerifyCredentialArgs();
-            verifyCredentialArgs.setCredential(credential);
-            WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
-            weIdPublicKey.setPublicKey(reqVerifyCredentialArgs.getWeIdPublicKey());
-            verifyCredentialArgs.setWeIdPublicKey(weIdPublicKey);
-            response = credentialService.verifyCredentialWithSpecifiedPubKey(verifyCredentialArgs);
-        } catch (Exception e) {
-            logger.error(
-                "[verifyCredentialWithSpecifiedPubKey]: unknow error. reqVerifyCredentialArgs:{}",
-                reqVerifyCredentialArgs,
-                e);
-            response.setErrorCode(HttpErrorCode.UNKNOW_ERROR.getCode());
-            response.setErrorMessage(HttpErrorCode.UNKNOW_ERROR.getCodeDesc());
-        }
-        return response;
-    }
+    HttpResponseData<Object> verifyCredentialInvoke(InputArg verifyCredentialFuncArgs);
 }

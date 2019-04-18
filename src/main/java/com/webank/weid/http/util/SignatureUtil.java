@@ -17,22 +17,31 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
+import java.nio.charset.StandardCharsets;
 
-@SpringBootApplication
-//@ComponentScan(basePackages = {"com.webank.weid.service","com.webank.weid.http"})
-@ComponentScan
-public class Application {
+import org.bcos.web3j.crypto.Sign.SignatureData;
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
+import com.webank.weid.util.SignatureUtils;
+
+/**
+ * Handles all signature related tasks.
+ *
+ * @author chaoxinhu
+ */
+public class SignatureUtil {
+
+    /**
+     * Convert an off-chain Base64 signature String to signatureData format
+     *
+     * @param base64Signature the signature string in Base64
+     * @return signatureData structure
+     */
+    public static SignatureData convertBase64StringToSignatureData(String base64Signature) {
+        return SignatureUtils.simpleSignatureDeserialization(
+            SignatureUtils.base64Decode(
+                base64Signature.getBytes(StandardCharsets.UTF_8))
+        );
     }
 }

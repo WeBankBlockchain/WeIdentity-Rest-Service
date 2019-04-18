@@ -17,37 +17,35 @@
  *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http.service;
+package com.webank.weid.http.protocol.request;
 
-import org.springframework.stereotype.Service;
+import lombok.Data;
 
-import com.webank.weid.http.protocol.request.InputArg;
-import com.webank.weid.http.protocol.response.HttpResponseData;
-
-@Service
-public interface InvokerCptService {
-
-    /**
-     * Register a new CPT to blockchain via Invoke function.
-     *
-     * @param registerArgs the args
-     * @return the resp data
-     */
-    HttpResponseData<Object> registerCptInvoke(InputArg registerArgs);
+/**
+ * The common input argument for all Service API.
+ *
+ * @author chaoxinhu
+ **/
+@Data
+public class InputArg {
 
     /**
-     * Call to WeID SDK with direct transaction hex String, to register CPT.
-     *
-     * @param transactionHex the transactionHex value
-     * @return String in ResponseData
+     * Required: the function related arguments.
      */
-    HttpResponseData<String> registerCptWithTransactionHex(String transactionHex);
+    String functionArg;
 
     /**
-     * Query CPT via the InvokeFunction API.
-     *
-     * @param queryArgs the query arg
-     * @return the CPT data
+     * Required: the transaction related arguments.
      */
-    HttpResponseData<Object> queryCptInvoke(InputArg queryArgs);
+    String transactionArg;
+
+    /**
+     * Required: the function name to be called.
+     */
+    String functionName;
+
+    /**
+     * Required: the API version.
+     */
+    String v;
 }
