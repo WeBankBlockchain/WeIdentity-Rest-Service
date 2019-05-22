@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.util;
@@ -51,7 +51,6 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.util.JsonUtil;
 import com.webank.weid.util.SignatureUtils;
 import com.webank.weid.util.TransactionUtils;
@@ -79,17 +78,15 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildRegisterCptInputParameters(inputParam);
-            if (responseData.getResult() == null) {
+            List<Type> typeList = TransactionUtils.buildRegisterCptInputParameters(inputParam);
+            if (typeList == null) {
                 logger.error("[RegisterCpt] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
-                responseData.getResult(),
+                typeList,
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -115,17 +112,15 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildCreateWeIdInputParameters(inputParam);
-            if (responseData.getResult() == null) {
+            List<Type> typeList = TransactionUtils.buildCreateWeIdInputParameters(inputParam);
+            if (typeList == null) {
                 logger.error("[CreateWeId] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
-                responseData.getResult(),
+                typeList,
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -151,18 +146,16 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildAuthorityIssuerInputParameters(inputParam);
-            if (responseData.getResult() == null) {
+            List<Type> typeList = TransactionUtils.buildAuthorityIssuerInputParameters(inputParam);
+            if (typeList == null) {
                 logger.error(
                     "[RegisterAuthorityIssuer] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
-                responseData.getResult(),
+                typeList,
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
