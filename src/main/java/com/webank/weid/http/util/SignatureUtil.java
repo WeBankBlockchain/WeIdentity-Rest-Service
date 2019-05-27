@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.bcos.web3j.crypto.Sign.SignatureData;
 
-import com.webank.weid.util.SignatureUtils;
+import com.webank.weid.util.DataToolUtils;
 
 /**
  * Handles all signature related tasks.
@@ -39,8 +39,8 @@ public class SignatureUtil {
      * @return signatureData structure
      */
     public static SignatureData convertBase64StringToSignatureData(String base64Signature) {
-        return SignatureUtils.simpleSignatureDeserialization(
-            SignatureUtils.base64Decode(
+        return DataToolUtils.simpleSignatureDeserialization(
+            DataToolUtils.base64Decode(
                 base64Signature.getBytes(StandardCharsets.UTF_8))
         );
     }

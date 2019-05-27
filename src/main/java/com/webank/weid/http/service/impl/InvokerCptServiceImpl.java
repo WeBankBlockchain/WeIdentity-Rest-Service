@@ -34,7 +34,7 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerCptService;
-import com.webank.weid.http.util.InputUtil;
+import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.PrivateKeyUtil;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -44,7 +44,6 @@ import com.webank.weid.rpc.CptService;
 import com.webank.weid.rpc.RawTransactionService;
 import com.webank.weid.service.impl.CptServiceImpl;
 import com.webank.weid.service.impl.RawTransactionServiceImpl;
-import com.webank.weid.util.JsonUtil;
 
 @Component
 public class InvokerCptServiceImpl extends BaseService implements InvokerCptService {
@@ -98,7 +97,7 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
                 return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR);
             }
             return new HttpResponseData<>(
-                InputUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
+                JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {
@@ -159,12 +158,12 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
                 .readTree(queryArgs.getFunctionArg())
                 .get(ParamKeyConstant.CPT_ID);
             if (cptIdNode == null || StringUtils
-                .isEmpty(InputUtil.removeDoubleQuotes(cptIdNode.toString()))) {
+                .isEmpty(JsonUtil.removeDoubleQuotes(cptIdNode.toString()))) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             Integer cptId;
             try {
-                cptId = Integer.valueOf(InputUtil.removeDoubleQuotes(cptIdNode.toString()));
+                cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
             } catch (Exception e) {
                 return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
             }
@@ -179,7 +178,7 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
                 return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR);
             }
             return new HttpResponseData<>(
-                InputUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
+                JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {

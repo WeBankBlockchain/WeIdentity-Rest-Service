@@ -26,6 +26,9 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.webank.weid.config.ContractConfig;
+import com.webank.weid.config.FiscoConfig;
+
 public class PropertiesUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertiesUtil.class);
@@ -85,5 +88,20 @@ public class PropertiesUtil {
             loadProps();
         }
         return props.getProperty(key, defaultValue);
+    }
+
+    /**
+     * On-demand build the contract config info.
+     *
+     * @return the contractConfig instance
+     */
+    public static ContractConfig buildContractConfig(FiscoConfig fiscoConfig) {
+        ContractConfig contractConfig = new ContractConfig();
+        contractConfig.setWeIdAddress(fiscoConfig.getWeIdAddress());
+        contractConfig.setCptAddress(fiscoConfig.getCptAddress());
+        contractConfig.setIssuerAddress(fiscoConfig.getIssuerAddress());
+        contractConfig.setEvidenceAddress(fiscoConfig.getEvidenceAddress());
+        contractConfig.setSpecificIssuerAddress(fiscoConfig.getSpecificIssuerAddress());
+        return contractConfig;
     }
 }

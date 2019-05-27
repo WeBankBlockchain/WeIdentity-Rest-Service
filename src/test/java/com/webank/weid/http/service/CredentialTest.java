@@ -33,9 +33,9 @@ import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.util.DateUtils;
-import com.webank.weid.util.JsonUtil;
 
 @Component
 public class CredentialTest extends BaseTest {

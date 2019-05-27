@@ -74,19 +74,21 @@ List jackson = [
         'io.netty:netty-all:4.1.15.Final',
         'io.netty:netty-tcnative:2.0.0.Final',
         'com.github.fge:json-schema-validator:2.2.6',
-        'org.apache.httpcomponents:httpclient:4.5.2'
+        'org.apache.httpcomponents:httpclient:4.5.2',
+        "com.github.reinert:jjschema:1.16",
+        "com.google.zxing:core:3.3.0"
 ]
 
 List blockchain = [
-        'com.webank:weidentity-contract-java:1.1.0'
+        'com.webank:weidentity-contract-java:1.2.2',
+        'org.fisco-bcos:web3sdk:1.2.5'
 ]
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
     compile logger, spring, lombok, apache_commons, jackson, spring_boot, blockchain
     testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test
-    compile files('lib/web3sdk.jar')
-    compile files('lib/weidentity-java-sdk-1.1.1.jar')
+    compile files('lib/weidentity-java-sdk-1.2.0.rc-3.jar')
 }
 
 configurations {

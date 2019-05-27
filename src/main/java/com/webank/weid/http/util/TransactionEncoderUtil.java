@@ -51,8 +51,8 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.util.JsonUtil;
-import com.webank.weid.util.SignatureUtils;
+import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.TransactionUtils;
 
 /**
@@ -78,15 +78,16 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> typeList = TransactionUtils.buildRegisterCptInputParameters(inputParam);
-            if (typeList == null) {
+            ResponseData<List<Type>> responseData = TransactionUtils
+                .buildRegisterCptInputParameters(inputParam);
+            if (responseData.getResult() == null) {
                 logger.error("[RegisterCpt] Error occurred when building input param with: {}",
                     inputParam);
                 return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
-                typeList,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -112,15 +113,16 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> typeList = TransactionUtils.buildCreateWeIdInputParameters(inputParam);
-            if (typeList == null) {
+            ResponseData<List<Type>> responseData = TransactionUtils
+                .buildCreateWeIdInputParameters(inputParam);
+            if (responseData.getResult() == null) {
                 logger.error("[CreateWeId] Error occurred when building input param with: {}",
                     inputParam);
                 return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
-                typeList,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -146,8 +148,9 @@ public class TransactionEncoderUtil {
         String nonce,
         String to) {
         try {
-            List<Type> typeList = TransactionUtils.buildAuthorityIssuerInputParameters(inputParam);
-            if (typeList == null) {
+            ResponseData<List<Type>> responseData = TransactionUtils
+                .buildAuthorityIssuerInputParameters(inputParam);
+            if (responseData.getResult() == null) {
                 logger.error(
                     "[RegisterAuthorityIssuer] Error occurred when building input param with: {}",
                     inputParam);
@@ -155,7 +158,7 @@ public class TransactionEncoderUtil {
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
-                typeList,
+                responseData.getResult(),
                 Collections.emptyList());
             RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
@@ -395,6 +398,6 @@ public class TransactionEncoderUtil {
      * @return Base64 string
      */
     private static String base64Encode(byte[] nonBase64ByteArray) {
-        return new String(SignatureUtils.base64Encode(nonBase64ByteArray), StandardCharsets.UTF_8);
+        return new String(DataToolUtils.base64Encode(nonBase64ByteArray), StandardCharsets.UTF_8);
     }
 }
