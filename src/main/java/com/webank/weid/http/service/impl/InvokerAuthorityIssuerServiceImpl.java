@@ -35,7 +35,7 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerAuthorityIssuerService;
-import com.webank.weid.http.util.InputUtil;
+import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.PrivateKeyUtil;
 import com.webank.weid.protocol.base.AuthorityIssuer;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -45,7 +45,6 @@ import com.webank.weid.rpc.AuthorityIssuerService;
 import com.webank.weid.rpc.RawTransactionService;
 import com.webank.weid.service.impl.AuthorityIssuerServiceImpl;
 import com.webank.weid.service.impl.RawTransactionServiceImpl;
-import com.webank.weid.util.JsonUtil;
 
 @Component
 public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
@@ -161,7 +160,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             ResponseData response = authorityIssuerService
                 .queryAuthorityIssuerInfo(weIdNode.textValue());
             return new HttpResponseData<>(
-                InputUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
+                JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {

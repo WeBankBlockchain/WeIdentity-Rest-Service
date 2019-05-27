@@ -33,7 +33,7 @@ import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.util.JsonUtil;
+import com.webank.weid.http.util.JsonUtil;
 
 @Component
 public class PureInvokerTest extends BaseTest {
@@ -95,7 +95,7 @@ public class PureInvokerTest extends BaseTest {
         // register authority Issuer (use SDK privkey, should succeed)
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name", "Sample College" + Math.random() * 100);
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
