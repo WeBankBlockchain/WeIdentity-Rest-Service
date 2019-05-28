@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.service;
@@ -42,9 +42,9 @@ import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
-import com.webank.weid.util.JsonUtil;
-import com.webank.weid.util.SignatureUtils;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 
 @Component
@@ -82,11 +82,11 @@ public class TransactionTest extends BaseTest {
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
-        byte[] encodedTransaction = SignatureUtils
+        byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
         SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
-            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
 
         funcArgMap = new LinkedHashMap<>();
         txnArgMap = new LinkedHashMap<>();
@@ -131,7 +131,8 @@ public class TransactionTest extends BaseTest {
         String nonceVal = TransactionEncoderUtil.getNonce().toString();
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", issuerWeId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         Map<String, Object> inputParamMap;
@@ -156,11 +157,11 @@ public class TransactionTest extends BaseTest {
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
-        byte[] encodedTransaction = SignatureUtils
+        byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
         SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
-            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + signedMsg);
 
         // step 4: send
@@ -236,11 +237,11 @@ public class TransactionTest extends BaseTest {
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
-        byte[] encodedTransaction = SignatureUtils
+        byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
         SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
-            SignatureUtils.base64Encode(SignatureUtils.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + signedMsg);
 
         // step 4: send

@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.service.impl;
@@ -35,8 +35,8 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerWeIdService;
-import com.webank.weid.http.util.InputUtil;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.SetAuthenticationArgs;
 import com.webank.weid.protocol.request.SetPublicKeyArgs;
@@ -137,7 +137,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
             ResponseData<String> response = weIdService.getWeIdDocumentJson(weIdNode.textValue());
             return new HttpResponseData<>(
-                InputUtil.convertJsonToSortedMap(response.getResult()),
+                JsonUtil.convertJsonToSortedMap(response.getResult()),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {
@@ -163,7 +163,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             if (createWeIdDataResult != null) {
                 try {
                     // host the weId which just got created
-                    PrivateKeyUtil.savePrivateKey(PrivateKeyUtil.SDK_PRIVKEY_PATH,
+                    KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
                         createWeIdDataResult.getWeId(),
                         createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
                 } catch (Exception e) {
@@ -185,7 +185,6 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 // set authentication
                 SetAuthenticationArgs setAuthenticationArgs = new SetAuthenticationArgs();
                 setAuthenticationArgs.setWeId(createWeIdDataResult.getWeId());
-                setAuthenticationArgs.setType("RsaSignatureAuthentication2018");
                 setAuthenticationArgs
                     .setPublicKey(createWeIdDataResult.getUserWeIdPublicKey().getPublicKey());
                 setAuthenticationArgs.setUserWeIdPrivateKey(weIdPrivateKey);

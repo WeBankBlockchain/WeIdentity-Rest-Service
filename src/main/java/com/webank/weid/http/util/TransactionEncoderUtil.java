@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.util;
@@ -52,8 +52,7 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.util.JsonUtil;
-import com.webank.weid.util.SignatureUtils;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.TransactionUtils;
 
 /**
@@ -84,8 +83,7 @@ public class TransactionEncoderUtil {
             if (responseData.getResult() == null) {
                 logger.error("[RegisterCpt] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
@@ -120,8 +118,7 @@ public class TransactionEncoderUtil {
             if (responseData.getResult() == null) {
                 logger.error("[CreateWeId] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
@@ -157,8 +154,7 @@ public class TransactionEncoderUtil {
                 logger.error(
                     "[RegisterAuthorityIssuer] Error occurred when building input param with: {}",
                     inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, responseData.getErrorCode(),
-                    responseData.getErrorMessage());
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
             }
             Function function = new Function(
                 WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
@@ -198,7 +194,8 @@ public class TransactionEncoderUtil {
         }
         byte[] encodedSignedMessage = encodeTransactionWithSignature(
             rawTransaction,
-            SignatureUtil.convertBase64StringToSignatureData(signedMessage));
+            DataToolUtils.simpleSignatureDeserialization(
+                DataToolUtils.base64Decode(signedMessage.getBytes(StandardCharsets.UTF_8))));
         return Hex.toHexString(encodedSignedMessage);
     }
 
@@ -402,6 +399,6 @@ public class TransactionEncoderUtil {
      * @return Base64 string
      */
     private static String base64Encode(byte[] nonBase64ByteArray) {
-        return new String(SignatureUtils.base64Encode(nonBase64ByteArray), StandardCharsets.UTF_8);
+        return new String(DataToolUtils.base64Encode(nonBase64ByteArray), StandardCharsets.UTF_8);
     }
 }

@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.service.impl;
@@ -25,12 +25,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import com.webank.weid.config.ContractConfig;
+import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -42,7 +40,8 @@ import com.webank.weid.http.service.InvokerCptService;
 import com.webank.weid.http.service.InvokerCredentialService;
 import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.service.TransactionService;
-import com.webank.weid.http.util.InputUtil;
+import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 
 /**
@@ -55,14 +54,11 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
 
     private Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
-    @Autowired
-    private InvokerAuthorityIssuerService invokerAuthorityIssuerService;
-    @Autowired
-    private InvokerWeIdService invokerWeIdService;
-    @Autowired
-    private InvokerCptService invokerCptService;
-    @Autowired
-    private InvokerCredentialService invokerCredentialService;
+    private InvokerAuthorityIssuerService invokerAuthorityIssuerService =
+        new InvokerAuthorityIssuerServiceImpl();
+    private InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();
+    private InvokerCptService invokerCptService = new InvokerCptServiceImpl();
+    private InvokerCredentialService invokerCredentialService = new InvokerCredentialServiceImpl();
 
     /**
      * Create an Encoded Transaction.
@@ -90,12 +86,12 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
             }
-            String nonce = InputUtil.removeDoubleQuotes(nonceNode.toString());
+            String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
 
-            // Load contract addresses
-            ApplicationContext context = new ClassPathXmlApplicationContext(
-                "applicationContext.xml");
-            ContractConfig config = context.getBean(ContractConfig.class);
+            // Load WeIdentity related contract addresses
+            FiscoConfig fiscoConfig = new FiscoConfig();
+            fiscoConfig.load();
+            ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
 
             String functionName = inputArg.getFunctionName();
             String functionArg = inputArg.getFunctionArg();
@@ -104,7 +100,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 httpResponseData = TransactionEncoderUtil
                     .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }
@@ -113,7 +109,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 httpResponseData = TransactionEncoderUtil
                     .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }
@@ -121,7 +117,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 httpResponseData = TransactionEncoderUtil
                     .registerCptEncoder(functionArg, nonce, config.getCptAddress());
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }
@@ -173,13 +169,13 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             }
 
             // Load WeIdentity related contract addresses
-            ApplicationContext context = new ClassPathXmlApplicationContext(
-                "applicationContext.xml");
-            ContractConfig config = context.getBean(ContractConfig.class);
+            FiscoConfig fiscoConfig = new FiscoConfig();
+            fiscoConfig.load();
+            ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
 
             String functionName = inputArg.getFunctionName();
-            String nonce = InputUtil.removeDoubleQuotes(nonceNode.toString());
-            String data = InputUtil.removeDoubleQuotes(dataNode.toString());
+            String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
+            String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
             HttpResponseData<String> httpResponseData;
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
@@ -192,7 +188,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 }
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(transactionHex);
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }
@@ -208,7 +204,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 httpResponseData = invokerAuthorityIssuerService
                     .registerAuthorityIssuerWithTransactionHex(transactionHex);
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }
@@ -222,7 +218,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 }
                 httpResponseData = invokerCptService.registerCptWithTransactionHex(transactionHex);
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
                     httpResponseData.getErrorMessage());
             }

@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.service;
@@ -33,7 +33,7 @@ import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.util.JsonUtil;
+import com.webank.weid.http.util.JsonUtil;
 
 @Component
 public class PureInvokerTest extends BaseTest {
@@ -77,7 +77,8 @@ public class PureInvokerTest extends BaseTest {
         // register authority issuer using dumb weid, should fail
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
@@ -90,12 +91,14 @@ public class PureInvokerTest extends BaseTest {
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp3));
         Assert
-            .assertTrue((resp3.getRespBody().toString()).equalsIgnoreCase(Boolean.FALSE.toString()));
+            .assertTrue(
+                (resp3.getRespBody().toString()).equalsIgnoreCase(Boolean.FALSE.toString()));
 
         // register authority Issuer (use SDK privkey, should succeed)
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
@@ -107,7 +110,8 @@ public class PureInvokerTest extends BaseTest {
         HttpResponseData<Object> resp4 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp4));
-        Assert.assertTrue((resp4.getRespBody().toString()).equalsIgnoreCase(Boolean.TRUE.toString()));
+        Assert
+            .assertTrue((resp4.getRespBody().toString()).equalsIgnoreCase(Boolean.TRUE.toString()));
 
         // query authority issuer
         funcArgMap = new LinkedHashMap<>();

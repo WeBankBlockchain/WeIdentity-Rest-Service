@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.service.impl;
@@ -35,8 +35,8 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerAuthorityIssuerService;
-import com.webank.weid.http.util.InputUtil;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.AuthorityIssuer;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
@@ -45,7 +45,6 @@ import com.webank.weid.rpc.AuthorityIssuerService;
 import com.webank.weid.rpc.RawTransactionService;
 import com.webank.weid.service.impl.AuthorityIssuerServiceImpl;
 import com.webank.weid.service.impl.RawTransactionServiceImpl;
-import com.webank.weid.util.JsonUtil;
 
 @Component
 public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
@@ -83,8 +82,8 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
                     ErrorCode.AUTHORITY_ISSUER_NAME_ILLEGAL.getCodeDesc());
             }
 
-            String weIdPrivKey = PrivateKeyUtil
-                .getPrivateKeyByWeId(PrivateKeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            String weIdPrivKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
             if (StringUtils.isEmpty(weIdPrivKey)) {
                 return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
             }
@@ -161,7 +160,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             ResponseData response = authorityIssuerService
                 .queryAuthorityIssuerInfo(weIdNode.textValue());
             return new HttpResponseData<>(
-                InputUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
+                JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {

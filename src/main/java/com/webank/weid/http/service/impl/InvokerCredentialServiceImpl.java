@@ -1,27 +1,26 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 
 package com.webank.weid.http.service.impl;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.bcos.web3j.crypto.Sign;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,8 +41,8 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerCredentialService;
-import com.webank.weid.http.util.InputUtil;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CreateCredentialArgs;
@@ -53,8 +51,6 @@ import com.webank.weid.rpc.CredentialService;
 import com.webank.weid.service.impl.CredentialServiceImpl;
 import com.webank.weid.util.CredentialUtils;
 import com.webank.weid.util.DateUtils;
-import com.webank.weid.util.JsonUtil;
-import com.webank.weid.util.SignatureUtils;
 
 @Component
 public class InvokerCredentialServiceImpl extends BaseService implements InvokerCredentialService {
@@ -85,12 +81,14 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 || claimNode == null || StringUtils.isEmpty(claimNode.toString())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
+
             Integer cptId;
             try {
-                cptId = Integer.valueOf(InputUtil.removeDoubleQuotes(cptIdNode.toString()));
+                cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
             } catch (Exception e) {
                 return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
             }
+
             Long expirationDate;
             try {
                 expirationDate = DateUtils
@@ -100,6 +98,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                     ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
                     ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
             }
+
             Credential credential = new Credential();
             credential.setId(UUID.randomUUID().toString());
             credential.setCptId(cptId);
@@ -107,8 +106,9 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             credential.setExpirationDate(expirationDate);
             credential.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
             // Now here is a trick - timestamp granularity is too "fine". Need to make it coarse.
-            credential.setIssuranceDate(DateUtils.convertUtcDateToTimeStamp(
-                DateUtils.convertTimestampToUtc(DateUtils.getCurrentTimeStamp())));
+            Long issuanceDate = DateUtils.convertUtcDateToTimeStamp(
+                DateUtils.convertTimestampToUtc(DateUtils.getCurrentTimeStamp()));
+            credential.setIssuanceDate(issuanceDate);
             Map<String, Object> claimMap;
             try {
                 claimMap = (Map<String, Object>) JsonUtil
@@ -120,49 +120,43 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             }
             credential.setClaim(claimMap);
 
+            // check validity 1st round: the create args with an arbitrary private key
+            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
+            weIdPrivateKey.setPrivateKey("111111");
+            CreateCredentialArgs args = CredentialUtils.extractCredentialMetadata(credential);
+            args.setWeIdPrivateKey(weIdPrivateKey);
+            ErrorCode errorCode = CredentialUtils.isCreateCredentialArgsValid(args);
+            if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
+                return new HttpResponseData<>(null, errorCode.getCode(),
+                    errorCode.getCodeDesc());
+            }
+
             JsonNode txnArgNode = new ObjectMapper()
                 .readTree(createCredentialFuncArgs.getTransactionArg());
             JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+
+            // Decide the key holding mechanism
             if (keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+
                 // this is the client-storage privkey approach
                 String claimHash = CredentialUtils.getClaimHash(credential, null);
                 // Construct return value - a middle term
                 Map<String, Object> credMap = JsonUtil.objToMap(credential);
                 credMap.put(WeIdentityParamKeyConstant.CLAIM_HASH, claimHash);
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(JsonUtil.mapToCompactJson(credMap)),
+                    JsonUtil.convertJsonToSortedMap(JsonUtil.mapToCompactJson(credMap)),
                     HttpReturnCode.SUCCESS);
             } else {
                 // this is the server-hosting privkey approach
-                String privateKey = PrivateKeyUtil
-                    .getPrivateKeyByWeId(PrivateKeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+                String privateKey = KeyUtil
+                    .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
                 if (StringUtils.isEmpty(privateKey)) {
                     return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
                 }
-                // check validity 1st round
-                WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-                weIdPrivateKey.setPrivateKey(privateKey);
-                CreateCredentialArgs createArgs = new CreateCredentialArgs();
-                createArgs.setCptId(cptId);
-                createArgs.setExpirationDate(expirationDate);
-                createArgs.setClaim(claimMap);
-                createArgs.setIssuer(issuerNode.textValue());
-                createArgs.setWeIdPrivateKey(weIdPrivateKey);
-                ErrorCode errorCode = CredentialUtils.isCreateCredentialArgsValid(createArgs);
-                if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
-                    return new HttpResponseData<>(null, errorCode.getCode(),
-                        errorCode.getCodeDesc());
-                }
+                Map<String, String> credentialProof = CredentialUtils
+                    .buildCredentialProof(credential, privateKey, null);
+                credential.setProof(credentialProof);
 
-                String rawData = CredentialUtils
-                    .getCredentialThumbprintWithoutSig(credential, null);
-                Sign.SignatureData sigData = SignatureUtils.signMessage(rawData, privateKey);
-                credential.setSignature(
-                    new String(
-                        SignatureUtils
-                            .base64Encode(SignatureUtils.simpleSignatureSerialization(sigData)),
-                        StandardCharsets.UTF_8)
-                );
                 // check validity 2nd round
                 errorCode = CredentialUtils.isCredentialValid(credential);
                 if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
@@ -171,7 +165,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 }
                 ResponseData<String> response = credentialService.getCredentialJson(credential);
                 return new HttpResponseData<>(
-                    InputUtil.convertJsonToSortedMap(response.getResult()),
+                    JsonUtil.convertJsonToSortedMap(response.getResult()),
                     response.getErrorCode(), response.getErrorMessage());
             }
         } catch (IOException e) {
@@ -206,24 +200,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 Map<String, Object> credMap = (Map<String, Object>) JsonUtil
                     .jsonStrToObj(new HashMap<String, Object>(),
                         verifyCredentialFuncArgs.getFunctionArg());
-
-                // Convert format
-                Object context = credMap
-                    .get(CredentialConstant.CREDENTIAL_CONTEXT_PORTABLE_JSON_FIELD);
-                credMap.remove(CredentialConstant.CREDENTIAL_CONTEXT_PORTABLE_JSON_FIELD);
-                if (!StringUtils.isEmpty(context.toString())) {
-                    credMap.put(ParamKeyConstant.CONTEXT, context);
-                } else if (StringUtils.isEmpty(credMap.get(ParamKeyConstant.CONTEXT).toString())) {
-                    credMap
-                        .put(ParamKeyConstant.CONTEXT,
-                            CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
-                }
-                String issuanceDate = credMap.get(ParamKeyConstant.ISSURANCE_DATE).toString();
-                String expirationDate = credMap.get(ParamKeyConstant.EXPIRATION_DATE).toString();
-                credMap.replace(ParamKeyConstant.ISSURANCE_DATE,
-                    DateUtils.convertUtcDateToTimeStamp(issuanceDate));
-                credMap.replace(ParamKeyConstant.EXPIRATION_DATE,
-                    DateUtils.convertUtcDateToTimeStamp(expirationDate));
+                credMap = JsonUtil.reformatCredentialPojoToJson(credMap);
                 credential = (Credential) JsonUtil
                     .jsonStrToObj(new Credential(), JsonUtil.mapToCompactJson(credMap));
             } catch (Exception e) {
