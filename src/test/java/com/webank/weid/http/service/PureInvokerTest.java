@@ -77,7 +77,8 @@ public class PureInvokerTest extends BaseTest {
         // register authority issuer using dumb weid, should fail
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
@@ -90,12 +91,14 @@ public class PureInvokerTest extends BaseTest {
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp3));
         Assert
-            .assertTrue((resp3.getRespBody().toString()).equalsIgnoreCase(Boolean.FALSE.toString()));
+            .assertTrue(
+                (resp3.getRespBody().toString()).equalsIgnoreCase(Boolean.FALSE.toString()));
 
         // register authority Issuer (use SDK privkey, should succeed)
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name", "Sample College" + Math.random() * 100);
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
@@ -107,7 +110,8 @@ public class PureInvokerTest extends BaseTest {
         HttpResponseData<Object> resp4 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp4));
-        Assert.assertTrue((resp4.getRespBody().toString()).equalsIgnoreCase(Boolean.TRUE.toString()));
+        Assert
+            .assertTrue((resp4.getRespBody().toString()).equalsIgnoreCase(Boolean.TRUE.toString()));
 
         // query authority issuer
         funcArgMap = new LinkedHashMap<>();

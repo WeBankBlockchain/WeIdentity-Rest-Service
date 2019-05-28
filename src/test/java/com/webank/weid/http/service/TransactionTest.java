@@ -131,7 +131,8 @@ public class TransactionTest extends BaseTest {
         String nonceVal = TransactionEncoderUtil.getNonce().toString();
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", issuerWeId);
-        funcArgMap.put("name", "Sample College");
+        funcArgMap.put("name",
+            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         Map<String, Object> inputParamMap;

@@ -36,7 +36,7 @@ import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerAuthorityIssuerService;
 import com.webank.weid.http.util.JsonUtil;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.AuthorityIssuer;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
@@ -82,8 +82,8 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
                     ErrorCode.AUTHORITY_ISSUER_NAME_ILLEGAL.getCodeDesc());
             }
 
-            String weIdPrivKey = PrivateKeyUtil
-                .getPrivateKeyByWeId(PrivateKeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            String weIdPrivKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
             if (StringUtils.isEmpty(weIdPrivKey)) {
                 return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
             }

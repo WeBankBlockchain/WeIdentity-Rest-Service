@@ -194,7 +194,8 @@ public class TransactionEncoderUtil {
         }
         byte[] encodedSignedMessage = encodeTransactionWithSignature(
             rawTransaction,
-            SignatureUtil.convertBase64StringToSignatureData(signedMessage));
+            DataToolUtils.simpleSignatureDeserialization(
+                DataToolUtils.base64Decode(signedMessage.getBytes(StandardCharsets.UTF_8))));
         return Hex.toHexString(encodedSignedMessage);
     }
 
