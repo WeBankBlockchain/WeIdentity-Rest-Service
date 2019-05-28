@@ -1,20 +1,20 @@
 /*
  *       Copyright© (2019) WeBank Co., Ltd.
  *
- *       This file is part of weidentity-java-sdk.
+ *       This file is part of weidentity-http-service.
  *
- *       weidentity-java-sdk is free software: you can redistribute it and/or modify
+ *       weidentity-http-service is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU Lesser General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
  *
- *       weidentity-java-sdk is distributed in the hope that it will be useful,
+ *       weidentity-http-service is distributed in the hope that it will be useful,
  *       but WITHOUT ANY WARRANTY; without even the implied warranty of
  *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *       GNU Lesser General Public License for more details.
  *
  *       You should have received a copy of the GNU Lesser General Public License
- *       along with weidentity-java-sdk.  If not, see <https://www.gnu.org/licenses/>.
+ *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.webank.weid.http.util;
@@ -32,21 +32,87 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * file tool.
- *
+ * the util of the private key.
  * @author v_wbgyang
  *
  */
-public class FileUtil {
+public class KeyUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(KeyUtil.class);
 
-    private static final String HEX_STRING = "0123456789ABCDEF";
+    /**
+     * SDK private key storage path.
+     */
+    public static final String SDK_PRIVKEY_PATH =
+        PropertiesUtil.getProperty("admin.privKeyPath");
 
     /**
      * slash.
      */
     private static final String SLASH_CHARACTER = "/";
+
+    /**
+     * this method stores weId private key information by file and stores
+     * private key information by itself in actual scene.
+     *
+     * @param path save path
+     * @param weId the weId
+     * @param privateKey the private key
+     * @return returns saved results
+     */
+    public static boolean savePrivateKey(String path, String weId, String privateKey) {
+
+        try {
+            if (null == weId) {
+                logger.error("weId is null");
+                return false;
+            }
+
+            // get the third paragraph of weId.
+            String fileName = weId.substring(weId.lastIndexOf(":") + 1);
+
+            // check whether the path exists or not, then create the path and return.
+            String checkPath = checkDir(path);
+            String filePath = checkPath + fileName;
+
+            logger.info("save private key into file, weId={}, filePath={}", weId, filePath);
+
+            // save the private key information as the file name for the third paragraph of weId.
+            saveFile(filePath, privateKey);
+            return true;
+        } catch (Exception e) {
+            logger.error("savePrivateKey error", e);
+        }
+        return false;
+    }
+
+    /**
+     * get the private key by weId.
+     *
+     * @param path the path
+     * @param weId the weId
+     * @return returns the private key
+     */
+    public static String getPrivateKeyByWeId(String path, String weId) {
+
+        if (null == weId) {
+            logger.error("weId is null");
+            return StringUtils.EMPTY;
+        }
+
+        // get the third paragraph of weId.
+        String fileName = weId.substring(weId.lastIndexOf(":") + 1);
+
+        // check whether the path exists or not, then create the path and return.
+        String checkPath = checkDir(path);
+        String filePath = checkPath + fileName;
+
+        logger.info("get private key from file, weId={}, filePath={}", weId, filePath);
+
+        // get private key information from a file according to the third paragraph of weId.
+        String privateKey = getDataByPath(filePath);
+        return privateKey;
+    }
 
     /**
      * check the path is exists, create and return the path if it does not exist.
@@ -136,44 +202,5 @@ public class FileUtil {
             }
         }
         return StringUtils.EMPTY;
-    }
-
-    /**
-     * convert hex String to String.
-     *
-     * @param hexString input hex String
-     * @return return String
-     */
-    public static String hexString2String(String hexString) {
-        String str = HEX_STRING;
-        char[] hexs = hexString.toCharArray();
-        byte[] bytes = new byte[hexString.length() / 2];
-        int n;
-        for (int i = 0; i < bytes.length; i++) {
-            n = str.indexOf(hexs[2 * i]) * 16;
-            n += str.indexOf(hexs[2 * i + 1]);
-            bytes[i] = (byte) (n & 0xff);
-        }
-        return new String(bytes);
-    }
-
-    /**
-     * convert String to hex String.
-     *
-     * @param string input String
-     * @return return hex String
-     */
-    public static String string2HexString(String string) {
-        char[] chars = HEX_STRING.toCharArray();
-        StringBuilder sb = new StringBuilder("");
-        byte[] bs = string.getBytes();
-        int bit;
-        for (int i = 0; i < bs.length; i++) {
-            bit = (bs[i] & 0x0f0) >> 4;
-            sb.append(chars[bit]);
-            bit = bs[i] & 0x0f;
-            sb.append(chars[bit]);
-        }
-        return sb.toString().trim();
     }
 }
