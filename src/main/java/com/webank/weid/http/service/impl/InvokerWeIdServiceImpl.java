@@ -36,7 +36,7 @@ import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.util.JsonUtil;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.SetAuthenticationArgs;
 import com.webank.weid.protocol.request.SetPublicKeyArgs;
@@ -163,7 +163,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             if (createWeIdDataResult != null) {
                 try {
                     // host the weId which just got created
-                    PrivateKeyUtil.savePrivateKey(PrivateKeyUtil.SDK_PRIVKEY_PATH,
+                    KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
                         createWeIdDataResult.getWeId(),
                         createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
                 } catch (Exception e) {

@@ -50,7 +50,7 @@ public class CredentialTest extends BaseTest {
         // test create
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("cptId", "10");
-        funcArgMap.put("issuer", "did:weid:0x12025448644151248e5c1115b23a3fe55f4158e4153");
+        funcArgMap.put("issuer", "did:weid:0x865f29d2407e91a8be0d5811c6156b6f1c845f41");
         funcArgMap.put("expirationDate", "2400-04-18T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
         claimMap.put("acc", "10001");
@@ -66,7 +66,7 @@ public class CredentialTest extends BaseTest {
             WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIAL);
         HttpResponseData<Object> resp1 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
-        System.out.println("intermediate result: " + resp1);
+        System.out.println("intermediate result: " + JsonUtil.objToJsonStr(resp1));
 
         // simulate client side sign
         // this result contains both claim and claimhash
@@ -79,20 +79,20 @@ public class CredentialTest extends BaseTest {
         credForSigMap.put("claim", claimHash);
         credForSigMap.remove("signature");
         //do sign
-        //String sign = Sign(mapToJson(credForSigMap), privKey)
+        //String sign = ClientUtil.signCredential(credMap, privateKey);
         String sign = "FeB5";
         Map<String, Object> proofMap = new HashMap<>();
-        proofMap.put(ParamKeyConstant.PROOF_CREATED,
-            DateUtils.convertTimestampToUtc(System.currentTimeMillis()));
+        proofMap.put(ParamKeyConstant.PROOF_CREATED, DateUtils.convertUtcDateToTimeStamp(
+            DateUtils.convertTimestampToUtc(System.currentTimeMillis())));
         proofMap.put(ParamKeyConstant.PROOF_CREATOR,
-            "did:weid:0x12025448644151248e5c1115b23a3fe55f4158e4153");
+            "did:weid:0x865f29d2407e91a8be0d5811c6156b6f1c845f41");
         proofMap.put(ParamKeyConstant.PROOF_TYPE, CredentialProofType.ECDSA.getTypeName());
         proofMap.put(ParamKeyConstant.CREDENTIAL_SIGNATURE, sign);
         credMap.put(ParamKeyConstant.PROOF, proofMap);
         String credentialAfterSign = JsonUtil.mapToCompactJson(credMap);
         Credential credential = (Credential) JsonUtil
             .jsonStrToObj(new Credential(), credentialAfterSign);
-        System.out.println("after sign: " + credential);
+        System.out.println("after sign: " + JsonUtil.objToJsonStr(credential));
 
         //test verify
         Map<String, Object> credJsonMap = JsonUtil.objToMap(credential);

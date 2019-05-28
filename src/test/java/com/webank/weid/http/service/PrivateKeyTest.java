@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
-import com.webank.weid.http.util.PrivateKeyUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 
 @Component
@@ -41,17 +41,17 @@ public class PrivateKeyTest {
         String privKey = createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey();
 
         // test save
-        PrivateKeyUtil.savePrivateKey(PrivateKeyUtil.SDK_PRIVKEY_PATH, weId, privKey);
+        KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, weId, privKey);
 
         // test load
-        String extractedKey = PrivateKeyUtil
-            .getPrivateKeyByWeId(PrivateKeyUtil.SDK_PRIVKEY_PATH, weId);
+        String extractedKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, weId);
         System.out.println(extractedKey);
         Assert.assertTrue(StringUtils.equals(extractedKey, privKey));
 
         // test load sdk
-        String extractedKey2 = PrivateKeyUtil
-            .getPrivateKeyByWeId(PrivateKeyUtil.SDK_PRIVKEY_PATH, "0xffffffff");
+        String extractedKey2 = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff");
         System.out.println(extractedKey2);
     }
 }

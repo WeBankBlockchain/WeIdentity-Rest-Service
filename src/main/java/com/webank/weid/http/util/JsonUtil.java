@@ -36,10 +36,13 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.StringUtils;
 
+import com.webank.weid.constant.CredentialConstant;
+import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.exception.DataTypeCastException;
+import com.webank.weid.util.DateUtils;
 
 /**
- * Handles all input related tasks.
+ * Handles all Json related tasks.
  *
  * @author chaoxinhu
  */
@@ -147,5 +150,37 @@ public class JsonUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Format a credential pojo object into a Json format Map by tuning the context and date.
+     *
+     * @param originalMap the original credential (in map)
+     * @return the new map
+     * @throws Exception date conversion related exceptions
+     */
+    public static Map<String, Object> reformatCredentialPojoToJson(Map<String, Object> originalMap)
+        throws Exception {
+        Map<String, Object> credMap = new HashMap<>(originalMap);
+
+        // Convert context into @context
+        Object context = credMap
+            .get(CredentialConstant.CREDENTIAL_CONTEXT_PORTABLE_JSON_FIELD);
+        credMap.remove(CredentialConstant.CREDENTIAL_CONTEXT_PORTABLE_JSON_FIELD);
+        if (!StringUtils.isEmpty(context.toString())) {
+            credMap.put(ParamKeyConstant.CONTEXT, context);
+        } else if (StringUtils.isEmpty(credMap.get(ParamKeyConstant.CONTEXT).toString())) {
+            credMap
+                .put(ParamKeyConstant.CONTEXT,
+                    CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
+        }
+        // Convert dates
+        String issuanceDate = credMap.get(ParamKeyConstant.ISSUANCE_DATE).toString();
+        String expirationDate = credMap.get(ParamKeyConstant.EXPIRATION_DATE).toString();
+        credMap.put(ParamKeyConstant.ISSUANCE_DATE,
+            DateUtils.convertUtcDateToTimeStamp(issuanceDate));
+        credMap.put(ParamKeyConstant.EXPIRATION_DATE,
+            DateUtils.convertUtcDateToTimeStamp(expirationDate));
+        return credMap;
     }
 }
