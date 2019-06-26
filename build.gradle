@@ -13,8 +13,7 @@ targetCompatibility = 1.8
 // In this section you declare where to find the dependencies of your project
 repositories {
     maven {
-        //url "http://maven.aliyun.com/nexus/content/groups/public/"
-        url "http://maven.weoa.com/nexus/content/groups/public/"
+        url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
 
     mavenLocal()
@@ -44,16 +43,16 @@ List spring = [
 ]
 
 def spring_boot_version = "1.5.12.RELEASE"
-List spring_boot =[
-    "org.springframework.boot:spring-boot-starter-web:$spring_boot_version",
-    "org.springframework.boot:spring-boot-autoconfigure:$spring_boot_version",
-    "org.springframework.boot:spring-boot-configuration-processor:$spring_boot_version",
-    "org.springframework.boot:spring-boot-starter-log4j2:$spring_boot_version",
-    "org.springframework.boot:spring-boot-starter-aop:$spring_boot_version"
+List spring_boot = [
+        "org.springframework.boot:spring-boot-starter-web:$spring_boot_version",
+        "org.springframework.boot:spring-boot-autoconfigure:$spring_boot_version",
+        "org.springframework.boot:spring-boot-configuration-processor:$spring_boot_version",
+        "org.springframework.boot:spring-boot-starter-log4j2:$spring_boot_version",
+        "org.springframework.boot:spring-boot-starter-aop:$spring_boot_version"
 ]
 
-List spring_boot_test =[
-    "org.springframework.boot:spring-boot-starter-test:$spring_boot_version"
+List spring_boot_test = [
+        "org.springframework.boot:spring-boot-starter-test:$spring_boot_version"
 ]
 
 // junit test
@@ -80,15 +79,31 @@ List jackson = [
 ]
 
 List blockchain = [
-        'com.webank:weidentity-contract-java:1.2.2',
         'org.fisco-bcos:web3sdk:1.2.5'
+]
+
+List weid_contract = [
+        'com.webank:weidentity-contract-java:1.2.2',
+]
+
+List weid_java_sdk = [
+        'com.webank:weidentity-java-sdk:1.2.0'
 ]
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile logger, spring, lombok, apache_commons, jackson, spring_boot, blockchain
-    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test
-    compile files('lib/weidentity-java-sdk-1.2.0.rc-3.jar')
+    compile logger, spring, lombok, apache_commons, jackson, spring_boot, blockchain, weid_contract
+    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test, blockchain, weid_contract
+    // Check SDK pipeline dependency
+    if (file("./dependencies/weid-java-sdk-pipeline.jar").exists()) {
+        println "Pipeline jar for WeIdentity Java SDK found."
+        compile files('./dependencies/weid-java-sdk-pipeline.jar')
+        testCompile files('./dependencies/weid-java-sdk-pipeline.jar')
+    } else {
+        println "No pipeline jar found for WeIdentity Java SDK, using gradle version.."
+        compile weid_java_sdk
+        testCompile weid_java_sdk
+    }
 }
 
 configurations {
@@ -133,7 +148,7 @@ jar {
             into 'dist/lib'
         }
         copy {
-            from file('.').listFiles().findAll{File f -> (f.name.endsWith('.bat') || f.name.endsWith('.sh') || f.name.endsWith('.env'))}
+            from file('.').listFiles().findAll { File f -> (f.name.endsWith('.bat') || f.name.endsWith('.sh') || f.name.endsWith('.env')) }
             into 'dist'
         }
     }
