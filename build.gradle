@@ -15,7 +15,7 @@ repositories {
     maven {
         url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
-
+    maven { url "https://dl.bintray.com/ethereum/maven/" }
     mavenLocal()
     mavenCentral()
 }
@@ -78,22 +78,18 @@ List jackson = [
         "com.google.zxing:core:3.3.0"
 ]
 
-List blockchain = [
-        'org.fisco-bcos:web3sdk:1.2.5'
-]
-
 List weid_contract = [
-        'com.webank:weidentity-contract-java:1.2.2',
+        'com.webank:weid-contract-java:1.2.3'
 ]
 
 List weid_java_sdk = [
-        'com.webank:weidentity-java-sdk:1.2.0'
+        'com.webank:weid-java-sdk:1.3.0'
 ]
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile logger, spring, lombok, apache_commons, jackson, spring_boot, blockchain, weid_contract
-    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test, blockchain, weid_contract
+    compile logger, spring, lombok, apache_commons, jackson, spring_boot, weid_contract
+    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test, weid_contract
     // Check SDK pipeline dependency
     if (file("./dependencies/weid-java-sdk-pipeline.jar").exists()) {
         println "Pipeline jar for WeIdentity Java SDK found."

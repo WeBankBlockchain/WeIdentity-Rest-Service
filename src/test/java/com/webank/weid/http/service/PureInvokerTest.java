@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service;
 
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,6 +35,7 @@ import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
 
 @Component
 public class PureInvokerTest extends BaseTest {
@@ -100,6 +102,8 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap.put("name",
             "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
+        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -133,6 +137,7 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap.put("weId", weId);
         Map<String, Object> cptJsonSchemaMap = new LinkedHashMap<>();
         cptJsonSchemaMap.put("title", "a CPT schema");
+        cptJsonSchemaMap.put("weid", "0x11111111");
         funcArgMap.put("cptJsonSchema", cptJsonSchemaMap);
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
