@@ -19,12 +19,12 @@
 
 package com.webank.weid.http.service;
 
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.bcos.contract.tools.ToolConf;
 import org.bcos.web3j.crypto.Credentials;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.GenCredential;
@@ -34,8 +34,6 @@ import org.bcos.web3j.crypto.Sign.SignatureData;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.BaseTest;
@@ -43,6 +41,7 @@ import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
@@ -149,10 +148,9 @@ public class TransactionTest extends BaseTest {
 
         // step 3: sign via SDK privKey
         // note that the authorityIssuer creation can only be done by god account - for now
-        ApplicationContext context = new ClassPathXmlApplicationContext(
-            "applicationContext.xml");
-        ToolConf toolConf = (ToolConf) context.getBean("toolConf");
-        Credentials credentials = GenCredential.create(toolConf.getPrivKey());
+        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        BigInteger decValue = new BigInteger(adminPrivKey, 10);
+        Credentials credentials = GenCredential.create(decValue.toString(16));
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
@@ -229,10 +227,9 @@ public class TransactionTest extends BaseTest {
 
         // step 3: sign via SDK privKey
         // let us use god account for low-bit cptId for good
-        ApplicationContext context = new ClassPathXmlApplicationContext(
-            "applicationContext.xml");
-        ToolConf toolConf = (ToolConf) context.getBean("toolConf");
-        Credentials credentials = GenCredential.create(toolConf.getPrivKey());
+        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        BigInteger decValue = new BigInteger(adminPrivKey, 10);
+        Credentials credentials = GenCredential.create(decValue.toString(16));
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));

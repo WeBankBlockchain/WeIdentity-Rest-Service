@@ -19,12 +19,15 @@
 
 package com.webank.weid.http.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
@@ -202,5 +205,69 @@ public class KeyUtil {
             }
         }
         return StringUtils.EMPTY;
+    }
+
+    /**
+     * Read key form file.
+     * @param fileName filename
+     * @return private key
+     */
+    public static String readPrivateKeyFromFile(String fileName) {
+
+        BufferedReader br = null;
+        FileInputStream fis = null;
+        InputStreamReader isr = null;
+        StringBuffer privateKey = new StringBuffer();
+
+        URL fileUrl = KeyUtil.class.getClassLoader().getResource(fileName);
+        if (fileUrl == null) {
+            return privateKey.toString();
+        }
+
+        String filePath = fileUrl.getFile();
+        if (filePath == null) {
+            return privateKey.toString();
+        }
+
+        try {
+            fis = new FileInputStream(fileUrl.getFile());
+            isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+            br = new BufferedReader(isr);
+
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                privateKey.append(line);
+            }
+        } catch (Exception e) {
+            logger.error("read privateKey from {} failed, error:{}", fileName, e);
+        } finally {
+            closeStream(br, fis, isr);
+        }
+
+        return privateKey.toString();
+    }
+
+    private static void closeStream(BufferedReader br, FileInputStream fis, InputStreamReader isr) {
+        if (br != null) {
+            try {
+                br.close();
+            } catch (IOException e) {
+                logger.error("BufferedReader close error:", e);
+            }
+        }
+        if (isr != null) {
+            try {
+                isr.close();
+            } catch (IOException e) {
+                logger.error("InputStreamReader close error:", e);
+            }
+        }
+        if (fis != null) {
+            try {
+                fis.close();
+            } catch (IOException e) {
+                logger.error("FileInputStream close error:", e);
+            }
+        }
     }
 }
