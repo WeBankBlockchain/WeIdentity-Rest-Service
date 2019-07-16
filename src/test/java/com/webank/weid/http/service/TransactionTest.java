@@ -42,6 +42,7 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
@@ -148,7 +149,8 @@ public class TransactionTest extends BaseTest {
 
         // step 3: sign via SDK privKey
         // note that the authorityIssuer creation can only be done by god account - for now
-        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
         BigInteger decValue = new BigInteger(adminPrivKey, 10);
         Credentials credentials = GenCredential.create(decValue.toString(16));
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();
@@ -227,7 +229,8 @@ public class TransactionTest extends BaseTest {
 
         // step 3: sign via SDK privKey
         // let us use god account for low-bit cptId for good
-        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
         BigInteger decValue = new BigInteger(adminPrivKey, 10);
         Credentials credentials = GenCredential.create(decValue.toString(16));
         ECKeyPair ecKeyPair = credentials.getEcKeyPair();

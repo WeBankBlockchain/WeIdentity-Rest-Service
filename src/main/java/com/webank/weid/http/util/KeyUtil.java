@@ -19,25 +19,24 @@
 
 package com.webank.weid.http.util;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+
 /**
  * the util of the private key.
- * @author v_wbgyang
  *
+ * @author v_wbgyang
  */
 public class KeyUtil {
 
@@ -55,8 +54,8 @@ public class KeyUtil {
     private static final String SLASH_CHARACTER = "/";
 
     /**
-     * this method stores weId private key information by file and stores
-     * private key information by itself in actual scene.
+     * this method stores weId private key information by file and stores private key information by
+     * itself in actual scene.
      *
      * @param path save path
      * @param weId the weId
@@ -105,6 +104,12 @@ public class KeyUtil {
 
         // get the third paragraph of weId.
         String fileName = weId.substring(weId.lastIndexOf(":") + 1);
+
+        // check the default passphrase
+        String passphrase = PropertiesUtil.getProperty("default.passphrase");
+        if (fileName.equalsIgnoreCase(passphrase)) {
+            fileName = WeIdentityParamKeyConstant.DEFAULT_PRIVATE_KEY_FILE_NAME;
+        }
 
         // check whether the path exists or not, then create the path and return.
         String checkPath = checkDir(path);
@@ -205,69 +210,5 @@ public class KeyUtil {
             }
         }
         return StringUtils.EMPTY;
-    }
-
-    /**
-     * Read key form file.
-     * @param fileName filename
-     * @return private key
-     */
-    public static String readPrivateKeyFromFile(String fileName) {
-
-        BufferedReader br = null;
-        FileInputStream fis = null;
-        InputStreamReader isr = null;
-        StringBuffer privateKey = new StringBuffer();
-
-        URL fileUrl = KeyUtil.class.getClassLoader().getResource(fileName);
-        if (fileUrl == null) {
-            return privateKey.toString();
-        }
-
-        String filePath = fileUrl.getFile();
-        if (filePath == null) {
-            return privateKey.toString();
-        }
-
-        try {
-            fis = new FileInputStream(fileUrl.getFile());
-            isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            br = new BufferedReader(isr);
-
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                privateKey.append(line);
-            }
-        } catch (Exception e) {
-            logger.error("read privateKey from {} failed, error:{}", fileName, e);
-        } finally {
-            closeStream(br, fis, isr);
-        }
-
-        return privateKey.toString();
-    }
-
-    private static void closeStream(BufferedReader br, FileInputStream fis, InputStreamReader isr) {
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException e) {
-                logger.error("BufferedReader close error:", e);
-            }
-        }
-        if (isr != null) {
-            try {
-                isr.close();
-            } catch (IOException e) {
-                logger.error("InputStreamReader close error:", e);
-            }
-        }
-        if (fis != null) {
-            try {
-                fis.close();
-            } catch (IOException e) {
-                logger.error("FileInputStream close error:", e);
-            }
-        }
     }
 }
