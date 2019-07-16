@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
 import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 
 @Component
@@ -51,7 +52,8 @@ public class PrivateKeyTest {
 
         // test load sdk
         String extractedKey2 = KeyUtil
-            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff");
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+                PropertiesUtil.getProperty("default.passphrase"));
         System.out.println(extractedKey2);
     }
 }

@@ -36,6 +36,7 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 
 @Component
 public class PureInvokerTest extends BaseTest {
@@ -102,7 +103,8 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap.put("name",
             "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
         txnArgMap = new LinkedHashMap<>();
-        String adminPrivKey = KeyUtil.readPrivateKeyFromFile("ecdsa_key");
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
         KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
