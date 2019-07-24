@@ -1,9 +1,22 @@
+def gradleVer = "4"
+if (gradle.gradleVersion.startsWith("6")
+        || gradle.gradleVersion.startsWith("5")
+        || gradle.gradleVersion.startsWith("4.10")
+        || gradle.gradleVersion.startsWith("4.9")
+        || gradle.gradleVersion.startsWith("4.8")
+        || gradle.gradleVersion.startsWith("4.7")) {
+    println "Gradle with version >= 4.7 detected"
+    gradleVer = "5"
+} else {
+    println "Gradle with version < 4.7 detected"
+}
+
 apply plugin: 'maven'
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "0.9"
+version = "1.3.1"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -78,18 +91,14 @@ List jackson = [
         "com.google.zxing:core:3.3.0"
 ]
 
-List weid_contract = [
-        'com.webank:weid-contract-java:1.2.3'
-]
-
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.3.0'
+        'com.webank:weid-java-sdk:1.3.1'
 ]
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile logger, spring, lombok, apache_commons, jackson, spring_boot, weid_contract
-    testCompile logger, spring, lombok, junit, spring_boot, spring_boot_test, weid_contract
+    compile logger, spring, apache_commons, jackson, spring_boot
+    testCompile logger, spring, junit, spring_boot, spring_boot_test
     // Check SDK pipeline dependency
     if (file("./dependencies/weid-java-sdk-pipeline.jar").exists()) {
         println "Pipeline jar for WeIdentity Java SDK found."
@@ -99,6 +108,22 @@ dependencies {
         println "No pipeline jar found for WeIdentity Java SDK, using gradle version.."
         compile weid_java_sdk
         testCompile weid_java_sdk
+    }
+    compile("com.webank:weid-contract-java:1.2.4") {
+        exclude group:"org.slf4j", module: "slf4j-log4j12"
+    }
+    testCompile("com.webank:weid-contract-java:1.2.4") {
+        exclude group:"org.slf4j", module: "slf4j-log4j12"
+    }
+    if (gradleVer.startsWith("4")) {
+        compile lombok
+        testCompile lombok
+    }
+    if (gradleVer.startsWith("5")) {
+        compileOnly lombok
+        annotationProcessor lombok
+        testAnnotationProcessor lombok
+        testCompileOnly lombok
     }
 }
 
