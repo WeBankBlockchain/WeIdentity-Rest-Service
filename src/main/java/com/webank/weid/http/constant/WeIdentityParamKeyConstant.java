@@ -38,8 +38,8 @@ public final class WeIdentityParamKeyConstant {
     public static final String TRANSACTION_ARG = "transactionArg";
     public static final String CLAIM_HASH = "claimHash";
     public static final String KEY_INDEX = "invokerWeId";
+    public static final String BODY = "body";
 
     public static final String DEFAULT_API_VERSION = "1.0.0";
     public static final String DEFAULT_PRIVATE_KEY_FILE_NAME = "ecdsa_key";
-
 }

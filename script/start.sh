@@ -8,8 +8,8 @@ JAVA_HOME="$JAVA_HOME"
 CURRENT_DIR=`pwd`
 APP_NAME=`basename ${CURRENT_DIR}`
 
-CONF_DIR=/data/app/${APP_NAME}/conf
-LOG_DIR=/data/app/logs/${APP_NAME}
+CONF_DIR=./app/${APP_NAME}/conf
+LOG_DIR=./logs/${APP_NAME}
 
 # Java main
 APP_MAIN=com.webank.weid.http.Application

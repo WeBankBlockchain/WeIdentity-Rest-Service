@@ -17,26 +17,38 @@
  *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
+import java.util.List;
 
-@SpringBootApplication(
-    exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class}
-)
-@ComponentScan
-public class Application {
+import org.springframework.stereotype.Service;
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
+import com.webank.weid.http.protocol.request.EndpointRequest;
+import com.webank.weid.http.protocol.response.EndpointInfo;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
-    }
+@Service
+public interface EndpointService {
+
+    /**
+     * Get all registered endpoints.
+     * @return
+     */
+    HttpResponseData<List<EndpointInfo>> getAllEndpoints();
+
+    /**
+     * Re-route an endpoint service to SDK.
+     *
+     * @param endpointRequest
+     * @return
+     */
+    HttpResponseData<String> invokeEndpointService(EndpointRequest endpointRequest);
+
+    /**
+     * Get an endpoint info.
+     *
+     * @param endpointName
+     * @return
+     */
+    HttpResponseData<EndpointInfo> getEndpoint(String endpointName);
 }

@@ -100,7 +100,15 @@ public enum HttpReturnCode {
     /**
      * data illegal.
      */
-    DATA_ILLEGAL(201014, "data segment format illegal or missing. ");
+    DATA_ILLEGAL(201014, "data segment format illegal or missing. "),
+
+    /**
+     * RPC related error codes.
+     */
+    RPC_SEND_FAIL(205001, "Sending RPC request failure"),
+    RPC_NETWORK_ERROR(205002, "RPC networking failure"),
+    RPC_GET_FAIL(205003, "Get RPC reply from request UUID failure"),
+    RPC_FETCH_FAIL(205004, "Fetching RPC remote service info failure");
 
     /**
      * error code.
