@@ -96,7 +96,8 @@ List weid_java_sdk = [
 ]
 
 List rpc = [
-        'org.smartboot.socket:aio-core:1.4.2'
+        'org.smartboot.socket:aio-core:1.4.2',
+        'org.smartboot.socket:aio-pro:1.4.2'
 ]
 
 // In this section you declare the dependencies for your production and test code

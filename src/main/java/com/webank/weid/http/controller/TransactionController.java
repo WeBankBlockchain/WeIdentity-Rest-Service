@@ -118,9 +118,9 @@ public class TransactionController {
     @RequestMapping(value = WeIdentityServiceEndpoint.EPS_ROOT
         + "/{endpoint}", method = RequestMethod.POST)
     public HttpResponseData<String> invokeEndpointService(
-        @RequestBody String requestBody, @PathVariable String endpointName) {
+        @RequestBody String requestBody, @PathVariable String endpoint) {
         EndpointRequest endpointRequest = new EndpointRequest();
-        endpointRequest.setRequestName(endpointName);
+        endpointRequest.setRequestName(endpoint);
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(requestBody);

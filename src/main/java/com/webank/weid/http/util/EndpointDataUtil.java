@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import com.webank.weid.http.protocol.response.EndpointInfo;
+import com.webank.weid.util.DataToolUtils;
 
 public class EndpointDataUtil {
 
@@ -117,7 +118,7 @@ public class EndpointDataUtil {
                 } else {
                     EndpointInfo endpointInfo = new EndpointInfo();
                     endpointInfo = fillInEndpointInfo(endpointInfo, key, tempProps);
-                    if (!endpointInfo.isEmpty()) {
+                    if (!isEndpointInfoEmpty(endpointInfo)) {
                         endpointMap.put(index, endpointInfo);
                     }
                 }
@@ -142,6 +143,11 @@ public class EndpointDataUtil {
         endpointInfoList = allEndpoints;
     }
 
+    private static boolean isEndpointInfoEmpty(EndpointInfo endpointInfo) {
+        return (StringUtils.isEmpty(endpointInfo.getRequestName()) && StringUtils.isEmpty(endpointInfo.getDescription())
+            && (endpointInfo.getInAddr() == null || endpointInfo.getInAddr().size() == 0));
+    }
+    
     /**
      * Fetch each entry one by one into the in-memory endpoint table.
      */
@@ -221,10 +227,13 @@ public class EndpointDataUtil {
      */
     public static synchronized void mergeToCentral(EndpointInfo endpointInfo) {
         List<String> inAddr = endpointInfo.getInAddr();
-        Set<String> set = new HashSet<>(endpointInfo.getInAddr());
-        inAddr.clear();
-        inAddr.addAll(set);
-        endpointInfo.setInAddr(inAddr);
+        if (inAddr != null && inAddr.size() > 1) {
+            // Remove potential duplicates in addr list
+            Set<String> set = new HashSet<>(endpointInfo.getInAddr());
+            inAddr.clear();
+            inAddr.addAll(set);
+            endpointInfo.setInAddr(inAddr);
+        }
         if (endpointInfoList.size() == 0) {
             endpointInfoList.add(endpointInfo);
             return;
@@ -242,10 +251,12 @@ public class EndpointDataUtil {
                 localInfo.setInAddr(inAddrList);
                 exists = true;
             }
+            System.out.println("1" + DataToolUtils.serialize(localInfo));
             finalList.add(localInfo);
         }
         if (!exists) {
             finalList.add(endpointInfo);
+            System.out.println("b" + DataToolUtils.serialize(endpointInfo));
         }
         endpointInfoList = finalList;
     }
