@@ -50,31 +50,15 @@ public class RpcConnectionHandler {
     private static final Logger logger = LoggerFactory.getLogger(RpcConnectionHandler.class);
 
     // Mapping key: request (UUID), value: a remote host/port
-    private Map<String, String> uuidHostMap = new ConcurrentHashMap<>();
+    private static Map<String, String> uuidHostMap = new ConcurrentHashMap<>();
 
     // Mapping key: hostport, value: one active RpcClient
-    private Map<String, RpcClient> hostClientsMap = new ConcurrentHashMap<>();
+    private static Map<String, RpcClient> hostClientsMap = new ConcurrentHashMap<>();
 
-    // Singleton
-    private volatile static RpcConnectionHandler rpcConnectionHandler;
-
-    private RpcConnectionHandler() {
-    }
-
-    public static RpcConnectionHandler getInstance() {
-        if (rpcConnectionHandler == null) {
-            synchronized (RpcConnectionHandler.class) {
-                if (rpcConnectionHandler == null) {
-                    rpcConnectionHandler = new RpcConnectionHandler();
-                }
-            }
-        }
-        return rpcConnectionHandler;
-
-    }
-
-    // Background process to periodically fetch remote's endpoint info per defined seconds.
-    {
+    /**
+     * Background process to periodically fetch remote's endpoint info per defined seconds.
+     */
+    public static void init() {
         Runnable runnable = new Runnable() {
             public void run() {
                 List<String> inAddrList = Arrays
@@ -82,8 +66,9 @@ public class RpcConnectionHandler {
                 fetchAndMergeEndpoints(inAddrList);
             }
         };
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(runnable, 10, 60, TimeUnit.SECONDS);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+        scheduler.scheduleAtFixedRate(runnable, 1,
+            Integer.valueOf(PropertiesUtil.getProperty("fetch.period.seconds")), TimeUnit.SECONDS);
     }
 
     /**
@@ -93,7 +78,7 @@ public class RpcConnectionHandler {
      * @param endpointRequest the endpoint request
      * @return String reply message
      */
-    public HttpResponseData<String> send(String hostport, EndpointRequest endpointRequest) {
+    public static HttpResponseData<String> send(String hostport, EndpointRequest endpointRequest) {
         RpcClient rpcClient;
         try {
             if (hostClientsMap.containsKey(hostport)) {
@@ -130,7 +115,7 @@ public class RpcConnectionHandler {
      * @param inAddrList destination address list
      * @return UUID index
      */
-    public HttpResponseData<String> randomSend(List<String> inAddrList,
+    public static HttpResponseData<String> randomSend(List<String> inAddrList,
         EndpointRequest endpointRequest) {
         double gap = (double) 1 / inAddrList.size();
         double pick = Math.random();
@@ -155,7 +140,7 @@ public class RpcConnectionHandler {
      * @param uuid the uuid
      * @return result
      */
-    public HttpResponseData<String> get(String uuid) {
+    public static HttpResponseData<String> get(String uuid) {
         String hostPort = uuidHostMap.get(uuid);
         if (StringUtils.isEmpty(hostPort)) {
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
@@ -177,7 +162,7 @@ public class RpcConnectionHandler {
      *
      * @param addrList remote address list
      */
-    private void fetchAndMergeEndpoints(List<String> addrList) {
+    public static void fetchAndMergeEndpoints(List<String> addrList) {
         logger.info("Now: " + System.currentTimeMillis() + " Starting to poll remote service at: "
             + EndpointDataUtil.stringListToString(addrList));
         System.out.println("Now: " + System.currentTimeMillis() + " Starting to poll remote service"
@@ -189,13 +174,19 @@ public class RpcConnectionHandler {
             try {
                 String uuid = send(hostport, endpointRequest).getRespBody();
                 if (!StringUtils.isEmpty(uuid)) {
-                    String endpointInfoString = get(uuid).getRespBody();
-                    EndpointInfo endpointInfo = DataToolUtils
-                        .deserialize(endpointInfoString, EndpointInfo.class);
-                    List<String> newList = new ArrayList<>();
-                    newList.add(hostport);
-                    endpointInfo.setInAddr(newList);
-                    EndpointDataUtil.mergeToCentral(endpointInfo);
+                    String reply = get(uuid).getRespBody();
+                    List<String> endpointInfoList = new ArrayList<>(
+                        Arrays.asList(reply.split("```")));
+                    for (String endpointInfoString : endpointInfoList) {
+                        EndpointInfo endpointInfo = DataToolUtils
+                            .deserialize(endpointInfoString, EndpointInfo.class);
+                        // Fillin the external network addr to be the one in here
+                        List<String> newList = new ArrayList<>();
+                        newList.add(hostport);
+                        endpointInfo.setInAddr(newList);
+                        logger.debug("Fetched Endpoint: " + DataToolUtils.serialize(endpointInfo));
+                        EndpointDataUtil.mergeToCentral(endpointInfo);
+                    }
                 } else {
                     logger.info("Failed to connect to remote host (reply null): " + hostport);
                 }
