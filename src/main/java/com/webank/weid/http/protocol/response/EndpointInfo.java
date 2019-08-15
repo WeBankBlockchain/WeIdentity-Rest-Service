@@ -30,9 +30,4 @@ public class EndpointInfo {
     private String requestName;
     private List<String> inAddr;
     private String description;
-
-    public boolean isEmpty() {
-        return (StringUtils.isEmpty(this.requestName) && StringUtils.isEmpty(this.description)
-            && (this.inAddr == null || this.inAddr.size() == 0));
-    }
 }

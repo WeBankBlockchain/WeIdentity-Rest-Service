@@ -39,7 +39,10 @@ import com.webank.weid.http.util.EndpointDataUtil;
 public class EndpointServiceImpl extends BaseService implements EndpointService {
 
     private Logger logger = LoggerFactory.getLogger(EndpointServiceImpl.class);
-    private RpcConnectionHandler rpcConnectionHandler = RpcConnectionHandler.getInstance();
+
+    static {
+        RpcConnectionHandler.init();
+    }
 
     /**
      * Get all registered endpoints, locally.
@@ -48,6 +51,7 @@ public class EndpointServiceImpl extends BaseService implements EndpointService 
      */
     public HttpResponseData<List<EndpointInfo>> getAllEndpoints() {
         try {
+            EndpointDataUtil.loadAllEndpointInfoFromProps();
             return new HttpResponseData<>(EndpointDataUtil.getAllEndpointInfo(),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
@@ -69,19 +73,21 @@ public class EndpointServiceImpl extends BaseService implements EndpointService 
             String requestName = endpointInfo.getRequestName();
             if (requestName.equalsIgnoreCase(endpointRequest.getRequestName())) {
                 try {
-                    String uuid = rpcConnectionHandler
+                    String uuid = RpcConnectionHandler
                         .randomSend(endpointInfo.getInAddr(), endpointRequest).getRespBody();
                     if (StringUtils.isEmpty(uuid)) {
                         return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL);
                     }
-                    return rpcConnectionHandler.get(uuid);
+                    return RpcConnectionHandler.get(uuid);
                 } catch (Exception e) {
                     return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL.getCode(),
                         HttpReturnCode.RPC_GET_FAIL.getCodeDesc() + e.getMessage());
                 }
             }
         }
-        return null;
+        return new HttpResponseData<>(null, HttpReturnCode.RPC_ENDPOINT_NOT_EXIST.getCode(),
+            HttpReturnCode.RPC_ENDPOINT_NOT_EXIST.getCodeDesc() + ": " + endpointRequest
+                .getRequestName());
     }
 
     /**
@@ -103,6 +109,5 @@ public class EndpointServiceImpl extends BaseService implements EndpointService 
             return new HttpResponseData<>(null, HttpReturnCode.RPC_GET_FAIL.getCode(),
                 HttpReturnCode.RPC_GET_FAIL.getCodeDesc() + e.getMessage());
         }
-
     }
 }
