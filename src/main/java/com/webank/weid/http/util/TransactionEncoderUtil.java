@@ -281,7 +281,7 @@ public class TransactionEncoderUtil {
 
     /**
      * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires
-     * the previous rawTransaction and the signed Message from client side. todo change to private
+     * the previous rawTransaction and the signed Message from client side.
      *
      * @param rawTransaction the input rawTransaction
      * @param signatureData the signatureData
