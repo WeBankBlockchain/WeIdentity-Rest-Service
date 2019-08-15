@@ -19,7 +19,9 @@
 
 package com.webank.weid.http.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,9 +34,11 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.protocol.request.InputArg;
+import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerWeIdService;
+import com.webank.weid.http.util.EndpointDataUtil;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -191,8 +195,35 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 ResponseData<Boolean> responseSetAuth = weIdService
                     .setAuthentication(setAuthenticationArgs);
 
+                String errMsg = "";
+                List<EndpointInfo> endpointInfoList = EndpointDataUtil.getAllEndpointInfo();
+                for (EndpointInfo endpointInfo : endpointInfoList) {
+                    System.out.println(endpointInfo.toString());
+                    logger.info(endpointInfo.toString());
+                    errMsg = errMsg + endpointInfo.toString();
+                }
+                errMsg = errMsg + "xxxxxxx";
+                EndpointInfo newInfo = new EndpointInfo();
+                newInfo.setRequestName("remove-file");
+                newInfo.setInAddr(new ArrayList<>());
+                newInfo.setDescription("temp");
+                EndpointDataUtil.mergeToCentral(newInfo);
+                EndpointDataUtil.saveEndpointsToFile();
+                endpointInfoList = EndpointDataUtil.getAllEndpointInfo();
+                for (EndpointInfo endpointInfo : endpointInfoList) {
+                    System.out.println(endpointInfo.toString());
+                    logger.info(endpointInfo.toString());
+                    errMsg = errMsg + endpointInfo.toString();
+                }
+                errMsg = errMsg + "xxxxxxx";
+                EndpointDataUtil.removeEndpoint(newInfo);
+                for (EndpointInfo endpointInfo : endpointInfoList) {
+                    System.out.println(endpointInfo.toString());
+                    logger.info(endpointInfo.toString());
+                    errMsg = errMsg + endpointInfo.toString();
+                }
                 return new HttpResponseData<>(createWeIdDataResult.getWeId(),
-                    response.getErrorCode(), response.getErrorMessage());
+                    response.getErrorCode(), errMsg);
             } else {
                 return new HttpResponseData<>(null, response.getErrorCode(),
                     response.getErrorMessage());

@@ -35,4 +35,21 @@ public final class WeIdentityServiceEndpoint {
     public static final String SEND_TRANSACTION = "transact";
     public static final String INVOKE_FUNCTION = "invoke";
 
+    /**
+     * EP Service endpoint.
+     */
+    public static final String EPS_ROOT = "endpoint";
+    public static final String ADD_FUNCTION = "add";
+    public static final String REMOVE_FUNCTION = "remove";
+    public static final String FETCH_FUNCTION = "auto-fetch";
+
+    /**
+     * Separator.
+     */
+    public static final String EPS_SEPARATOR = "|||";
+
+    /**
+     * Misc items
+     */
+    public static final String ALL_INFO = "ALL";
 }

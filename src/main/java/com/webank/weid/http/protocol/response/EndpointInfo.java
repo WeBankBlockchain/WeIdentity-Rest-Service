@@ -17,26 +17,22 @@
  *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.protocol.response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
+import java.util.List;
 
-@SpringBootApplication(
-    exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class}
-)
-@ComponentScan
-public class Application {
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
+@Data
+public class EndpointInfo {
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
+    private String requestName;
+    private List<String> inAddr;
+    private String description;
+
+    public boolean isEmpty() {
+        return (StringUtils.isEmpty(this.requestName) && StringUtils.isEmpty(this.description)
+            && (this.inAddr == null || this.inAddr.size() == 0));
     }
 }

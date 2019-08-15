@@ -17,26 +17,25 @@
  *       along with weidentity-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http;
+package com.webank.weid.http.service.rpc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
+import java.nio.ByteBuffer;
 
-@SpringBootApplication(
-    exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class}
-)
-@ComponentScan
-public class Application {
+import org.smartboot.socket.Protocol;
+import org.smartboot.socket.transport.AioSession;
 
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
-
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class);
-        logger.info("#### Start finished");
+public class StringProtocol implements Protocol<String> {
+    public String decode(ByteBuffer buffer, AioSession<String> session) {
+        // An RI for protocol.
+        buffer.mark(); // 1
+        byte length = buffer.get(); // 2
+        if (buffer.remaining() < length) { // 3
+            buffer.reset(); // 4
+            return null;
+        }
+        byte[] body = new byte[length];
+        buffer.get(body); // 5
+        buffer.mark(); // 6
+        return new String(body); // 7
     }
 }
