@@ -20,6 +20,7 @@
 package com.webank.weid.http.service.rpc;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,10 +39,10 @@ import org.smartboot.socket.transport.AioSession;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.http.util.PropertiesUtil;
 
 
 public class RpcClient {
+
     private static final Logger logger = LoggerFactory.getLogger(RpcClient.class);
 
     private static final int STATE_PENDING = 0;
@@ -50,9 +51,6 @@ public class RpcClient {
     private static final int STATE_FAILED = 3;
     private static final int POLL_INTERNAL_MILLIS = 500;
     private static final int MAX_RETRIES = 20;
-
-    private static final Integer DEFAULT_LISTENER_PORT =
-        Integer.valueOf(PropertiesUtil.getProperty("default.listener.port"));
 
     // The results and states per uuid w.r.t session.
     private AioSession<String> session = null;
@@ -71,12 +69,7 @@ public class RpcClient {
      * Constructor with supplied host and port String.
      */
     protected RpcClient(String hostport) throws Exception {
-        if (hostport.contains(":")) {
-            setHostPort(hostport);
-        } else {
-            this.host = hostport;
-            this.port = DEFAULT_LISTENER_PORT;
-        }
+        setHostPort(hostport);
         session = getNewSession(this.host, this.port);
     }
 
@@ -103,13 +96,14 @@ public class RpcClient {
     protected HttpResponseData<String> send(String msg) {
         String uuid = UUID.randomUUID().toString();
         String message = msg + WeIdentityServiceEndpoint.EPS_SEPARATOR + uuid;
-        byte[] msgBody = message.getBytes();
-        byte[] msgHead = {(byte) msgBody.length};
+        System.out.println("Sending msg: " + message + session.getSessionID());
+        ByteBuffer byteBuffer = FixedLengthProtocol.encode(message);
+        byte[] resp = new byte[byteBuffer.remaining()];
+        byteBuffer.get(resp, 0, resp.length);
         resultMap.put(uuid, StringUtils.EMPTY);
         stateMap.put(uuid, STATE_PENDING);
         try {
-            session.writeBuffer().write(msgHead);
-            session.writeBuffer().write(msgBody);
+            session.writeBuffer().write(resp);
             session.writeBuffer().flush();
         } catch (IOException e) {
             stateMap.put(uuid, STATE_FAILED);
@@ -144,8 +138,9 @@ public class RpcClient {
     private AioSession<String> getNewSession(String host, int port)
         throws InterruptedException, ExecutionException, IOException {
         AioQuickClient<String> client = new AioQuickClient<String>(host, port,
-            new StringProtocol(), new MessageProcessor<String>() {
+            new FixedLengthProtocol(), new MessageProcessor<String>() {
             public void process(AioSession<String> session, String msg) {
+                System.out.println("received msg: " + msg + session.getSessionID());
                 String uuid = msg.substring(msg.length() - 36);
                 resultMap.put(uuid, msg.substring(0, msg.length() - 39));
                 stateMap.put(uuid, STATE_RECEIVED);
@@ -155,7 +150,6 @@ public class RpcClient {
                 Throwable throwable) {
             }
         });
-
         return client.start();
     }
 
