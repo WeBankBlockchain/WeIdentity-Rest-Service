@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="info">
 	<Properties>
-        <Property name="logPath">/data/app/logs/weidentity-http-service/</Property>
+        <Property name="logPath">/data/app/logs/weid-http-service/</Property>
     </Properties>
 	<Appenders>
 		<Console name="console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}(%F:%L) - %m%n" />
 		</Console>
 
-		<RollingFile name="fileAppender" fileName="${logPath}weidentity-http-service.log" filePattern="${logPath}weidentity-http-service.log.%d{yyyy-MM-dd}.%i.log">
+		<RollingFile name="fileAppender" fileName="${logPath}weid-http-service.log" filePattern="${logPath}weid-http-service.log.%d{yyyy-MM-dd}.%i.log">
 			<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}(%L) - %m%n" />
 			<Policies>
 				<TimeBasedTriggeringPolicy />
