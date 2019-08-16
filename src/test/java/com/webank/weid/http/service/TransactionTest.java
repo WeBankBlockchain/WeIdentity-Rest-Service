@@ -262,6 +262,7 @@ public class TransactionTest extends BaseTest {
         System.out.println(resp2);
 
         // step 5: queryCpt
+        /*
         JsonNode jsonNode = new ObjectMapper().readTree(JsonUtil.objToJsonStr(resp2.getRespBody()));
         Integer cptId = Integer.valueOf(jsonNode.get("cptId").toString());
         System.out.println("cptId is: " + cptId);
@@ -278,5 +279,6 @@ public class TransactionTest extends BaseTest {
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
         System.out.println("invoke done, step 3 done");
+        */
     }
 }
