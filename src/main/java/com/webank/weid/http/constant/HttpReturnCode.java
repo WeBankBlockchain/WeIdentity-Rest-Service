@@ -108,7 +108,8 @@ public enum HttpReturnCode {
     RPC_SEND_FAIL(205001, "Sending RPC request failure"),
     RPC_NETWORK_ERROR(205002, "RPC networking failure"),
     RPC_GET_FAIL(205003, "Get RPC reply from request UUID failure"),
-    RPC_FETCH_FAIL(205004, "Fetching RPC remote service info failure");
+    RPC_FETCH_FAIL(205004, "Fetching RPC remote service info failure"),
+    RPC_ENDPOINT_NOT_EXIST(205005, "RPC Endpoint does not exist");
 
     /**
      * error code.

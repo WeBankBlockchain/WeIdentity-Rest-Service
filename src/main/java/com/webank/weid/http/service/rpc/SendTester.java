@@ -19,59 +19,23 @@
 
 package com.webank.weid.http.service.rpc;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.request.EndpointRequest;
 
 public class SendTester {
 
     public static void main(String[] args) throws Exception {
         // Test direct send via client
-        String hostport = "127.0.1:6090";
+        String hostport = "127.0.1:6095";
         // need boot up server first
         RpcClient rpcClient = new RpcClient(hostport);
-        for (int i = 0; i < 2; i++) {
-            String uuid = rpcClient.send("Hello, Server!").getRespBody();
-            System.out.println(rpcClient.get(uuid));
-        }
-        List<String> list = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            String uuid = rpcClient.send(String.valueOf(i)).getRespBody();
-            list.add(uuid);
-            Thread.sleep(100);
-        }
-        for (String uuid: list) {
-            System.out.println(rpcClient.get(uuid));
-        }
-        System.out.println("RPC valid: " + rpcClient.isValid());
-        rpcClient.close();
-        System.out.println("RPC valid: " + rpcClient.isValid());
-        rpcClient.reconnect();
-        for (int i = 0; i < 2; i++) {
-            String uuid = rpcClient.send("Again, Server!").getRespBody();
-            System.out.println(rpcClient.get(uuid));
-        }
-        System.out.println("RPC valid: " + rpcClient.isValid());
-        rpcClient.close();
-
-        RpcConnectionHandler rpcConnectionHandler = RpcConnectionHandler.getInstance();
-        List<String> toAddrList = new ArrayList<>();
-        toAddrList.add(hostport);
-        toAddrList.add("127.0.0.1:6092");
         EndpointRequest endpointRequest = new EndpointRequest();
-        endpointRequest.setRequestName("abc");
-        endpointRequest.setRequestBody("test");
-        String uuid;
-        String result;
-        for (int i = 0; i < 10; i++) {
-            uuid = rpcConnectionHandler.randomSend(toAddrList, endpointRequest).getRespBody();
-            System.out.println(
-                "Round: " + i + ", Send req name: " + endpointRequest.getRequestName() + ", body: "
-                    + endpointRequest.getRequestBody() + ". uuid: " + uuid);
-            result = rpcConnectionHandler.get(uuid).getRespBody();
-            System.out.println("Round: " + i + ", Result: " + result + ". uuid: " + uuid);
-        }
+        endpointRequest.setRequestName(WeIdentityServiceEndpoint.FETCH_FUNCTION);
+        endpointRequest.setRequestBody("123");
+        String uuid = RpcConnectionHandler.send(hostport, endpointRequest).getRespBody();
+        String endpointInfoString = RpcConnectionHandler.get(uuid).getRespBody();
+        System.out.println(endpointInfoString);
+        RpcConnectionHandler.init();
     }
 
 }

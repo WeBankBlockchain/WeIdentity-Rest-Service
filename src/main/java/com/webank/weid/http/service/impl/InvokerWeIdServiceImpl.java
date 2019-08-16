@@ -195,35 +195,8 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 ResponseData<Boolean> responseSetAuth = weIdService
                     .setAuthentication(setAuthenticationArgs);
 
-                String errMsg = "";
-                List<EndpointInfo> endpointInfoList = EndpointDataUtil.getAllEndpointInfo();
-                for (EndpointInfo endpointInfo : endpointInfoList) {
-                    System.out.println(endpointInfo.toString());
-                    logger.info(endpointInfo.toString());
-                    errMsg = errMsg + endpointInfo.toString();
-                }
-                errMsg = errMsg + "xxxxxxx";
-                EndpointInfo newInfo = new EndpointInfo();
-                newInfo.setRequestName("remove-file");
-                newInfo.setInAddr(new ArrayList<>());
-                newInfo.setDescription("temp");
-                EndpointDataUtil.mergeToCentral(newInfo);
-                EndpointDataUtil.saveEndpointsToFile();
-                endpointInfoList = EndpointDataUtil.getAllEndpointInfo();
-                for (EndpointInfo endpointInfo : endpointInfoList) {
-                    System.out.println(endpointInfo.toString());
-                    logger.info(endpointInfo.toString());
-                    errMsg = errMsg + endpointInfo.toString();
-                }
-                errMsg = errMsg + "xxxxxxx";
-                EndpointDataUtil.removeEndpoint(newInfo);
-                for (EndpointInfo endpointInfo : endpointInfoList) {
-                    System.out.println(endpointInfo.toString());
-                    logger.info(endpointInfo.toString());
-                    errMsg = errMsg + endpointInfo.toString();
-                }
                 return new HttpResponseData<>(createWeIdDataResult.getWeId(),
-                    response.getErrorCode(), errMsg);
+                    responseSetAuth.getErrorCode(), responseSetAuth.getErrorMessage());
             } else {
                 return new HttpResponseData<>(null, response.getErrorCode(),
                     response.getErrorMessage());
