@@ -51,7 +51,7 @@ public class CredentialTest extends BaseTest {
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("cptId", "10");
         funcArgMap.put("issuer", "did:weid:0x865f29d2407e91a8be0d5811c6156b6f1c845f41");
-        funcArgMap.put("expirationDate", "2400-04-18T21:12:33Z");
+        funcArgMap.put("expirationDate", "2020-04-18T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
         claimMap.put("acc", "10001");
         claimMap.put("name", "ppp");
@@ -73,6 +73,7 @@ public class CredentialTest extends BaseTest {
         Map<String, Object> credMap = (Map<String, Object>) JsonUtil
             .jsonStrToObj(new HashMap<String, Object>(),
                 JsonUtil.mapToCompactJson((Map<String, Object>) resp1.getRespBody()));
+        System.out.println(credMap);
         String claimHash = credMap.get("claimHash").toString();
         credMap.remove("claimHash");
         Map<String, Object> credForSigMap = new HashMap<>(credMap);
