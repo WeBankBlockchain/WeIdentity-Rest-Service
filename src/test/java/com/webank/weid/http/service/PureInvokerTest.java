@@ -176,7 +176,7 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("cptId", cptId);
         funcArgMap.put("issuer", weId);
-        funcArgMap.put("expirationDate", "2500-01-01T21:12:33Z");
+        funcArgMap.put("expirationDate", "2021-01-01T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
         claimMap.put("account", "10000");
         claimMap.put("name", "Anon");
