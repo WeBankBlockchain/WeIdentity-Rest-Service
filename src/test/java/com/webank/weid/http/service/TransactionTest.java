@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -58,6 +59,11 @@ public class TransactionTest extends BaseTest {
     @Test
     public void TestWeIdAll() throws Exception {
 
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        if (fiscoConfig.getVersion().startsWith("2")) {
+            return;
+        }
         ECKeyPair ecKeyPair = Keys.createEcKeyPair();
         String newPublicKey = ecKeyPair.getPublicKey().toString();
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
@@ -124,6 +130,11 @@ public class TransactionTest extends BaseTest {
 
     @Test
     public void TestAuthorityIssuerAll() throws Exception {
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        if (fiscoConfig.getVersion().startsWith("2")) {
+            return;
+        }
         //step 1: create a WeID as the issuer
         String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
 
@@ -199,6 +210,11 @@ public class TransactionTest extends BaseTest {
 
     @Test
     public void TestCptAll() throws Exception {
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        if (fiscoConfig.getVersion().startsWith("2")) {
+            return;
+        }
         //step 1: create a WeID as the cpt creator (we let alone the authority issuer business)
         String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
         Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
