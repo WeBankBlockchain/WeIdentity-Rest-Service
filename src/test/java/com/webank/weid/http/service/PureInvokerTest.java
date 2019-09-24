@@ -100,8 +100,7 @@ public class PureInvokerTest extends BaseTest {
         // register authority Issuer (use SDK privkey, should succeed)
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", weId);
-        funcArgMap.put("name",
-            "id" + Math.round(Math.random() * 1000) + Math.round(Math.random() * 1000));
+        funcArgMap.put("name", "id" + System.currentTimeMillis());
         txnArgMap = new LinkedHashMap<>();
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
