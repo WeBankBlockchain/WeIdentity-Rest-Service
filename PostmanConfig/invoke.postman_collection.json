@@ -12,8 +12,8 @@
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
+						"type": "text",
+						"value": "application/json"
 					}
 				],
 				"body": {
@@ -49,7 +49,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"getWeIdDocument\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\"\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"getWeIdDocument\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -80,7 +80,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"cptJsonSchema\": {\n        \t\"title\": \"a CPT schema\"\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerCpt\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"cptJsonSchema\": {\n        \t\"weid\" : \"Delegator WeID\",\n        \t\"receiver\": \"Receiver WeID\",\n        \t\"content\": \"Authorized content\"\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerCpt\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -111,7 +111,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"cptId\": 2000019\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryCpt\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"cptId\": 1278\n    },\n    \"transactionArg\": {},\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryCpt\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -142,7 +142,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"name\": \"Sample College\"\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xffffffff\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerAuthorityIssuer\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"name\": \"Administration Office\"\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"ecdsa_key\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerAuthorityIssuer\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -173,7 +173,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryAuthorityIssuer\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\"\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"queryAuthorityIssuer\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -204,7 +204,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"issuer\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"cptId\": 2000019,\n        \"expirationDate\": \"2400-04-18T21:12:33Z\",\n        \"claim\": {\n            \"name\": \"zhang san\",\n            \"gender\": \"F\",\n            \"age\": 18\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"createCredential\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"issuer\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"cptId\": \"1278\",\n        \"expirationDate\": \"2500-04-18T21:12:33Z\",\n        \"claim\": {\n            \"weid\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n            \"receiver\": \"did:weid:0x7ed16eca3b0737227bc986dd0f2851f644cf4754\",\n            \"content\": \"b1016358-cf72-42be-9f4b-a18fca610fca\"\n        }\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"createCredential\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -235,7 +235,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"@context\": \"https://www.w3.org/2018/credentials/v1\",\n        \"claim\": {\n            \"age\": 18,\n            \"gender\": \"F\",\n            \"name\": \"zhang san\"\n        },\n        \"cptId\": 2000019,\n        \"expirationDate\": \"2400-04-18T21:12:33Z\",\n        \"id\": \"ae9d67a2-5b77-401e-b8b8-282e5429fc33\",\n        \"issuer\": \"did:weid:0xb435b94d56f6021867e572f6822a6f0fe07efc01\",\n        \"issuranceDate\": \"2019-04-02T18:57:47Z\",\n        \"signature\": \"HEb/aY4P7gYsuUXJAF6qQB9k5fHg8iOqwS0hfA2Pr+MneWa/8BzTSD8EpKCZTWGFXlfmwvoE4YbvW2x0dNkMOnY=\"\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"verifyCredential\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"@context\": \"https://github.com/WeBankFinTech/WeIdentity/blob/master/context/v1\",\n        \"claim\": {\n            \"content\": \"b1016358-cf72-42be-9f4b-a18fca610fca\",\n            \"receiver\": \"did:weid:0x7ed16eca3b0737227bc986dd0f2851f644cf4754\",\n            \"weid\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\"\n        },\n        \"cptId\": 1278,\n        \"expirationDate\": \"2500-04-18T21:12:33Z\",\n        \"id\": \"340cb28b-46e2-480a-abdf-b76959df00f1\",\n        \"issuanceDate\": \"2019-09-27T18:12:31Z\",\n        \"issuer\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"proof\": {\n            \"created\": \"1569579151000\",\n            \"creator\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n            \"signature\": \"HNTDfc0S1V5GyGKa7+HGSq56sWsVjr8QTa5c80DsoZcdSi3SGv3gc4JtAnC3fRmDmi6OTqINwykzSwBWzrVcsFU=\",\n            \"type\": \"EcdsaSignature\"\n        }\n    },\n    \"transactionArg\": {\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"verifyCredential\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
@@ -248,6 +248,64 @@
 						"weid",
 						"api",
 						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all endpoint",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/endpoint",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"endpoint"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Call endpoint",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"body\": \"abcabc\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/endpoint/duplicate-input",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"endpoint",
+						"duplicate-input"
 					]
 				}
 			},
