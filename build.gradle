@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.3.1"
+version = "1.4.0"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -92,7 +92,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.3.2'
+        'com.webank:weid-java-sdk:1.4.0'
 ]
 
 List pdfbox = [
