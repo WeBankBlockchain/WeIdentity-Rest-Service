@@ -22,10 +22,10 @@ datasource1.jdbc.minEvictableIdleTimeMillis=1800000
 # the second segment is the name of the table, and if not, the default is the first data source and the default table `sdk_all_data`,
 # Multiple domains can be configured at the same time.
 # example:
-# credential.domain=datasource1:credential_data
-# weidDocument.domain=datasource1:weid_document_data
+# domain.credential=datasource1:credential_data
+# domain.weidDocument=datasource1:weid_document_data
 
-default.domain=datasource1:sdk_all_data
+domain.default=datasource1:sdk_all_data
 
 # Salt length for Proof creation.
 salt.length=5
