@@ -34,7 +34,7 @@ repositories {
 }
 
 List lombok = [
-        'org.projectlombok:lombok:1.16.14'
+        'org.projectlombok:lombok:1.18.10'
 ]
 
 List logger = [
