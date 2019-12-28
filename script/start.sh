@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # get JAVA_HOME conf from server.env
 #TEMP_JAVA_HOME=`cat server.env | grep JAVA_HOME | cut -d':' -f4`
@@ -26,7 +26,7 @@ getTradeProtalPID(){
     fi
 }
 
-JAVA_OPTS=" -Dfile.encoding=UTF-8"
+JAVA_OPTS=" -Dfile.encoding=UTF-8 -Djdk.tls.namedGroups=\"secp256r1,secp256k1\""
 JAVA_OPTS+=" -Dlog4j.configurationfile=${CONF_DIR}/log4j2.xml -Dindex.log.home=${LOG_DIR} -Dconfig=${CONF_DIR}/"
 JAVA_OPTS+=" -server -Xmx1024m -Xms1024m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=128m -XX:MaxPermSize=128m"
 JAVA_OPTS+=" -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection -XX:CMSInitiatingOccupancyFraction=70"
