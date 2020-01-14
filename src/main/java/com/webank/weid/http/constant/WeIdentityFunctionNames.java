@@ -40,6 +40,8 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_GET_WEID_DOCUMENT_JSON = "getWeIdDocumentJson";
     public static final String FUNCNAME_QUERY_AUTHORITY_ISSUER = "queryAuthorityIssuer";
     public static final String FUNCNAME_QUERY_CPT = "queryCpt";
+    public static final String FUNCNAME_CREATE_CREDENTIALPOJO = "createCredentialPojo";
+    public static final String FUNCNAME_VERIFY_CREDENTIALPOJO = "verifyCredentialPojo";
 
     /**
      * Function names to be assembled in SDK Function call. Case sensitive.
