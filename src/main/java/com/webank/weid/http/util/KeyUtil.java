@@ -19,15 +19,22 @@
 
 package com.webank.weid.http.util;
 
+import com.webank.weid.protocol.base.WeIdAuthentication;
+import com.webank.weid.protocol.base.WeIdPrivateKey;
+import com.webank.weid.util.WeIdUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.abi.datatypes.Address;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
+import org.fisco.bcos.web3j.crypto.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +61,7 @@ public class KeyUtil {
     private static final String SLASH_CHARACTER = "/";
 
     /**
-     * this method stores weId private key information by file and stores private key information by
-     * itself in actual scene.
+     * this method stores weId private key information by file and stores private key information by itself in actual scene.
      *
      * @param path save path
      * @param weId the weId
@@ -210,5 +216,42 @@ public class KeyUtil {
             }
         }
         return StringUtils.EMPTY;
+    }
+
+    /**
+     * Build a default WeIdAuthentication from passed-in private key.
+     *
+     * @param privateKey the private key in String
+     * @return weIdAuthentication
+     */
+    public static WeIdAuthentication buildWeIdAuthenticationFromPrivKey(String privateKey) {
+        if (StringUtils.isBlank(privateKey) || !isPrivateKeyLengthValid(privateKey)) {
+            logger.error("Private key format or size illegal.");
+            return null;
+        }
+        ECKeyPair keyPair = ECKeyPair.create(new BigInteger(privateKey));
+        String keyWeId = WeIdUtils
+            .convertAddressToWeId(new Address(Keys.getAddress(keyPair)).toString());
+        WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
+        weIdAuthentication.setWeId(keyWeId);
+        weIdAuthentication.setWeIdPublicKeyId(keyWeId + "#keys-0");
+        WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
+        weIdPrivateKey.setPrivateKey(privateKey);
+        weIdAuthentication.setWeIdPrivateKey(weIdPrivateKey);
+        return weIdAuthentication;
+    }
+
+    public static boolean isPrivateKeyLengthValid(String privateKey) {
+        if (StringUtils.isBlank(privateKey)) {
+            return false;
+        }
+        WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
+        weIdPrivateKey.setPrivateKey(privateKey);
+        if (WeIdUtils.isPrivateKeyValid(weIdPrivateKey)) {
+            BigInteger privKeyBig = new BigInteger(privateKey, 10);
+            BigInteger MAX_PRIVKEY_VALUE = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
+            return (privKeyBig.compareTo(MAX_PRIVKEY_VALUE) <= 0);
+        }
+        return false;
     }
 }

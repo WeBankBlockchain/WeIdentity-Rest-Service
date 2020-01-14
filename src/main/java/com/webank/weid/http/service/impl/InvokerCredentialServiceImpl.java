@@ -20,6 +20,13 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.base.WeIdAuthentication;
+import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
+import com.webank.weid.rpc.CredentialPojoService;
+import com.webank.weid.service.impl.CredentialPojoServiceImpl;
+import com.webank.weid.util.CredentialPojoUtils;
+import com.webank.weid.util.DataToolUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,14 +65,16 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
     private Logger logger = LoggerFactory.getLogger(InvokerCredentialServiceImpl.class);
 
     private CredentialService credentialService = new CredentialServiceImpl();
+    private CredentialPojoService credentialPojoService = new CredentialPojoServiceImpl();
 
     /**
-     * Generate a credential for client to sign. The signature field is null, and both full claim
-     * and claimHash will be returned. The returned json String is an key-ordered compact json.
+     * Generate a credential for client to sign. The signature field is null, and both full claim and claimHash will be returned. The returned json
+     * String is an key-ordered compact json.
      *
      * @param createCredentialFuncArgs the functionArgs
      * @return the Map contains Credential content and claimHash.
      */
+    @Override
     public HttpResponseData<Object> createCredentialInvoke(
         InputArg createCredentialFuncArgs) {
         try {
@@ -150,7 +159,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 // this is the server-hosting privkey approach
                 String privateKey = KeyUtil
                     .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
-                if (StringUtils.isEmpty(privateKey)) {
+                if (!KeyUtil.isPrivateKeyLengthValid(privateKey)) {
                     return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
                 }
                 Map<String, String> credentialProof = CredentialUtils
@@ -185,6 +194,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
      * @param verifyCredentialFuncArgs the credential json args
      * @return the Boolean response data
      */
+    @Override
     public HttpResponseData<Object> verifyCredentialInvoke(InputArg verifyCredentialFuncArgs) {
         Credential credential = null;
         try {
@@ -217,6 +227,125 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         } catch (Exception e) {
             logger.error("[verifyCredentialInvoke]: SDK error. reqCredentialArgs:{}",
                 verifyCredentialFuncArgs,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> createCredentialPojoInvoke(InputArg createCredentialPojoFuncArgs) {
+        JsonNode cptIdNode;
+        JsonNode issuerNode;
+        JsonNode expirationDateNode;
+        JsonNode claimNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(createCredentialPojoFuncArgs.getFunctionArg());
+            cptIdNode = functionArgNode.get(ParamKeyConstant.CPT_ID);
+            issuerNode = functionArgNode.get(ParamKeyConstant.ISSUER);
+            expirationDateNode = functionArgNode.get(ParamKeyConstant.EXPIRATION_DATE);
+            claimNode = functionArgNode.get(ParamKeyConstant.CLAIM);
+            if (cptIdNode == null || StringUtils.isEmpty(cptIdNode.toString())
+                || issuerNode == null || StringUtils.isEmpty(issuerNode.textValue())
+                || expirationDateNode == null || StringUtils.isEmpty(expirationDateNode.textValue())
+                || claimNode == null || StringUtils.isEmpty(claimNode.toString())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+        } catch (Exception e) {
+            logger.error("[createCredentialPojoInvoke]: input args error: {}", createCredentialPojoFuncArgs, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+
+        Integer cptId;
+        try {
+            cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+        } catch (Exception e) {
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+
+        Long expirationDate;
+        try {
+            expirationDate = DateUtils
+                .convertUtcDateToTimeStamp(expirationDateNode.textValue());
+        } catch (Exception e) {
+            return new HttpResponseData<>(null,
+                ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
+                ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
+        }
+
+        CredentialPojo credential = new CredentialPojo();
+        credential.setId(UUID.randomUUID().toString());
+        credential.setCptId(cptId);
+        credential.setIssuer(issuerNode.textValue());
+        credential.setExpirationDate(expirationDate);
+        credential.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
+        credential.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
+        Map<String, Object> claimMap;
+        try {
+            claimMap = (Map<String, Object>) JsonUtil
+                .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+        } catch (Exception e) {
+            return new HttpResponseData<>(null,
+                ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+        }
+        credential.setClaim(claimMap);
+
+        WeIdAuthentication weIdAuthentication;
+        try {
+            JsonNode txnArgNode = new ObjectMapper().readTree(createCredentialPojoFuncArgs.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            String privateKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            weIdAuthentication = KeyUtil.buildWeIdAuthenticationFromPrivKey(privateKey);
+            if (weIdAuthentication == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+        } catch (Exception e) {
+            return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS.getCode(),
+                ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS.getCodeDesc());
+        }
+
+        // Client-side check of validity
+        CreateCredentialPojoArgs createArg = new CreateCredentialPojoArgs();
+        createArg.setClaim(claimMap);
+        createArg.setCptId(cptId);
+        createArg.setIssuer(issuerNode.textValue());
+        createArg.setIssuanceDate(credential.getIssuanceDate());
+        createArg.setExpirationDate(expirationDate);
+        createArg.setContext(credential.getContext());
+        createArg.setId(credential.getId());
+        createArg.setWeIdAuthentication(weIdAuthentication);
+        ErrorCode errorCode = CredentialPojoUtils.isCreateCredentialPojoArgsValid(createArg);
+        if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
+            return new HttpResponseData<>(null, errorCode.getCode(),
+                errorCode.getCodeDesc());
+        }
+        ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(createArg);
+        // TODO unify with Credential
+        Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(),
+            DataToolUtils.serialize(createResp.getResult()));
+        return new HttpResponseData<>(credMap, createResp.getErrorCode(), createResp.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Boolean> verifyCredentialPojoInvoke(InputArg verifyCredentialPojoFuncArgs) {
+        CredentialPojo credential;
+        try {
+            credential = DataToolUtils.deserialize(verifyCredentialPojoFuncArgs.getFunctionArg(), CredentialPojo.class);
+        } catch (Exception e) {
+            logger.error("Input credential format illegal: {}", verifyCredentialPojoFuncArgs);
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc().concat(e.getMessage()));
+        }
+        try {
+            ResponseData<Boolean> responseData = credentialPojoService.verify(credential.getIssuer(), credential);
+            return new HttpResponseData<>(responseData.getResult(),
+                responseData.getErrorCode(), responseData.getErrorMessage());
+        } catch (Exception e) {
+            logger.error("[verifyCredentialInvoke]: SDK error. reqCredentialArgs:{}",
+                verifyCredentialPojoFuncArgs,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));

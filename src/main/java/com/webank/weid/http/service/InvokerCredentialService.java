@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.protocol.base.CredentialPojo;
 import org.springframework.stereotype.Service;
 
 import com.webank.weid.http.protocol.request.InputArg;
@@ -43,4 +44,20 @@ public interface InvokerCredentialService {
      * @return the Boolean response data
      */
     HttpResponseData<Object> verifyCredentialInvoke(InputArg verifyCredentialFuncArgs);
+
+    /**
+     * Create Credential Pojo. Need format conversion.
+     *
+     * @param createCredentialPojoFuncArgs
+     * @return credentialpojo
+     */
+    HttpResponseData<Object> createCredentialPojoInvoke(InputArg createCredentialPojoFuncArgs);
+
+    /**
+     * Verify the validity of a Credential Pojo. Need format conversion.
+     *
+     * @param verifyCredentialPojoFuncArgs
+     * @return boolean
+     */
+    HttpResponseData<Boolean> verifyCredentialPojoInvoke(InputArg verifyCredentialPojoFuncArgs);
 }
