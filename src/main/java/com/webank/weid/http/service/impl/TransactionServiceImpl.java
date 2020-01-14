@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2019) WeBank Co., Ltd.
+ *       Copyright© (2019-2020) WeBank Co., Ltd.
  *
  *       This file is part of weid-http-service.
  *
@@ -21,6 +21,7 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.protocol.base.CredentialPojo;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
 import org.slf4j.Logger;
@@ -69,6 +70,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
      * params into SDK readable format to send there; apiVersion is for extensibility purpose.
      * @return encoded transaction in Base64 format, and the data segment in RawTransaction.
      */
+    @Override
     public HttpResponseData<Object> encodeTransaction(
         String encodeTransactionJsonArgs) {
         try {
@@ -139,6 +141,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
      * (including all business related params), transactionArgs, functionName and apiVersion.
      * @return the json string from SDK response.
      */
+    @Override
     public HttpResponseData<Object> sendTransaction(String sendTransactionJsonArgs) {
         try {
             HttpResponseData<InputArg> resp = TransactionEncoderUtil
@@ -240,6 +243,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
      * (including all business related params), EMPTY transactionArgs, functionName and apiVersion.
      * @return the json string from SDK response.
      */
+    @Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {
         HttpResponseData<InputArg> resp = TransactionEncoderUtil
             .buildInputArg(invokeFunctionJsonArgs);
@@ -253,8 +257,15 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIAL)) {
                 return invokerCredentialService.createCredentialInvoke(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO)) {
+                return invokerCredentialService.createCredentialPojoInvoke(inputArg);
+            }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIAL)) {
                 return invokerCredentialService.verifyCredentialInvoke(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIALPOJO)) {
+                HttpResponseData<Boolean> respData = invokerCredentialService.verifyCredentialPojoInvoke(inputArg);
+                return new HttpResponseData<>(respData.getRespBody(), respData.getErrorCode(), respData.getErrorMessage());
             }
             if (functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_QUERY_AUTHORITY_ISSUER)) {

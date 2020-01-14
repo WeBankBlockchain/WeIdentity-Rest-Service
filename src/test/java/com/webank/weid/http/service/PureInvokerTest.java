@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.protocol.base.CredentialPojo;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -207,6 +208,36 @@ public class PureInvokerTest extends BaseTest {
         HttpResponseData<Object> resp9 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp9));
-        Assert.assertNotNull(resp9.getRespBody());
+        Assert.assertTrue((Boolean) resp9.getRespBody());
+
+        // create credentialPojo using the same cpt id
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO);
+        HttpResponseData<Object> resp10 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp10));
+        Assert.assertNotNull(resp10.getRespBody());
+
+        // verify credentialPojo
+        credJsonMap = (Map<String, Object>) resp10.getRespBody();
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, credJsonMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIALPOJO);
+        HttpResponseData<Object> resp11 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp11));
+        Assert.assertTrue((Boolean) resp11.getRespBody());
     }
 }
