@@ -11,8 +11,8 @@ evidence.contractaddress=${EVIDENCE_ADDRESS}
 specificissuer.contractaddress=${SPECIFICISSUER_ADDRESS}
 
 # blockchain connection params
-chain.id=101
-web3sdk.timeout=10000
+chain.id=1
+web3sdk.timeout=20000
 web3sdk.core-pool-size=100
 web3sdk.max-pool-size=200
 web3sdk.queue-capacity=1000
