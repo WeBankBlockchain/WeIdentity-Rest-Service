@@ -44,6 +44,14 @@ public final class WeIdentityServiceEndpoint {
     public static final String FETCH_FUNCTION = "auto-fetch";
 
     /**
+     * Data-Authorization related endpoints.
+     */
+    public static final String AUTHO_ROOT = "authorize";
+    public static final String AUTHO_FETCH_DATA = "fetch-data";
+    public static final String AUTHO_REQUEST_TOKEN = "request-token";
+    public static final String AUTHO_DEFAULT_FETCH_REQ_NAME = "fetch-authorized-data";
+
+    /**
      * Separator.
      */
     public static final String EPS_SEPARATOR = "|||";

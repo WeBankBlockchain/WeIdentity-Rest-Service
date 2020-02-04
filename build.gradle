@@ -92,7 +92,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.4.0'
+        'com.webank:weid-java-sdk:1.5.0'
 ]
 
 List pdfbox = [
@@ -118,12 +118,13 @@ dependencies {
         compile weid_java_sdk
         testCompile weid_java_sdk
     }
-    compile("com.webank:weid-contract-java:1.2.9") {
+    compile("com.webank:weid-contract-java:1.2.12") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
-    testCompile("com.webank:weid-contract-java:1.2.9") {
+    testCompile("com.webank:weid-contract-java:1.2.12") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
+    compile files("lib/WeDPR-Java-SDK.jar")
     if (gradleVer.startsWith("4")) {
         compile lombok
         testCompile lombok
