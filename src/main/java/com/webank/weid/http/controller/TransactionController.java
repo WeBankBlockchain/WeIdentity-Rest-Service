@@ -19,6 +19,9 @@
 
 package com.webank.weid.http.controller;
 
+import com.webank.weid.http.service.AuthService;
+import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.util.DataToolUtils;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,6 +58,9 @@ public class TransactionController {
 
     @Autowired
     private EndpointService endpointService;
+
+    @Autowired
+    private AuthService authService;
 
     /**
      * Create an Encoded Transaction.
@@ -147,5 +153,57 @@ public class TransactionController {
         + "/{endpoint}", method = RequestMethod.GET)
     public HttpResponseData<EndpointInfo> invokeEndpointService(@PathVariable String endpointName) {
         return endpointService.getEndpoint(endpointName);
+    }
+
+    /**
+     * Fetch data from other endpoint.
+     *
+     * @return data in String
+     */
+    @RequestMapping(value = WeIdentityServiceEndpoint.AUTHO_ROOT
+        + WeIdentityServiceEndpoint.AUTHO_FETCH_DATA, method = RequestMethod.POST)
+    public HttpResponseData<String> authFetchData(@RequestBody String requestBody) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(requestBody);
+            if (jsonNode == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode authTokenNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_TOKEN);
+            if (authTokenNode == null || StringUtils.isEmpty(authTokenNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.textValue(),
+                CredentialPojo.class);
+            JsonNode signedNonceNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_SIGNED_NONCE);
+            if (signedNonceNode == null || StringUtils.isEmpty(signedNonceNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String signedNonce = signedNonceNode.textValue();
+            return authService.fetchData(authToken, signedNonce);
+        } catch (Exception e) {
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
+        }
+    }
+
+    @RequestMapping(value = WeIdentityServiceEndpoint.AUTHO_ROOT
+        + WeIdentityServiceEndpoint.AUTHO_REQUEST_TOKEN, method = RequestMethod.POST)
+    public HttpResponseData<String> authRequestToken(@RequestBody String requestBody) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(requestBody);
+            if (jsonNode == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode authTokenNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_TOKEN);
+            if (authTokenNode == null || StringUtils.isEmpty(authTokenNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.textValue(),
+                CredentialPojo.class);
+            return authService.requestNonce(authToken);
+        } catch (Exception e) {
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
+        }
     }
 }
