@@ -19,8 +19,10 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.protocol.base.CredentialPojo;
 import java.math.BigInteger;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
