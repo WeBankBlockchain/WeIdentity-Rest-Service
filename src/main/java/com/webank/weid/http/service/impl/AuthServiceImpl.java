@@ -14,6 +14,7 @@ import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;
+import java.net.URI;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -68,15 +69,33 @@ public class AuthServiceImpl extends BaseService implements AuthService {
         */
         // verify III: check serviceUrl exists in this local registered endpoints
         String serviceUrl = (String) authToken.getClaim().get("serviceUrl");
+        String hostname;
+        Integer port;
+        String endpointName;
+        try {
+            URI uri = new URI(serviceUrl);
+            hostname = uri.getHost();
+            port = uri.getPort();
+            String path = uri.getPath();
+            if (StringUtils.isEmpty(hostname) || StringUtils.isEmpty(path) || port < 0) {
+                logger.error("Service URL illegal: {}", serviceUrl);
+                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
+            }
+            // Truncate the first slash
+            endpointName = path.substring(1);
+        } catch (Exception e) {
+            logger.error("Service URL illegal: {}", serviceUrl);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
+        }
+        String endpointInAddr = hostname + port.toString();
         EndpointDataUtil.loadAllEndpointInfoFromProps();
         List<EndpointInfo> allEndpoints = EndpointDataUtil.getAllEndpointInfo();
         boolean found = false;
         for (EndpointInfo endpointInfo : allEndpoints) {
-            if (WeIdentityServiceEndpoint.AUTHO_DEFAULT_FETCH_REQ_NAME
-                .equalsIgnoreCase(endpointInfo.getRequestName())) {
+            if (endpointName.equalsIgnoreCase(endpointInfo.getRequestName())) {
                 List<String> inAddrs = endpointInfo.getInAddr();
                 for (String inAddr : inAddrs) {
-                    if (inAddr.equalsIgnoreCase(serviceUrl)) {
+                    if (inAddr.equalsIgnoreCase(endpointInAddr)) {
                         found = true;
                         break;
                     }
@@ -91,7 +110,7 @@ public class AuthServiceImpl extends BaseService implements AuthService {
         }
         // Final: invoke endpoint via provided resourceId
         EndpointRequest endpointRequest = new EndpointRequest();
-        endpointRequest.setRequestName(WeIdentityServiceEndpoint.AUTHO_DEFAULT_FETCH_REQ_NAME);
+        endpointRequest.setRequestName(endpointName);
         endpointRequest.setRequestBody((String) authToken.getClaim().get("resourceId"));
 
         try {
