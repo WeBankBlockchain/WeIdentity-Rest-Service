@@ -1,7 +1,6 @@
 package com.webank.weid.http.service.impl;
 
 import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.request.EndpointRequest;
 import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
@@ -67,7 +66,7 @@ public class AuthServiceImpl extends BaseService implements AuthService {
             return new ResponseData<>(false, errorCode);
         }
         */
-        // verify III: check serviceUrl exists in this local registered endpoints
+        // verify III: check if serviceUrl exists in this local registered endpoints
         String serviceUrl = (String) authToken.getClaim().get("serviceUrl");
         String hostname;
         Integer port;
@@ -87,14 +86,17 @@ public class AuthServiceImpl extends BaseService implements AuthService {
             logger.error("Service URL illegal: {}", serviceUrl);
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
         }
-        String endpointInAddr = hostname + port.toString();
+        String endpointInAddr = hostname + ":" + port.toString();
+        logger.debug("The Endpoint to fetch is {} and the endpointName is {}", endpointInAddr, endpointName);
         EndpointDataUtil.loadAllEndpointInfoFromProps();
         List<EndpointInfo> allEndpoints = EndpointDataUtil.getAllEndpointInfo();
         boolean found = false;
         for (EndpointInfo endpointInfo : allEndpoints) {
+            logger.debug("Endpoint name to-check is {}", endpointInfo.getRequestName());
             if (endpointName.equalsIgnoreCase(endpointInfo.getRequestName())) {
                 List<String> inAddrs = endpointInfo.getInAddr();
                 for (String inAddr : inAddrs) {
+                    logger.debug("endpoint addr to-check is {}", endpointInAddr);
                     if (inAddr.equalsIgnoreCase(endpointInAddr)) {
                         found = true;
                         break;
@@ -115,7 +117,7 @@ public class AuthServiceImpl extends BaseService implements AuthService {
 
         try {
             String uuid = RpcConnectionHandler
-                .send(serviceUrl, endpointRequest).getRespBody();
+                .send(endpointInAddr, endpointRequest).getRespBody();
             if (StringUtils.isEmpty(uuid)) {
                 return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL);
             }
