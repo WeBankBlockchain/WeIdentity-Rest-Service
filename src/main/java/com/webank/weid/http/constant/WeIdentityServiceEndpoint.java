@@ -48,7 +48,7 @@ public final class WeIdentityServiceEndpoint {
      */
     public static final String AUTHO_ROOT = "authorize";
     public static final String AUTHO_FETCH_DATA = "fetch-data";
-    public static final String AUTHO_REQUEST_TOKEN = "request-token";
+    public static final String AUTHO_REQUEST_NONCE = "request-nonce";
 
     /**
      * Separator.

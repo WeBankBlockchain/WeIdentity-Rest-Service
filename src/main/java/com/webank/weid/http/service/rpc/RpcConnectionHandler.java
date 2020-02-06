@@ -102,7 +102,7 @@ public class RpcConnectionHandler {
                 return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.RPC_GET_FAIL);
             }
         } catch (Exception e) {
-            logger.error("Failed to send to remote server: ", hostport);
+            logger.debug("Failed to send to remote server: ", hostport);
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.RPC_SEND_FAIL);
         }
     }
