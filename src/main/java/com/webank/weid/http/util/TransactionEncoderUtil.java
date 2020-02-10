@@ -19,17 +19,23 @@
 
 package com.webank.weid.http.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.request.InputArg;
+import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.TransactionUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.abi.FunctionEncoder;
 import org.bcos.web3j.abi.datatypes.Function;
@@ -45,22 +51,8 @@ import org.bcos.web3j.rlp.RlpType;
 import org.bcos.web3j.utils.Bytes;
 import org.bcos.web3j.utils.Numeric;
 import org.bouncycastle.util.encoders.Hex;
-import org.fisco.bcos.web3j.crypto.Credentials;
-import org.fisco.bcos.web3j.crypto.ExtendedRawTransaction;
-import org.fisco.bcos.web3j.crypto.ExtendedTransactionEncoder;
-import org.fisco.bcos.web3j.crypto.Sign;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.http.constant.WeIdentityFunctionNames;
-import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
-import com.webank.weid.http.protocol.request.InputArg;
-import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
-import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.TransactionUtils;
 
 /**
  * Handling all tasks related to encoding and sending transactions.
@@ -70,6 +62,20 @@ import com.webank.weid.util.TransactionUtils;
 public class TransactionEncoderUtil {
 
     private static Logger logger = LoggerFactory.getLogger(TransactionEncoderUtil.class);
+
+    public static boolean isFiscoBcosV1() {
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        if (fiscoConfig.getVersion().startsWith("1")) {
+            return true;
+        }
+        return false;
+    }
+
+    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
+        RawTransaction rawTransaction = TransactionEncoderUtil.buildRawTransaction(nonce, data, to);
+        return TransactionEncoderUtil.getTransactionHex(rawTransaction, encodedSig);
+    }
 
     /**
      * Create an Encoded Transaction for registerCpt.
@@ -189,12 +195,6 @@ public class TransactionEncoderUtil {
         return TransactionUtils.getNonce();
     }
 
-    public static BigInteger getV2Nonce() {
-        Random r = new SecureRandom();
-        BigInteger randomid = new BigInteger(250, r);
-        return randomid;
-    }
-
     /**
      * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires the previous rawTransaction and the signed
      * Message from client side.
@@ -212,67 +212,6 @@ public class TransactionEncoderUtil {
             DataToolUtils.simpleSignatureDeserialization(
                 DataToolUtils.base64Decode(signedMessage.getBytes(StandardCharsets.UTF_8))));
         return Hex.toHexString(encodedSignedMessage);
-    }
-
-    public static byte[] encodeV2(ExtendedRawTransaction rawTransaction) {
-        return encode(rawTransaction, null);
-    }
-
-    public static byte[] encode(
-        ExtendedRawTransaction rawTransaction, Sign.SignatureData signatureData) {
-        List<org.fisco.bcos.web3j.rlp.RlpType> values = asRlpValues(rawTransaction, signatureData);
-        org.fisco.bcos.web3j.rlp.RlpList rlpList = new org.fisco.bcos.web3j.rlp.RlpList(values);
-        return org.fisco.bcos.web3j.rlp.RlpEncoder.encode(rlpList);
-    }
-
-    static List<org.fisco.bcos.web3j.rlp.RlpType> asRlpValues(
-        ExtendedRawTransaction rawTransaction, Sign.SignatureData signatureData) {
-        List<org.fisco.bcos.web3j.rlp.RlpType> result = new ArrayList<>();
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getRandomid()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGasPrice()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGasLimit()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getBlockLimit()));
-        // an empty to address (contract creation) should not be encoded as a numeric 0 value
-        String to = rawTransaction.getTo();
-        if (to != null && to.length() > 0) {
-            // addresses that start with zeros should be encoded with the zeros included, not
-            // as numeric values
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(to)));
-        } else {
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(""));
-        }
-
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getValue()));
-
-        // value field will already be hex encoded, so we need to convert into binary first
-        byte[] data = org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(rawTransaction.getData());
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(data));
-
-        // add extra data!!!
-
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getFiscoChainId()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGroupId()));
-        if (rawTransaction.getExtraData() == null) {
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(""));
-        } else {
-            result.add(
-                org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(rawTransaction.getExtraData())));
-        }
-        if (signatureData != null) {
-            if (org.fisco.bcos.web3j.crypto.EncryptType.encryptType == 1) {
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getPub())));
-                // logger.debug("RLP-Pub:{},RLP-PubLen:{}",Hex.toHexString(signatureData.getPub()),signatureData.getPub().length);
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())));
-                // logger.debug("RLP-R:{},RLP-RLen:{}",Hex.toHexString(signatureData.getR()),signatureData.getR().length);
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
-                // logger.debug("RLP-S:{},RLP-SLen:{}",Hex.toHexString(signatureData.getS()),signatureData.getS().length);
-            } else {
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(signatureData.getV()));
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())));
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
-            }
-        }
-        return result;
     }
 
     /**
@@ -295,21 +234,6 @@ public class TransactionEncoderUtil {
             false);
     }
 
-    public static ExtendedRawTransaction buildRawTransactionV2(String nonce, String groupId, BigInteger blocklimit, String data, String to) {
-        ExtendedRawTransaction rawTransaction =
-            ExtendedRawTransaction.createTransaction(
-                new BigInteger(nonce),
-                new BigInteger("99999999999"),
-                new BigInteger("99999999999"),
-                blocklimit,
-                to,
-                BigInteger.ZERO,
-                data,
-                BigInteger.ONE, //chainId
-                new BigInteger(groupId),
-                null);
-        return rawTransaction;
-    }
 
     /**
      * Extract and build Input arg for all Service APIs.
@@ -428,7 +352,7 @@ public class TransactionEncoderUtil {
      * @param data the input rawTransaction's data
      * @return Json String, a wrapper including both Base64 encodes, and the rawTransaction
      */
-    private static String getEncodeOutput(byte[] encodedTransaction, String data) {
+    public static String getEncodeOutput(byte[] encodedTransaction, String data) {
         String base64EncodedTransaction = base64Encode(encodedTransaction);
         EncodedTransactionWrapper encodedTransactionWrapper = new EncodedTransactionWrapper();
         encodedTransactionWrapper.setEncodedTransaction(base64EncodedTransaction);
