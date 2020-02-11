@@ -95,31 +95,36 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             String functionName = inputArg.getFunctionName();
             String functionArg = inputArg.getFunctionArg();
             HttpResponseData<String> httpResponseData;
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            if (TransactionEncoderUtil.isFiscoBcosV1()) {
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                     httpResponseData = TransactionEncoderUtil
                         .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
-                } else {
-                    httpResponseData = TransactionEncoderUtilV2
-                        .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
                 }
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                httpResponseData = TransactionEncoderUtil
-                    .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                httpResponseData = TransactionEncoderUtil
-                    .registerCptEncoder(functionArg, nonce, config.getCptAddress());
+                if (functionName
+                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                    httpResponseData = TransactionEncoderUtil
+                        .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
+                    httpResponseData = TransactionEncoderUtil
+                        .registerCptEncoder(functionArg, nonce, config.getCptAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+            } else {
+                // is FISCO-BCOS v2 blockchain
+                httpResponseData = TransactionEncoderUtilV2
+                    .createEncoder(functionArg, nonce, functionName);
                 return new HttpResponseData<>(
                     JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
@@ -182,46 +187,65 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
-            HttpResponseData<String> httpResponseData;
+            HttpResponseData<String> httpResponseData =
+                new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             String txnHex;
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            if (TransactionEncoderUtil.isFiscoBcosV1()) {
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+                        txnHex = TransactionEncoderUtil
+                            .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+                if (functionName
+                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                     txnHex = TransactionEncoderUtil
-                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
-                } else {
+                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerAuthorityIssuerService
+                        .registerAuthorityIssuerWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
+                    txnHex = TransactionEncoderUtil
+                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+            } else { // is FISCO-BCOS v2
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                     txnHex = TransactionEncoderUtilV2
                         .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
+                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
                 }
-                if (StringUtils.isEmpty(txnHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                    txnHex = TransactionEncoderUtilV2
+                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
+                    httpResponseData = invokerAuthorityIssuerService
+                        .registerAuthorityIssuerWithTransactionHex(txnHex);
                 }
-                httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                txnHex = TransactionEncoderUtil
-                    .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
-                if (StringUtils.isEmpty(txnHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+                    txnHex = TransactionEncoderUtilV2
+                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
+                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
                 }
-                httpResponseData = invokerAuthorityIssuerService
-                    .registerAuthorityIssuerWithTransactionHex(txnHex);
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                txnHex = TransactionEncoderUtil
-                    .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
-                if (StringUtils.isEmpty(txnHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
-                }
-                httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
                 return new HttpResponseData<>(
                     JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
