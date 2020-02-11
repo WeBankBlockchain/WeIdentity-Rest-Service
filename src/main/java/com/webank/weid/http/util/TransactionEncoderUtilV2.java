@@ -1,18 +1,26 @@
 package com.webank.weid.http.util;
 
+import static com.webank.weid.service.impl.CredentialPojoServiceImpl.generateSalt;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.constant.CredentialConstant;
+import com.webank.weid.constant.CredentialConstant.CredentialProofType;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.exception.WeIdBaseException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
 import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.service.BaseService;
+import com.webank.weid.util.CredentialPojoUtils;
+import com.webank.weid.util.CredentialUtils;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.TransactionUtils;
@@ -29,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.utils.Numeric;
 import org.fisco.bcos.web3j.abi.FunctionEncoder;
@@ -426,5 +435,123 @@ public class TransactionEncoderUtilV2 {
             System.out.println();
         }
         return receiptOptional;
+    }
+
+
+    /**
+     * Encode Credential to client side for further signing. The raw data will be put into the signature part.
+     *
+     * @param createCredentialPojoFuncArgs createCredentialPojo args
+     * @return encodedCredential with rawData supplied in the signature
+     */
+    public static HttpResponseData<Object> encodeCredential(InputArg createCredentialPojoFuncArgs) {
+        try {
+            JsonNode cptIdNode;
+            JsonNode issuerNode;
+            JsonNode expirationDateNode;
+            JsonNode claimNode;
+            // build createCredentialPojoArgs
+            try {
+                JsonNode functionArgNode = new ObjectMapper()
+                    .readTree(createCredentialPojoFuncArgs.getFunctionArg());
+                cptIdNode = functionArgNode.get(ParamKeyConstant.CPT_ID);
+                issuerNode = functionArgNode.get(ParamKeyConstant.ISSUER);
+                expirationDateNode = functionArgNode.get(ParamKeyConstant.EXPIRATION_DATE);
+                claimNode = functionArgNode.get(ParamKeyConstant.CLAIM);
+                if (cptIdNode == null || StringUtils.isEmpty(cptIdNode.toString())
+                    || issuerNode == null || StringUtils.isEmpty(issuerNode.textValue())
+                    || expirationDateNode == null || StringUtils.isEmpty(expirationDateNode.textValue())
+                    || claimNode == null || StringUtils.isEmpty(claimNode.toString())) {
+                    return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+                }
+            } catch (Exception e) {
+                logger.error("[createCredentialPojoInvoke]: input args error: {}", createCredentialPojoFuncArgs, e);
+                return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+            }
+            Integer cptId;
+            try {
+                cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+            } catch (Exception e) {
+                return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+            }
+            Long expirationDate;
+            try {
+                expirationDate = DateUtils
+                    .convertUtcDateToTimeStamp(expirationDateNode.textValue());
+            } catch (Exception e) {
+                return new HttpResponseData<>(null,
+                    ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
+            }
+            CreateCredentialPojoArgs args = new CreateCredentialPojoArgs();
+            args.setExpirationDate(expirationDate);
+            args.setCptId(cptId);
+            args.setIssuer(issuerNode.textValue());
+            Map<String, Object> claimMap;
+            try {
+                claimMap = (HashMap<String, Object>) JsonUtil
+                    .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+            } catch (Exception e) {
+                return new HttpResponseData<>(null,
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+            }
+            args.setClaim(claimMap);
+
+            // Create CredentialPojo
+            CredentialPojo result = new CredentialPojo();
+            String context = CredentialUtils.getDefaultCredentialContext();
+            result.setContext(context);
+            if (StringUtils.isBlank(args.getId())) {
+                result.setId(UUID.randomUUID().toString());
+            } else {
+                result.setId(args.getId());
+            }
+            result.setCptId(args.getCptId());
+            result.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
+            result.setIssuer(args.getIssuer());
+            Long newExpirationDate =
+                DateUtils.convertToNoMillisecondTimeStamp(args.getExpirationDate());
+            if (newExpirationDate == null) {
+                logger.error("Create Credential Args illegal.");
+                return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
+            } else {
+                result.setExpirationDate(newExpirationDate);
+            }
+            result.addType(CredentialConstant.DEFAULT_CREDENTIAL_TYPE);
+            result.addType(CredentialConstant.ORIGINAL_CREDENTIAL_TYPE);
+            Object claimObject = args.getClaim();
+            String claimStr;
+            if (!(claimObject instanceof String)) {
+                claimStr = DataToolUtils.serialize(claimObject);
+            } else {
+                claimStr = (String) claimObject;
+            }
+
+            HashMap<String, Object> claimMapNew = DataToolUtils.deserialize(claimStr, HashMap.class);
+            result.setClaim(claimMapNew);
+
+            Map<String, Object> saltMap = DataToolUtils.clone(claimMapNew);
+            generateSalt(saltMap, null);
+            String rawData = CredentialPojoUtils
+                .getCredentialThumbprintWithoutSig(result, saltMap, null);
+            System.out.println(rawData);
+            result.putProofValue(ParamKeyConstant.PROOF_CREATED, result.getIssuanceDate());
+
+            String weIdPublicKeyId = issuerNode.textValue() + "#keys-0";
+            result.putProofValue(ParamKeyConstant.PROOF_CREATOR, weIdPublicKeyId);
+
+            String proofType = CredentialProofType.ECDSA.getTypeName();
+            result.putProofValue(ParamKeyConstant.PROOF_TYPE, proofType);
+            result.putProofValue(ParamKeyConstant.PROOF_SIGNATURE, rawData);
+            result.setSalt(saltMap);
+            Map<String, Object> credMap = JsonUtil.objToMap(result);
+            return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Generate Credential failed due to system error. ", e);
+            return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ERROR.getCode(),
+                ErrorCode.CREDENTIAL_ERROR.getCodeDesc());
+        }
     }
 }
