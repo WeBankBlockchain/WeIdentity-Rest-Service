@@ -19,11 +19,6 @@
 
 package com.webank.weid.http.util;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,12 +29,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.commons.lang3.StringUtils;
-
 import com.webank.weid.constant.CredentialConstant;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.exception.DataTypeCastException;
 import com.webank.weid.util.DateUtils;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Handles all Json related tasks.
@@ -103,8 +101,7 @@ public class JsonUtil {
     }
 
     /**
-     * Convert a Map to compact Json output, with keys ordered. Use Jackson JsonNode toString() to
-     * ensure key order and compact output.
+     * Convert a Map to compact Json output, with keys ordered. Use Jackson JsonNode toString() to ensure key order and compact output.
      *
      * @param map input map
      * @return JsonString
@@ -126,8 +123,8 @@ public class JsonUtil {
     }
 
     /**
-     * Remove the double quotes. Use this instead of plain JsonNode.textValue() to mitigate possible
-     * API body input style mixture (with double quotes or not), e.g. "cptId":10 or "cptId":"10".
+     * Remove the double quotes. Use this instead of plain JsonNode.textValue() to mitigate possible API body input style mixture (with double quotes
+     * or not), e.g. "cptId":10 or "cptId":"10".
      *
      * @param inputValue the input value String
      * @return the String
@@ -183,4 +180,6 @@ public class JsonUtil {
             DateUtils.convertUtcDateToTimeStamp(expirationDate));
         return credMap;
     }
+
+
 }
