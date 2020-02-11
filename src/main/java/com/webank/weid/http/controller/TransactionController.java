@@ -27,6 +27,8 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +44,6 @@ import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.EndpointService;
 import com.webank.weid.http.service.TransactionService;
-import com.webank.weid.http.util.JsonUtil;
 
 /**
  * Transaction Controller - to create encodedTransaction and send to Chain.
@@ -61,6 +62,8 @@ public class TransactionController {
 
     @Autowired
     private AuthService authService;
+
+    private Logger logger = LoggerFactory.getLogger(TransactionController.class);
 
     /**
      * Create an Encoded Transaction.
@@ -161,7 +164,7 @@ public class TransactionController {
      * @return data in String
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.AUTHO_ROOT
-        + WeIdentityServiceEndpoint.AUTHO_FETCH_DATA, method = RequestMethod.POST)
+        + "/" + WeIdentityServiceEndpoint.AUTHO_FETCH_DATA, method = RequestMethod.POST)
     public HttpResponseData<String> authFetchData(@RequestBody String requestBody) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -170,13 +173,13 @@ public class TransactionController {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             JsonNode authTokenNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_TOKEN);
-            if (authTokenNode == null || StringUtils.isEmpty(authTokenNode.textValue())) {
+            if (authTokenNode == null) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.textValue(),
+            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.toString(),
                 CredentialPojo.class);
             JsonNode signedNonceNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_SIGNED_NONCE);
-            if (signedNonceNode == null || StringUtils.isEmpty(signedNonceNode.textValue())) {
+            if (signedNonceNode == null) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             String signedNonce = signedNonceNode.textValue();
@@ -187,7 +190,7 @@ public class TransactionController {
     }
 
     @RequestMapping(value = WeIdentityServiceEndpoint.AUTHO_ROOT
-        + WeIdentityServiceEndpoint.AUTHO_REQUEST_TOKEN, method = RequestMethod.POST)
+        + "/" + WeIdentityServiceEndpoint.AUTHO_REQUEST_NONCE, method = RequestMethod.POST)
     public HttpResponseData<String> authRequestToken(@RequestBody String requestBody) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -196,10 +199,11 @@ public class TransactionController {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             JsonNode authTokenNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_TOKEN);
-            if (authTokenNode == null || StringUtils.isEmpty(authTokenNode.textValue())) {
+            if (authTokenNode == null) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.textValue(),
+            logger.info(authTokenNode.textValue());
+            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.toString(),
                 CredentialPojo.class);
             return authService.requestNonce(authToken);
         } catch (Exception e) {

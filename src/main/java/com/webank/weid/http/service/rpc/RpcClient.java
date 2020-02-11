@@ -96,7 +96,6 @@ public class RpcClient {
     protected HttpResponseData<String> send(String msg) {
         String uuid = UUID.randomUUID().toString();
         String message = msg + WeIdentityServiceEndpoint.EPS_SEPARATOR + uuid;
-        System.out.println("Sending msg: " + message + session.getSessionID());
         ByteBuffer byteBuffer = FixedLengthProtocol.encode(message);
         byte[] resp = new byte[byteBuffer.remaining()];
         byteBuffer.get(resp, 0, resp.length);
@@ -107,7 +106,7 @@ public class RpcClient {
             session.writeBuffer().flush();
         } catch (IOException e) {
             stateMap.put(uuid, STATE_FAILED);
-            logger.error("Failed to send message. ", e.getMessage());
+            logger.debug("Failed to send message. ", e.getMessage());
             return new HttpResponseData<>(StringUtils.EMPTY,
                 HttpReturnCode.RPC_SEND_FAIL.getCode(), e.getMessage());
         }
@@ -140,7 +139,6 @@ public class RpcClient {
         AioQuickClient<String> client = new AioQuickClient<String>(host, port,
             new FixedLengthProtocol(), new MessageProcessor<String>() {
             public void process(AioSession<String> session, String msg) {
-                System.out.println("received msg: " + msg + session.getSessionID());
                 String uuid = msg.substring(msg.length() - 36);
                 resultMap.put(uuid, msg.substring(0, msg.length() - 39));
                 stateMap.put(uuid, STATE_RECEIVED);
