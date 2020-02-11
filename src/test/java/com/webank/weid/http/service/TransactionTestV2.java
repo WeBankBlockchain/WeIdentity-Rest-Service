@@ -14,10 +14,13 @@ import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
 import com.webank.weid.http.service.impl.TransactionServiceImpl;
 import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.service.BaseService;
 import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -31,17 +34,19 @@ import java.util.concurrent.TimeUnit;
 import org.bcos.web3j.utils.Numeric;
 import org.fisco.bcos.web3j.abi.TypeReference;
 import org.fisco.bcos.web3j.abi.datatypes.Type;
+import org.fisco.bcos.web3j.crypto.Credentials;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
 import org.fisco.bcos.web3j.crypto.ExtendedRawTransaction;
 import org.fisco.bcos.web3j.crypto.ExtendedTransactionEncoder;
 import org.fisco.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
+import org.fisco.bcos.web3j.crypto.gm.GenCredential;
 import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.SendTransaction;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.fisco.bcos.web3j.tx.gas.StaticGasProvider;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -52,14 +57,17 @@ public class TransactionTestV2 {
 
     @Test
     public void testCreateWeIdAll() throws Exception {
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
+        if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            return;
+        }
 
+        // simulate client key-pair creation
         org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = org.fisco.bcos.web3j.crypto.Keys.createEcKeyPair();
         String newPublicKey = ecKeyPair.getPublicKey().toString();
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
         String nonce = TransactionEncoderUtilV2.getNonce().toString();
 
+        // simulate encode call
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("publicKey", newPublicKey);
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
@@ -74,7 +82,7 @@ public class TransactionTestV2 {
         HttpResponseData<Object> resp1 =
             transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
 
-        // simulate client side sign
+        // simulate client sign
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
@@ -84,6 +92,7 @@ public class TransactionTestV2 {
         String base64SignedMsg = new String(
             DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
 
+        // simulate transact call
         funcArgMap = new LinkedHashMap<>();
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonce);
@@ -99,13 +108,179 @@ public class TransactionTestV2 {
         HttpResponseData<Object> resp2 =
             transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp2);
+
+        // check WeID existence
         Assert.assertTrue(invokerWeIdService.isWeIdExist(weId).getResult());
     }
 
     @Test
-    public void testSetAttribute() throws Exception //{ExtendedRawTransaction rawTransaction, Credentials credentials,
-    //String address, String data) {
-    {
+    public void TestAuthorityIssuerAll() throws Exception {
+        if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            return;
+        }
+        //step 1: create a WeID as the issuer
+        String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
+
+        // step 2: prepare param
+        String nonceVal = TransactionEncoderUtilV2.getNonce().toString();
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        funcArgMap.put("name", "ID" + DateUtils.getNoMillisecondTimeStampString());
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        Map<String, Object> inputParamMap;
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
+        HttpResponseData<Object> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println("step 1 done: " + resp1);
+
+        // step 3: sign via SDK privKey
+        // note that the authorityIssuer creation can only be done by deployer
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        BigInteger decValue = new BigInteger(adminPrivKey, 10);
+        Credentials credentials = GenCredential.create(decValue.toString(16));
+        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        JsonNode encodeResult = new ObjectMapper()
+            .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
+        String data = encodeResult.get("data").textValue();
+        byte[] encodedTransaction = DataToolUtils
+            .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
+        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        String base64SignedMsg = new String(
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(bodySigned)));
+        System.out.println("step 2 done, sig: " + base64SignedMsg);
+
+        // step 4: send
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, base64SignedMsg);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
+        HttpResponseData<Object> resp2 =
+            transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp2);
+
+        // step 5: query
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_QUERY_AUTHORITY_ISSUER);
+        HttpResponseData<Object> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp3);
+        System.out.println("invoke done, step 3 done");
+    }
+
+
+    @Test
+    public void TestCptAll() throws Exception {
+        if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            return;
+        }
+        // step 0: create a WeID as the cpt creator (we let alone the authority issuer business)
+        String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
+
+        // step 1: prepare param
+        // note that the authorityIssuer creation can only be done by deployer
+        String nonceVal = TransactionEncoderUtil.getNonce().toString();
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", issuerWeId);
+        String cptSignature = "HJPbDmoi39xgZBGi/aj1zB6VQL5QLyt4qTV6GOvQwzfgUJEZTazKZXe1dRg5aCt8Q44GwNF2k+l1rfhpY1hc/ls=";
+        funcArgMap.put("cptSignature", cptSignature);
+        Map<String, Object> cptJsonSchemaMap = new LinkedHashMap<>();
+        cptJsonSchemaMap.put("title", "a CPT schema");
+        funcArgMap.put("cptJsonSchema", cptJsonSchemaMap);
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        Map<String, Object> inputParamMap;
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
+        HttpResponseData<Object> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println("step 1 done: " + resp1);
+
+        // step 2: sign via SDK privKey
+        // let us use god account for low-bit cptId for good
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        BigInteger decValue = new BigInteger(adminPrivKey, 10);
+        Credentials credentials = GenCredential.create(decValue.toString(16));
+        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        JsonNode encodeResult = new ObjectMapper()
+            .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
+        String data = encodeResult.get("data").textValue();
+        byte[] encodedTransaction = DataToolUtils
+            .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
+        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        String base64SignedMsg = new String(
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(bodySigned)));
+        System.out.println("step 2 done, sig: " + base64SignedMsg);
+
+        // step 3: send
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, base64SignedMsg);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT);
+        HttpResponseData<Object> resp2 =
+            transactionService.sendTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp2);
+
+        // step 3: queryCpt
+        JsonNode jsonNode = new ObjectMapper().readTree(JsonUtil.objToJsonStr(resp2.getRespBody()));
+        Integer cptId = Integer.valueOf(jsonNode.get("cptId").toString());
+        System.out.println("cptId is: " + cptId);
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("cptId", cptId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_QUERY_CPT);
+        HttpResponseData<Object> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(resp3);
+        System.out.println("invoke done, step 3 done");
+    }
+
+    @Test
+    public void testSetAttribute() throws Exception {
+        if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            return;
+        }
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
         String to = fiscoConfig.getWeIdAddress();
@@ -163,13 +338,16 @@ public class TransactionTestV2 {
                 new StaticGasProvider(WeIdConstant.GAS_PRICE, WeIdConstant.GAS_LIMIT));
             List<WeIdAttributeChangedEventResponse> response =
                 weIdContract.getWeIdAttributeChangedEvents(receipt);
-            System.out.println();
+            Assert.assertNotNull(response);
+            Assert.assertNotNull(response.get(0));
         }
     }
 
-
     @Test
     public void testRemoveAuthIssuer() throws Exception {
+        if (TransactionEncoderUtil.isFiscoBcosV1()) {
+            return;
+        }
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
         String to = fiscoConfig.getIssuerAddress();
@@ -207,6 +385,7 @@ public class TransactionTestV2 {
             new StaticGasProvider(WeIdConstant.GAS_PRICE, WeIdConstant.GAS_LIMIT));
         List<AuthorityIssuerRetLogEventResponse> response =
             authorityIssuerController.getAuthorityIssuerRetLogEvents(receipt);
-        System.out.println(response);
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.get(0));
     }
 }

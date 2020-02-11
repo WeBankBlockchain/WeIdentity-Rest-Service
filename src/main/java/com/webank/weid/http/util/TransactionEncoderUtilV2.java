@@ -3,31 +3,45 @@ package com.webank.weid.http.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.exception.WeIdBaseException;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.service.BaseService;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import com.webank.weid.util.TransactionUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.utils.Numeric;
+import org.fisco.bcos.web3j.abi.FunctionEncoder;
 import org.fisco.bcos.web3j.abi.TypeReference;
 import org.fisco.bcos.web3j.abi.datatypes.Address;
 import org.fisco.bcos.web3j.abi.datatypes.DynamicBytes;
 import org.fisco.bcos.web3j.abi.datatypes.Function;
+import org.fisco.bcos.web3j.abi.datatypes.generated.Bytes32;
 import org.fisco.bcos.web3j.abi.datatypes.generated.Int256;
+import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray128;
+import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray16;
+import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray8;
+import org.fisco.bcos.web3j.abi.datatypes.generated.Uint8;
 import org.fisco.bcos.web3j.crypto.ExtendedRawTransaction;
 import org.fisco.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
@@ -42,46 +56,37 @@ public class TransactionEncoderUtilV2 {
 
     private static Logger logger = LoggerFactory.getLogger(TransactionEncoderUtilV2.class);
 
-    public static HttpResponseData<String> createWeIdEncoder(
+    public static HttpResponseData<String> createEncoder(
         String inputParam,
         String nonce,
-        String to) {
-        Function function = buildCreateWeIdFunction(inputParam);
-        if (function == null) {
-            logger.error("[CreateWeId] Error occurred when building input param with: {}",
-                inputParam);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
-        }
+        String functionName) {
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
+        Function function;
+        String to;
+        if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+            to = fiscoConfig.getWeIdAddress();
+            function = buildCreateWeIdFunction(inputParam, functionName);
+        } else if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+            to = fiscoConfig.getIssuerAddress();
+            function = buildRegisterAuthorityIssuerFunction(inputParam, functionName);
+        } else if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+            to = fiscoConfig.getCptAddress();
+            function = buildRegisterCptFunction(inputParam, functionName);
+        } else {
+            logger.error("Unknown function name: {}", functionName);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+        }
+        if (function == null) {
+            logger.error("Error occurred when building input param with: {} on function name: {}",
+                inputParam, functionName);
+            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
+        }
         String encodeResult = createClientEncodeResult(function, nonce, to, fiscoConfig.getGroupId());
         return new HttpResponseData<>(encodeResult, HttpReturnCode.SUCCESS);
     }
 
-    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
-        SignatureData sigData = TransactionEncoderUtilV2
-            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()));
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
-        byte[] encodedSignedTxn = TransactionEncoderUtilV2.encode(rawTransaction, sigData);
-        return Numeric.toHexString(encodedSignedTxn);
-    }
-
-    public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
-        // 1. encode the Function
-        String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
-        // 2. server generate encodedTransaction
-        Web3j web3j = (Web3j) BaseService.getWeb3j();
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            groupId, data, to);
-        byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
-        // 3. server sends encodeTransaction (in base64) and data back to client
-        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
-    }
-
-    public static Function buildCreateWeIdFunction(String inputParam) {
+    public static Function buildCreateWeIdFunction(String inputParam, String functionName) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode inputParamNode;
         try {
@@ -111,7 +116,7 @@ public class TransactionEncoderUtilV2 {
             .append(addr)
             .toString();
         return new Function(
-            "createWeId",
+            WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
             Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
                 new Address(addr),
                 new DynamicBytes(DataToolUtils.stringToByteArray(auth)),
@@ -119,6 +124,155 @@ public class TransactionEncoderUtilV2 {
                 new Int256(BigInteger.valueOf(DateUtils.getNoMillisecondTimeStamp()))
             ),
             Collections.<TypeReference<?>>emptyList());
+    }
+
+    public static Function buildRegisterAuthorityIssuerFunction(String inputParam, String functionName) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode inputParamNode;
+        try {
+            inputParamNode = objectMapper.readTree(inputParam);
+        } catch (Exception e) {
+            logger.error("Failed to decode JsonInput");
+            return null;
+        }
+        JsonNode weIdNode = inputParamNode.get(ParamKeyConstant.WEID);
+        JsonNode nameNode = inputParamNode.get(ParamKeyConstant.AUTHORITY_ISSUER_NAME);
+        if (weIdNode == null || nameNode == null) {
+            return null;
+        }
+        String weId = weIdNode.textValue();
+        if (!WeIdUtils.isWeIdValid(weId)) {
+            return null;
+        }
+        String name = nameNode.textValue();
+        if (StringUtils.isEmpty(name)
+            || name.length() > WeIdConstant.MAX_AUTHORITY_ISSUER_NAME_LENGTH) {
+            logger.error("Input cpt publisher : {} is invalid.", name);
+            return null;
+        }
+        String weAddress = WeIdUtils.convertWeIdToAddress(weId);
+        List<byte[]> stringAttributes = new ArrayList<byte[]>();
+        stringAttributes.add(name.getBytes());
+        List<BigInteger> longAttributes = new ArrayList<>();
+        Long createDate = DateUtils.getNoMillisecondTimeStamp();
+        longAttributes.add(BigInteger.valueOf(createDate));
+        String accValue = "1";
+        return new Function(
+            WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
+            Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
+                new Address(weAddress),
+                new StaticArray16<Bytes32>(
+                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                        DataToolUtils.bytesArrayListToBytes32ArrayList(
+                            stringAttributes,
+                            WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
+                        ), Bytes32.class)),
+                new StaticArray16<Int256>(
+                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                        DataToolUtils.listToListBigInteger(
+                            longAttributes,
+                            WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
+                        ),
+                        Int256.class)),
+                new DynamicBytes(accValue.getBytes(StandardCharsets.UTF_8))
+            ),
+            Collections.<TypeReference<?>>emptyList());
+    }
+
+    public static Function buildRegisterCptFunction(String inputParam, String functionName) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode inputParamNode;
+        try {
+            inputParamNode = objectMapper.readTree(inputParam);
+        } catch (Exception e) {
+            logger.error("Failed to decode JsonInput");
+            return null;
+        }
+        JsonNode weIdNode = inputParamNode.get(ParamKeyConstant.WEID);
+        JsonNode cptJsonSchemaNode = inputParamNode.get(ParamKeyConstant.CPT_JSON_SCHEMA);
+        JsonNode cptSignatureNode = inputParamNode.get(ParamKeyConstant.CPT_SIGNATURE);
+        if (weIdNode == null || cptJsonSchemaNode == null || cptSignatureNode == null) {
+            return null;
+        }
+
+        String weId = weIdNode.textValue();
+        if (!WeIdUtils.isWeIdValid(weId)) {
+            logger.error("WeID illegal: {}", weId);
+            return null;
+        }
+
+        String cptJsonSchema = cptJsonSchemaNode.toString();
+        String cptJsonSchemaNew = TransactionUtils.complementCptJsonSchema(cptJsonSchema);
+        try {
+            if (StringUtils.isEmpty(cptJsonSchemaNew)
+                || !DataToolUtils.isCptJsonSchemaValid(cptJsonSchemaNew)) {
+                logger.error("Input cpt json schema : {} is invalid.", cptJsonSchemaNew);
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error("Input cpt json schema : {} is invalid.", cptJsonSchemaNew);
+            return null;
+        }
+        String cptSignature = cptSignatureNode.textValue();
+        if (!DataToolUtils.isValidBase64String(cptSignature)) {
+            logger.error("Input cpt signature invalid: {}", cptSignature);
+            return null;
+        }
+        RsvSignature rsvSignature =
+            DataToolUtils.convertSignatureDataToRsv(
+                DataToolUtils.convertBase64StringToSignatureData(cptSignature)
+            );
+        String weAddress = WeIdUtils.convertWeIdToAddress(weId);
+        List<byte[]> byteArray = new ArrayList<>();
+        return new Function(
+            WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
+            Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
+                new Address(weAddress),
+                new StaticArray8<Int256>(
+                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                        DataToolUtils.listToListBigInteger(
+                            DataToolUtils.getParamCreatedList(WeIdConstant.CPT_LONG_ARRAY_LENGTH),
+                            WeIdConstant.CPT_LONG_ARRAY_LENGTH
+                        ), Int256.class)),
+                new StaticArray8<Bytes32>(
+                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                        DataToolUtils.bytesArrayListToBytes32ArrayList(
+                            byteArray,
+                            WeIdConstant.CPT_STRING_ARRAY_LENGTH
+                        ), Bytes32.class)),
+                new StaticArray128<Bytes32>(
+                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                        DataToolUtils.stringToByte32ArrayList(
+                            cptJsonSchemaNew,
+                            WeIdConstant.JSON_SCHEMA_ARRAY_LENGTH
+                        ), Bytes32.class)),
+                new Uint8(rsvSignature.getV().getValue()),
+                new Bytes32(rsvSignature.getR().getValue()),
+                new Bytes32(rsvSignature.getS().getValue())
+            ),
+            Collections.<TypeReference<?>>emptyList());
+    }
+
+    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
+        SignatureData sigData = TransactionEncoderUtilV2
+            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()));
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+            fiscoConfig.getGroupId(), data, to);
+        byte[] encodedSignedTxn = TransactionEncoderUtilV2.encode(rawTransaction, sigData);
+        return Numeric.toHexString(encodedSignedTxn);
+    }
+
+    public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
+        // 1. encode the Function
+        String data = FunctionEncoder.encode(function);
+        // 2. server generate encodedTransaction
+        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+            groupId, data, to);
+        byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
+        // 3. server sends encodeTransaction (in base64) and data back to client
+        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
     }
 
     public static BigInteger getNonce() {

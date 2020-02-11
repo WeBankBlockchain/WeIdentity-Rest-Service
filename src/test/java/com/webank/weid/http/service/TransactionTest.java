@@ -207,7 +207,6 @@ public class TransactionTest extends BaseTest {
         }
         //step 1: create a WeID as the cpt creator (we let alone the authority issuer business)
         String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
-        Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
 
         // step 2: prepare param
         // note that the authorityIssuer creation can only be done by god account - for now
