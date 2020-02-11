@@ -78,6 +78,16 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Failed to build input argument: {}", encodeTransactionJsonArgs);
                 return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
             }
+
+            String functionName = inputArg.getFunctionName();
+            String functionArg = inputArg.getFunctionArg();
+            HttpResponseData<String> httpResponseData;
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO)) {
+                HttpResponseData<Object> credResp = TransactionEncoderUtilV2.encodeCredential(inputArg);
+                return new HttpResponseData<>(credResp.getRespBody(), credResp.getErrorCode(),
+                    credResp.getErrorMessage());
+            }
+
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode txnArgNode = objectMapper.readTree(inputArg.getTransactionArg());
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
@@ -86,15 +96,10 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
             }
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
-
             // Load WeIdentity related contract addresses
             FiscoConfig fiscoConfig = new FiscoConfig();
             fiscoConfig.load();
             ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
-
-            String functionName = inputArg.getFunctionName();
-            String functionArg = inputArg.getFunctionArg();
-            HttpResponseData<String> httpResponseData;
             if (TransactionEncoderUtil.isFiscoBcosV1()) {
                 if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                     httpResponseData = TransactionEncoderUtil
@@ -192,8 +197,8 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             String txnHex;
             if (TransactionEncoderUtil.isFiscoBcosV1()) {
                 if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                        txnHex = TransactionEncoderUtil
-                            .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
+                    txnHex = TransactionEncoderUtil
+                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
                     if (StringUtils.isEmpty(txnHex)) {
                         return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
                     }
