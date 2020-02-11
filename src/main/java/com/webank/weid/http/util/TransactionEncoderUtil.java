@@ -19,14 +19,23 @@
 
 package com.webank.weid.http.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.request.InputArg;
+import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.TransactionUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.abi.FunctionEncoder;
 import org.bcos.web3j.abi.datatypes.Function;
@@ -45,16 +54,6 @@ import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.http.constant.WeIdentityFunctionNames;
-import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
-import com.webank.weid.http.protocol.request.InputArg;
-import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
-import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.TransactionUtils;
-
 /**
  * Handling all tasks related to encoding and sending transactions.
  *
@@ -64,11 +63,24 @@ public class TransactionEncoderUtil {
 
     private static Logger logger = LoggerFactory.getLogger(TransactionEncoderUtil.class);
 
+    public static boolean isFiscoBcosV1() {
+        FiscoConfig fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
+        if (fiscoConfig.getVersion().startsWith("1")) {
+            return true;
+        }
+        return false;
+    }
+
+    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
+        RawTransaction rawTransaction = TransactionEncoderUtil.buildRawTransaction(nonce, data, to);
+        return TransactionEncoderUtil.getTransactionHex(rawTransaction, encodedSig);
+    }
+
     /**
      * Create an Encoded Transaction for registerCpt.
      *
-     * @param inputParam the CPT input param which should contain: weId, cptJsonSchema (json
-     * String), and cptSignature (in Base64).
+     * @param inputParam the CPT input param which should contain: weId, cptJsonSchema (json String), and cptSignature (in Base64).
      * @param nonce the nonce value to create rawTransaction
      * @param to contract address
      * @return encoded byte array in Base64 format and the rawTransaction.
@@ -89,10 +101,11 @@ public class TransactionEncoderUtil {
                 WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
                 responseData.getResult(),
                 Collections.emptyList());
-            RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
+            String data = FunctionEncoder.encode(function);
+            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
             return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction),
+                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("[RegisterCpt] Failed to get encoder for unknown reason: ", e);
@@ -124,10 +137,11 @@ public class TransactionEncoderUtil {
                 WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
                 responseData.getResult(),
                 Collections.emptyList());
-            RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
+            String data = FunctionEncoder.encode(function);
+            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
             return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction),
+                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("[createWeId] Failed to get encoder for unknown reason:", e);
@@ -160,10 +174,11 @@ public class TransactionEncoderUtil {
                 WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
                 responseData.getResult(),
                 Collections.emptyList());
-            RawTransaction rawTransaction = createRawTransactionFromFunction(function, nonce, to);
+            String data = FunctionEncoder.encode(function);
+            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
             byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
             return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction),
+                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("[registerAuthorityIssuer] Failed to get encoder for unknown reason:", e);
@@ -181,8 +196,8 @@ public class TransactionEncoderUtil {
     }
 
     /**
-     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires
-     * the previous rawTransaction and the signed Message from client side.
+     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires the previous rawTransaction and the signed
+     * Message from client side.
      *
      * @param rawTransaction the input rawTransaction
      * @param signedMessage the base64 signed message from client
@@ -198,6 +213,27 @@ public class TransactionEncoderUtil {
                 DataToolUtils.base64Decode(signedMessage.getBytes(StandardCharsets.UTF_8))));
         return Hex.toHexString(encodedSignedMessage);
     }
+
+    /**
+     * Get a rawTransaction instance, based on pre-defined parameters.
+     *
+     * @param nonce the nonce value
+     * @param data the data segment
+     * @param to contract address
+     */
+    public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
+        return RawTransaction.createTransaction(
+            new BigInteger(nonce),
+            new BigInteger("99999999999"),
+            new BigInteger("99999999999"),
+            getBlockLimit(),
+            to,
+            BigInteger.ZERO,
+            data,
+            BigInteger.ZERO,
+            false);
+    }
+
 
     /**
      * Extract and build Input arg for all Service APIs.
@@ -251,26 +287,6 @@ public class TransactionEncoderUtil {
     }
 
     /**
-     * Get a rawTransaction instance, based on pre-defined parameters.
-     *
-     * @param nonce the nonce value
-     * @param data the data segment
-     * @param to contract address
-     */
-    public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
-        return RawTransaction.createTransaction(
-            new BigInteger(nonce),
-            new BigInteger("99999999999"),
-            new BigInteger("99999999999"),
-            getBlockLimit(),
-            to,
-            new BigInteger("0"),
-            data,
-            BigInteger.ZERO,
-            false);
-    }
-
-    /**
      * Get a default blocklimit for a transaction.
      *
      * @return blocklimit in BigInt.
@@ -280,8 +296,8 @@ public class TransactionEncoderUtil {
     }
 
     /**
-     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires
-     * the previous rawTransaction and the signed Message from client side.
+     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires the previous rawTransaction and the signed
+     * Message from client side.
      *
      * @param rawTransaction the input rawTransaction
      * @param signatureData the signatureData
@@ -298,16 +314,15 @@ public class TransactionEncoderUtil {
     /**
      * Get a rawTransaction instance, based on pre-defined parameters and input Function.
      *
-     * @param function the input function instance
+     * @param data the input function instance
      * @param nonce the nonce value
      * @param to contract address
      * @return rawTransaction
      */
     private static RawTransaction createRawTransactionFromFunction(
-        Function function,
+        String data,
         String nonce,
         String to) {
-        String data = FunctionEncoder.encode(function);
         return RawTransaction.createTransaction(
             new BigInteger(nonce),
             new BigInteger("99999999999"),
@@ -334,15 +349,14 @@ public class TransactionEncoderUtil {
      * Get the encoded transaction byte array and rawTransaction into a json String as output.
      *
      * @param encodedTransaction the encoded transaction byte array (will be converted to Base64)
-     * @param rawTransaction the input rawTransaction
+     * @param data the input rawTransaction's data
      * @return Json String, a wrapper including both Base64 encodes, and the rawTransaction
      */
-    private static String getEncodeOutput(byte[] encodedTransaction,
-        RawTransaction rawTransaction) {
+    public static String getEncodeOutput(byte[] encodedTransaction, String data) {
         String base64EncodedTransaction = base64Encode(encodedTransaction);
         EncodedTransactionWrapper encodedTransactionWrapper = new EncodedTransactionWrapper();
         encodedTransactionWrapper.setEncodedTransaction(base64EncodedTransaction);
-        encodedTransactionWrapper.setData(rawTransaction.getData());
+        encodedTransactionWrapper.setData(data);
         return JsonUtil.objToJsonStr(encodedTransactionWrapper);
     }
 

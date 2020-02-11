@@ -21,13 +21,6 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.protocol.base.CredentialPojo;
-import org.apache.commons.lang3.StringUtils;
-import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.webank.weid.config.ContractConfig;
 import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.http.constant.HttpReturnCode;
@@ -44,6 +37,11 @@ import com.webank.weid.http.service.TransactionService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
+import com.webank.weid.http.util.TransactionEncoderUtilV2;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Handling Transaction related services.
@@ -64,9 +62,8 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     /**
      * Create an Encoded Transaction.
      *
-     * @param encodeTransactionJsonArgs json format args. It should contain 4 keys: functionArgs
-     * (including all business related params), transactionArgs, functionName and apiVersion.
-     * Hereafter, functionName will decide which WeID SDK method to engage, and assemble all input
+     * @param encodeTransactionJsonArgs json format args. It should contain 4 keys: functionArgs (including all business related params),
+     * transactionArgs, functionName and apiVersion. Hereafter, functionName will decide which WeID SDK method to engage, and assemble all input
      * params into SDK readable format to send there; apiVersion is for extensibility purpose.
      * @return encoded transaction in Base64 format, and the data segment in RawTransaction.
      */
@@ -81,6 +78,16 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Failed to build input argument: {}", encodeTransactionJsonArgs);
                 return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
             }
+
+            String functionName = inputArg.getFunctionName();
+            String functionArg = inputArg.getFunctionArg();
+            HttpResponseData<String> httpResponseData;
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO)) {
+                HttpResponseData<Object> credResp = TransactionEncoderUtilV2.encodeCredential(inputArg);
+                return new HttpResponseData<>(credResp.getRespBody(), credResp.getErrorCode(),
+                    credResp.getErrorMessage());
+            }
+
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode txnArgNode = objectMapper.readTree(inputArg.getTransactionArg());
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
@@ -89,35 +96,40 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
             }
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
-
             // Load WeIdentity related contract addresses
             FiscoConfig fiscoConfig = new FiscoConfig();
             fiscoConfig.load();
             ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
-
-            String functionName = inputArg.getFunctionName();
-            String functionArg = inputArg.getFunctionArg();
-            HttpResponseData<String> httpResponseData;
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                httpResponseData = TransactionEncoderUtil
-                    .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                httpResponseData = TransactionEncoderUtil
-                    .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                httpResponseData = TransactionEncoderUtil
-                    .registerCptEncoder(functionArg, nonce, config.getCptAddress());
+            if (TransactionEncoderUtil.isFiscoBcosV1()) {
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+                    httpResponseData = TransactionEncoderUtil
+                        .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+                if (functionName
+                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                    httpResponseData = TransactionEncoderUtil
+                        .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
+                    httpResponseData = TransactionEncoderUtil
+                        .registerCptEncoder(functionArg, nonce, config.getCptAddress());
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
+                }
+            } else {
+                // is FISCO-BCOS v2 blockchain
+                httpResponseData = TransactionEncoderUtilV2
+                    .createEncoder(functionArg, nonce, functionName);
                 return new HttpResponseData<>(
                     JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
@@ -137,8 +149,8 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     /**
      * Send Transaction to Blockchain.
      *
-     * @param sendTransactionJsonArgs the json format args. It should contain 4 keys: functionArgs
-     * (including all business related params), transactionArgs, functionName and apiVersion.
+     * @param sendTransactionJsonArgs the json format args. It should contain 4 keys: functionArgs (including all business related params),
+     * transactionArgs, functionName and apiVersion.
      * @return the json string from SDK response.
      */
     @Override
@@ -180,46 +192,65 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
-            HttpResponseData<String> httpResponseData;
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                RawTransaction rawTransaction = TransactionEncoderUtil
-                    .buildRawTransaction(nonce, data, config.getWeIdAddress());
-                String transactionHex = TransactionEncoderUtil
-                    .getTransactionHex(rawTransaction, signedMessage);
-                if (StringUtils.isEmpty(transactionHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+            HttpResponseData<String> httpResponseData =
+                new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            String txnHex;
+            if (TransactionEncoderUtil.isFiscoBcosV1()) {
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+                    txnHex = TransactionEncoderUtil
+                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
                 }
-                httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(transactionHex);
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                RawTransaction rawTransaction = TransactionEncoderUtil
-                    .buildRawTransaction(nonce, data, config.getIssuerAddress());
-                String transactionHex = TransactionEncoderUtil
-                    .getTransactionHex(rawTransaction, signedMessage);
-                if (StringUtils.isEmpty(transactionHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                if (functionName
+                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                    txnHex = TransactionEncoderUtil
+                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerAuthorityIssuerService
+                        .registerAuthorityIssuerWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
                 }
-                httpResponseData = invokerAuthorityIssuerService
-                    .registerAuthorityIssuerWithTransactionHex(transactionHex);
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                RawTransaction rawTransaction = TransactionEncoderUtil
-                    .buildRawTransaction(nonce, data, config.getCptAddress());
-                String transactionHex = TransactionEncoderUtil
-                    .getTransactionHex(rawTransaction, signedMessage);
-                if (StringUtils.isEmpty(transactionHex)) {
-                    return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
+                    txnHex = TransactionEncoderUtil
+                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
+                    if (StringUtils.isEmpty(txnHex)) {
+                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
+                    }
+                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
+                    return new HttpResponseData<>(
+                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
                 }
-                httpResponseData = invokerCptService.registerCptWithTransactionHex(transactionHex);
+            } else { // is FISCO-BCOS v2
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+                    txnHex = TransactionEncoderUtilV2
+                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
+                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
+                }
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                    txnHex = TransactionEncoderUtilV2
+                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
+                    httpResponseData = invokerAuthorityIssuerService
+                        .registerAuthorityIssuerWithTransactionHex(txnHex);
+                }
+                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+                    txnHex = TransactionEncoderUtilV2
+                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
+                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
+                }
                 return new HttpResponseData<>(
                     JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                     httpResponseData.getErrorCode(),
@@ -239,8 +270,8 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     /**
      * Directly invoke an SDK function. No client-side sign needed.
      *
-     * @param invokeFunctionJsonArgs the json format args. It should contain 4 keys: functionArgs,
-     * (including all business related params), EMPTY transactionArgs, functionName and apiVersion.
+     * @param invokeFunctionJsonArgs the json format args. It should contain 4 keys: functionArgs, (including all business related params), EMPTY
+     * transactionArgs, functionName and apiVersion.
      * @return the json string from SDK response.
      */
     @Override

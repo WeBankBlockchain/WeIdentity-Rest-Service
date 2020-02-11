@@ -19,31 +19,35 @@
 
 package com.webank.weid.http.service;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.webank.weid.constant.CredentialConstant.CredentialProofType;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
+import com.webank.weid.http.service.impl.TransactionServiceImpl;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.protocol.base.Credential;
+import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.response.CreateWeIdDataResult;
+import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.rpc.CredentialPojoService;
+import com.webank.weid.service.impl.CredentialPojoServiceImpl;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.junit.Test;
+import org.springframework.stereotype.Component;
 
 @Component
 public class CredentialTest extends BaseTest {
 
-    @Autowired
-    TransactionService transactionService;
-    @Autowired
-    InvokerCredentialService invokerCredentialService;
+    TransactionService transactionService = new TransactionServiceImpl();
+    InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();
+    CredentialPojoService credentialPojoService = new CredentialPojoServiceImpl();
 
     @Test
     public void TestClientSideCredentialAll() throws Exception {
@@ -107,5 +111,48 @@ public class CredentialTest extends BaseTest {
         HttpResponseData<Object> resp3 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(resp3);
+    }
+
+    @Test
+    public void TestEncodeCredentialPojoAll() throws Exception {
+        CreateWeIdDataResult createWeIdDataResult = invokerWeIdService.createWeId().getResult();
+        String weId = createWeIdDataResult.getWeId();
+
+        // test createargs
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("cptId", "10");
+        funcArgMap.put("issuer", weId);
+        funcArgMap.put("expirationDate", "2040-04-18T21:12:33Z");
+        Map<String, Object> claimMap = new LinkedHashMap<>();
+        claimMap.put("acc", "10001");
+        claimMap.put("name", "ppp");
+        funcArgMap.put("claim", claimMap);
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        Map<String, Object> inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO);
+        HttpResponseData<Object> resp1 =
+            transactionService.encodeTransaction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println("intermediate result: " + resp1.getRespBody());
+
+        // simulate client-sign
+        Map<String, Object> credMap = (HashMap<String, Object>) resp1.getRespBody();
+        Map<String, Object> proofMap = (HashMap<String, Object>) credMap.get("proof");
+        String rawData = (String) proofMap.get("signatureValue");
+        String signature = DataToolUtils.sign(rawData,
+            createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
+
+        // Verify Credential
+        proofMap.put("signatureValue", signature);
+        credMap.put("proof", proofMap);
+        CredentialPojo credentialPojo = DataToolUtils
+            .deserialize(DataToolUtils.mapToCompactJson(credMap), CredentialPojo.class);
+        ResponseData<Boolean> verifyResp = credentialPojoService.verify(credentialPojo.getIssuer(),
+            credentialPojo);
+        System.out.println(verifyResp.getResult());
     }
 }

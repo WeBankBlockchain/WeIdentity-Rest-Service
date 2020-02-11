@@ -19,6 +19,9 @@
 
 package com.webank.weid.http.constant;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Define function names to be picked for calls to WeIdentity Java SDK
  *
@@ -49,4 +52,13 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCCALL_SET_ATTRIBUTE = "setAttribute";
     public static final String FUNCCALL_ADD_AUTHORITY_ISSUER = "addAuthorityIssuer";
     public static final String FUNCCALL_REGISTER_CPT = "registerCpt";
+
+    /**
+     * The FISCO-BCOS v2 function name and call map.
+     */
+    public static final Map<String, String> FUNCNAME_CALL_MAP_V2 = new HashMap<String, String>() {{
+        put(FUNCNAME_CREATE_WEID, "createWeId");
+        put(FUNCNAME_REGISTER_AUTHORITY_ISSUER, "addAuthorityIssuer");
+        put(FUNCNAME_REGISTER_CPT, "registerCpt");
+    }};
 }

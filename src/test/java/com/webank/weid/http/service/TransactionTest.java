@@ -19,12 +19,21 @@
 
 package com.webank.weid.http.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.http.BaseTest;
+import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
+import com.webank.weid.http.util.TransactionEncoderUtil;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bcos.web3j.crypto.Credentials;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.GenCredential;
@@ -36,18 +45,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.webank.weid.config.FiscoConfig;
-import com.webank.weid.http.BaseTest;
-import com.webank.weid.http.constant.WeIdentityFunctionNames;
-import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
-import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.http.util.JsonUtil;
-import com.webank.weid.http.util.KeyUtil;
-import com.webank.weid.http.util.PropertiesUtil;
-import com.webank.weid.http.util.TransactionEncoderUtil;
-import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.WeIdUtils;
-
 @Component
 public class TransactionTest extends BaseTest {
 
@@ -58,10 +55,7 @@ public class TransactionTest extends BaseTest {
 
     @Test
     public void TestWeIdAll() throws Exception {
-
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
-        if (fiscoConfig.getVersion().startsWith("2")) {
+        if (!TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
         ECKeyPair ecKeyPair = Keys.createEcKeyPair();
@@ -130,9 +124,7 @@ public class TransactionTest extends BaseTest {
 
     @Test
     public void TestAuthorityIssuerAll() throws Exception {
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
-        if (fiscoConfig.getVersion().startsWith("2")) {
+        if (!TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
         //step 1: create a WeID as the issuer
@@ -210,14 +202,11 @@ public class TransactionTest extends BaseTest {
 
     @Test
     public void TestCptAll() throws Exception {
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
-        if (fiscoConfig.getVersion().startsWith("2")) {
+        if (!TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
         //step 1: create a WeID as the cpt creator (we let alone the authority issuer business)
         String issuerWeId = invokerWeIdService.createWeId().getResult().getWeId();
-        Assert.assertTrue(invokerWeIdService.isWeIdExist(issuerWeId).getResult());
 
         // step 2: prepare param
         // note that the authorityIssuer creation can only be done by god account - for now
