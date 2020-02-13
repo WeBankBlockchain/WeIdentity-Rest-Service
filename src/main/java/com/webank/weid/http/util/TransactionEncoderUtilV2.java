@@ -380,12 +380,29 @@ public class TransactionEncoderUtilV2 {
         if (65 != serializedSignatureData.length) {
             throw new WeIdBaseException("signature data illegal");
         }
-        byte v = serializedSignatureData[0];
+        // Determine signature type
+        Byte javav = serializedSignatureData[0];
+        Byte lwcv = serializedSignatureData[64];
         byte[] r = new byte[32];
         byte[] s = new byte[32];
-        System.arraycopy(serializedSignatureData, 1, r, 0, 32);
-        System.arraycopy(serializedSignatureData, 33, s, 0, 32);
-        Sign.SignatureData signatureData = new Sign.SignatureData(v, r, s);
+        Sign.SignatureData signatureData = null;
+        if ((javav.intValue() == 27 || javav.intValue() == 28)
+            && (lwcv.intValue() != 0 && lwcv.intValue() != 1)) {
+            // this is the signature from java client
+            logger.info("Java Client signature checked.");
+            System.arraycopy(serializedSignatureData, 1, r, 0, 32);
+            System.arraycopy(serializedSignatureData, 33, s, 0, 32);
+            signatureData = new Sign.SignatureData(javav, r, s);
+        }
+        if ((javav.intValue() != 27 && javav.intValue() != 28)
+            && (lwcv.intValue() == 0 || lwcv.intValue() == 1)) {
+            // this is the standard raw ecdsa sig method (go version client uses this)
+            logger.info("Standard Client signature checked.");
+            lwcv = (byte)(lwcv.intValue() + 27);
+            System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+            System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+            signatureData = new Sign.SignatureData(lwcv, r, s);
+        }
         return signatureData;
     }
 
@@ -436,7 +453,6 @@ public class TransactionEncoderUtilV2 {
         }
         return receiptOptional;
     }
-
 
     /**
      * Encode Credential to client side for further signing. The raw data will be put into the signature part.
