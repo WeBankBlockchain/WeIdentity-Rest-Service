@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.bcos.web3j.utils.Numeric;
+import org.bouncycastle.util.encoders.Base64;
 import org.fisco.bcos.web3j.abi.TypeReference;
 import org.fisco.bcos.web3j.abi.datatypes.Type;
 import org.fisco.bcos.web3j.crypto.Credentials;
@@ -111,6 +112,19 @@ public class TransactionTestV2 {
 
         // check WeID existence
         Assert.assertTrue(invokerWeIdService.isWeIdExist(weId).getResult());
+    }
+
+    @Test
+    public void testClientSign() {
+        BigInteger priv = new BigInteger("1113",
+            10);
+        ECKeyPair ecKeyPair = ECKeyPair.create(priv);
+        String rawData = "+QGYiAoqvdSrq50MhRdIduf/hRdIduf/ggQglFl9kvCEDRPm7TPTzjYkiy3r5p5JgLkBZGvzCg0AAAAAAAAAAAAAAAASqNtWmYMdG8x4pGCkn3Z0a0trLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXkT+MQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB5MTA4MTkzNTI4NjAyODUxMzgxMzc3NjA4NDQ0MjE3NDI4ODEwMjAzOTIxODc4OTEyMjk2ODE1MDI0MDQ5MjA3NDUwMjYwNzA1NTA0OTM4LzB4MTJhOGRiNTY5OTgzMWQxYmNjNzhhNDYwYTQ5Zjc2NzQ2YjRiNmIyYwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACjE1ODE1Nzk4MjUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQGA";
+        byte[] encodedTransactionClient = Base64.decode(rawData.getBytes());
+        SignatureData clientSignedData = Sign.getSignInterface().signMessage(encodedTransactionClient, ecKeyPair);
+        String base64SignedMsg = new String(
+            Base64.encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
+        System.out.println(base64SignedMsg);
     }
 
     @Test
