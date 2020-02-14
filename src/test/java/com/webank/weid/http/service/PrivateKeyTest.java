@@ -22,14 +22,12 @@ package com.webank.weid.http.service;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 
-@Component
 public class PrivateKeyTest {
 
     InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();

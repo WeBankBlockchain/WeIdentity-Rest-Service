@@ -20,6 +20,7 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
@@ -339,6 +340,12 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc().concat(e.getMessage()));
         }
+        String unifiedSig = TransactionEncoderUtilV2.convertIfGoSigToWeIdJavaSdkSig(credential.getSignature());
+        if (StringUtils.isEmpty(unifiedSig)) {
+            return new HttpResponseData<>(false, ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCode(),
+                ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCodeDesc());
+        }
+        credential.putProofValue("signatureValue", unifiedSig);
         try {
             ResponseData<Boolean> responseData = credentialPojoService.verify(credential.getIssuer(), credential);
             return new HttpResponseData<>(responseData.getResult(),
