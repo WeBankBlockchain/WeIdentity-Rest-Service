@@ -25,6 +25,8 @@ import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
+import com.webank.weid.http.service.impl.TransactionServiceImpl;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
@@ -42,16 +44,11 @@ import org.bcos.web3j.crypto.Sign;
 import org.bcos.web3j.crypto.Sign.SignatureData;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TransactionTest extends BaseTest {
 
-    @Autowired
-    TransactionService transactionService;
-    @Autowired
-    InvokerWeIdService invokerWeIdService;
+    TransactionService transactionService = new TransactionServiceImpl();
+    InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();
 
     @Test
     public void TestWeIdAll() throws Exception {

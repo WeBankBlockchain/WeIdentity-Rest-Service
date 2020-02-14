@@ -21,13 +21,10 @@ package com.webank.weid.http;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author darwindu
  **/
-@RunWith(SpringRunner.class)
 public abstract class BaseTest {
 
     @Before
