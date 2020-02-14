@@ -10,14 +10,12 @@ import com.webank.weid.constant.CredentialConstant.CredentialProofType;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
-import com.webank.weid.exception.WeIdBaseException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
-import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.service.BaseService;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.CredentialUtils;
@@ -227,10 +225,11 @@ public class TransactionEncoderUtilV2 {
             logger.error("Input cpt signature invalid: {}", cptSignature);
             return null;
         }
-        RsvSignature rsvSignature =
-            DataToolUtils.convertSignatureDataToRsv(
-                DataToolUtils.convertBase64StringToSignatureData(cptSignature)
-            );
+        SignatureData signatureData =
+            simpleSignatureDeserialization(DataToolUtils.base64Decode(cptSignature.getBytes()));
+        if (signatureData == null) {
+            return null;
+        }
         String weAddress = WeIdUtils.convertWeIdToAddress(weId);
         List<byte[]> byteArray = new ArrayList<>();
         return new Function(
@@ -255,9 +254,9 @@ public class TransactionEncoderUtilV2 {
                             cptJsonSchemaNew,
                             WeIdConstant.JSON_SCHEMA_ARRAY_LENGTH
                         ), Bytes32.class)),
-                new Uint8(rsvSignature.getV().getValue()),
-                new Bytes32(rsvSignature.getR().getValue()),
-                new Bytes32(rsvSignature.getS().getValue())
+                new Uint8((long) Integer.valueOf(signatureData.getV())),
+                new Bytes32(signatureData.getR()),
+                new Bytes32(signatureData.getS())
             ),
             Collections.<TypeReference<?>>emptyList());
     }
@@ -375,10 +374,20 @@ public class TransactionEncoderUtilV2 {
         return serializedSignatureData;
     }
 
+    public static String convertIfGoSigToWeIdJavaSdkSig(String goSig) {
+        byte[] serializedSig = DataToolUtils.base64Decode(goSig.getBytes(StandardCharsets.UTF_8));
+        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig);
+        if (sigData == null) {
+            return StringUtils.EMPTY;
+        }
+        return new String(DataToolUtils.base64Encode(simpleSignatureSerialization(sigData)),
+            StandardCharsets.UTF_8);
+    }
+
     public static Sign.SignatureData simpleSignatureDeserialization(
         byte[] serializedSignatureData) {
         if (65 != serializedSignatureData.length) {
-            throw new WeIdBaseException("signature data illegal");
+            return null;
         }
         // Determine signature type
         Byte javav = serializedSignatureData[0];
@@ -398,7 +407,7 @@ public class TransactionEncoderUtilV2 {
             && (lwcv.intValue() == 0 || lwcv.intValue() == 1)) {
             // this is the standard raw ecdsa sig method (go version client uses this)
             logger.info("Standard Client signature checked.");
-            lwcv = (byte)(lwcv.intValue() + 27);
+            lwcv = (byte) (lwcv.intValue() + 27);
             System.arraycopy(serializedSignatureData, 0, r, 0, 32);
             System.arraycopy(serializedSignatureData, 32, s, 0, 32);
             signatureData = new Sign.SignatureData(lwcv, r, s);
@@ -560,7 +569,8 @@ public class TransactionEncoderUtilV2 {
 
             String proofType = CredentialProofType.ECDSA.getTypeName();
             result.putProofValue(ParamKeyConstant.PROOF_TYPE, proofType);
-            result.putProofValue(ParamKeyConstant.PROOF_SIGNATURE, rawData);
+            result.putProofValue(ParamKeyConstant.PROOF_SIGNATURE,
+                new String(DataToolUtils.base64Encode(rawData.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
             result.setSalt(saltMap);
             Map<String, Object> credMap = JsonUtil.objToMap(result);
             return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);

@@ -5,12 +5,10 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.util.EndpointDataUtil;
 
-@Component
 public class PropertiesTest {
 
     @Test

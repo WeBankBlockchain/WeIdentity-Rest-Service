@@ -48,9 +48,7 @@ import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.fisco.bcos.web3j.tx.gas.StaticGasProvider;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TransactionTestV2 {
 
     TransactionService transactionService = new TransactionServiceImpl();
@@ -218,7 +216,8 @@ public class TransactionTestV2 {
         String nonceVal = TransactionEncoderUtil.getNonce().toString();
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("weId", issuerWeId);
-        String cptSignature = "HJPbDmoi39xgZBGi/aj1zB6VQL5QLyt4qTV6GOvQwzfgUJEZTazKZXe1dRg5aCt8Q44GwNF2k+l1rfhpY1hc/ls=";
+        String cptSignature = //"AbCRWWOb4HoCZY5HPHeY9D87I4Y/HrcAXpIGTO7eS9d/359J9FCAaTtio5Pae6xy6TxPpsd/fHipTm8fXYV3EAA=";
+            "HFH5xSCN4APHfL1SVWrlHEVRhZbmHvdXKeZtIoMlIOLrSJ1PpMoRTWAZbhcVYjbM0lhtpX9wQv3oF58Tte4YFPU=";
         funcArgMap.put("cptSignature", cptSignature);
         Map<String, Object> cptJsonSchemaMap = new LinkedHashMap<>();
         cptJsonSchemaMap.put("title", "a CPT schema");

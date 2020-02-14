@@ -28,6 +28,7 @@ import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.impl.InvokerWeIdServiceImpl;
 import com.webank.weid.http.service.impl.TransactionServiceImpl;
 import com.webank.weid.http.util.JsonUtil;
+import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
@@ -40,9 +41,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Test;
-import org.springframework.stereotype.Component;
 
-@Component
 public class CredentialTest extends BaseTest {
 
     TransactionService transactionService = new TransactionServiceImpl();
@@ -120,7 +119,7 @@ public class CredentialTest extends BaseTest {
 
         // test createargs
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
-        funcArgMap.put("cptId", "10");
+        funcArgMap.put("cptId", "2000000");
         funcArgMap.put("issuer", weId);
         funcArgMap.put("expirationDate", "2040-04-18T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
@@ -142,7 +141,10 @@ public class CredentialTest extends BaseTest {
         // simulate client-sign
         Map<String, Object> credMap = (HashMap<String, Object>) resp1.getRespBody();
         Map<String, Object> proofMap = (HashMap<String, Object>) credMap.get("proof");
-        String rawData = (String) proofMap.get("signatureValue");
+        String base64EncRawData = (String) proofMap.get("signatureValue");
+        System.out.println(base64EncRawData);
+        String rawData = new String(DataToolUtils.base64Decode(base64EncRawData.getBytes()));
+        System.out.println(rawData);
         String signature = DataToolUtils.sign(rawData,
             createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
 
@@ -153,6 +155,6 @@ public class CredentialTest extends BaseTest {
             .deserialize(DataToolUtils.mapToCompactJson(credMap), CredentialPojo.class);
         ResponseData<Boolean> verifyResp = credentialPojoService.verify(credentialPojo.getIssuer(),
             credentialPojo);
-        System.out.println(verifyResp.getResult());
+        System.out.println(verifyResp.getErrorCode());
     }
 }

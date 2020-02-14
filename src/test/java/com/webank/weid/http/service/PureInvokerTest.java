@@ -19,33 +19,24 @@
 
 package com.webank.weid.http.service;
 
-import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.protocol.base.CredentialPojo;
-import java.math.BigInteger;
-import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.service.impl.TransactionServiceImpl;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
-@Component
 public class PureInvokerTest extends BaseTest {
 
-    @Autowired
-    TransactionService transactionService;
+    TransactionService transactionService = new TransactionServiceImpl();
 
     @Test
     public void testInvokeIntegration() throws Exception {
