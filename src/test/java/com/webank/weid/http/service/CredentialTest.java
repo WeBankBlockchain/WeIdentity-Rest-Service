@@ -37,9 +37,13 @@ import com.webank.weid.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.bcos.web3j.crypto.ECKeyPair;
+import org.bcos.web3j.crypto.Sign;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CredentialTest extends BaseTest {
@@ -147,7 +151,10 @@ public class CredentialTest extends BaseTest {
         System.out.println(rawData);
         String signature = DataToolUtils.sign(rawData,
             createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
-
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey()));
+        String sig2 = new String(DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(
+            Sign.signMessage(DataToolUtils.sha3(rawData.getBytes()), ecKeyPair))));
+        Assert.assertTrue(sig2.equals(signature));
         // Verify Credential
         proofMap.put("signatureValue", signature);
         credMap.put("proof", proofMap);
