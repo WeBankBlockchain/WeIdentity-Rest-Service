@@ -163,7 +163,7 @@ public class RpcConnectionHandler {
      * @param addrList remote address list
      */
     public static void fetchAndMergeEndpoints(List<String> addrList) {
-        logger.info("Now: " + System.currentTimeMillis() + " Starting to poll remote service at: "
+        logger.debug("Now: " + System.currentTimeMillis() + " Starting to poll remote service at: "
             + EndpointDataUtil.stringListToString(addrList));
         System.out.println("Now: " + System.currentTimeMillis() + " Starting to poll remote service"
             + " at: " + EndpointDataUtil.stringListToString(addrList));
@@ -188,7 +188,7 @@ public class RpcConnectionHandler {
                         EndpointDataUtil.mergeToCentral(endpointInfo);
                     }
                 } else {
-                    logger.info("Failed to connect to remote host (reply null): " + hostport);
+                    logger.debug("Failed to connect to remote host (reply null): " + hostport);
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage());
