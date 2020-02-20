@@ -374,6 +374,14 @@ public class TransactionEncoderUtilV2 {
         return serializedSignatureData;
     }
 
+    public static byte[] goSignatureSerialization(Sign.SignatureData signatureData) {
+        byte[] serializedSignatureData = new byte[65];
+        serializedSignatureData[64] = (byte) (new Byte(signatureData.getV()).intValue() - 27);
+        System.arraycopy(signatureData.getR(), 0, serializedSignatureData, 0, 32);
+        System.arraycopy(signatureData.getS(), 0, serializedSignatureData, 32, 32);
+        return serializedSignatureData;
+    }
+
     public static String convertIfGoSigToWeIdJavaSdkSig(String goSig) {
         byte[] serializedSig = DataToolUtils.base64Decode(goSig.getBytes(StandardCharsets.UTF_8));
         Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig);
