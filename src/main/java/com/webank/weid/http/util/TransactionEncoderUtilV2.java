@@ -411,8 +411,7 @@ public class TransactionEncoderUtilV2 {
             System.arraycopy(serializedSignatureData, 33, s, 0, 32);
             signatureData = new Sign.SignatureData(javav, r, s);
         }
-        if ((javav.intValue() != 27 && javav.intValue() != 28)
-            && (lwcv.intValue() == 0 || lwcv.intValue() == 1)) {
+        if (lwcv.intValue() == 0 || lwcv.intValue() == 1) {
             // this is the standard raw ecdsa sig method (go version client uses this)
             logger.info("Standard Client signature checked.");
             lwcv = (byte) (lwcv.intValue() + 27);
