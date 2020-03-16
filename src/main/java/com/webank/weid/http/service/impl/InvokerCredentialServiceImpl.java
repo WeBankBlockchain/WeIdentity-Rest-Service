@@ -336,9 +336,13 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             credential = DataToolUtils.deserialize(verifyCredentialPojoFuncArgs.getFunctionArg(), CredentialPojo.class);
         } catch (Exception e) {
-            logger.error("Input credential format illegal: {}", verifyCredentialPojoFuncArgs);
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
-                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc().concat(e.getMessage()));
+            try {
+                credential = CredentialPojo.fromJson(verifyCredentialPojoFuncArgs.getFunctionArg());
+            } catch (Exception ex) {
+                logger.error("Input credential format illegal: {}", verifyCredentialPojoFuncArgs);
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc().concat(e.getMessage()));
+            }
         }
         String unifiedSig = TransactionEncoderUtilV2.convertIfGoSigToWeIdJavaSdkSig(credential.getSignature());
         if (StringUtils.isEmpty(unifiedSig)) {
