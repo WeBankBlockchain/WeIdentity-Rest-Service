@@ -19,13 +19,20 @@
 
 package com.webank.weid.http.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
+import com.webank.weid.http.protocol.request.EndpointRequest;
+import com.webank.weid.http.protocol.response.EndpointInfo;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.AuthService;
+import com.webank.weid.http.service.EndpointService;
+import com.webank.weid.http.service.TransactionService;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.util.DataToolUtils;
 import java.util.List;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +42,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
-import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
-import com.webank.weid.http.protocol.request.EndpointRequest;
-import com.webank.weid.http.protocol.response.EndpointInfo;
-import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.http.service.EndpointService;
-import com.webank.weid.http.service.TransactionService;
 
 /**
  * Transaction Controller - to create encodedTransaction and send to Chain.
@@ -68,12 +66,11 @@ public class TransactionController {
     /**
      * Create an Encoded Transaction.
      *
-     * @param encodeTransactionJsonArgs the json format args. It should contain two keys:
-     * inputParams (including all business related params as well as signatures if required), and
-     * functionName. Hereafter, functionName will decide which WeID SDK method to engage, and
-     * assemble the inputParams to construct the response.
-     * @return the json string wrapper which contains two keys: the encoded transaction byte array
-     * in Base64 format, and the rawTransaction related params for future encoding.
+     * @param encodeTransactionJsonArgs the json format args. It should contain two keys: inputParams (including all business related params as well
+     * as signatures if required), and functionName. Hereafter, functionName will decide which WeID SDK method to engage, and assemble the inputParams
+     * to construct the response.
+     * @return the json string wrapper which contains two keys: the encoded transaction byte array in Base64 format, and the rawTransaction related
+     * params for future encoding.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.ENCODE_TRANSACTION, method = RequestMethod.POST)
     public HttpResponseData<Object> encodeTransaction(
@@ -84,9 +81,8 @@ public class TransactionController {
     /**
      * Send a signed Transaction to Chain.
      *
-     * @param sendTransactionJsonArgs the json format args. It should contain three keys: the same
-     * inputParams as in the createEncodeTransaction case, the signedMessage based on previous
-     * encodedTransaction, and the functionName as to decide the SDK method endpoint.
+     * @param sendTransactionJsonArgs the json format args. It should contain three keys: the same inputParams as in the createEncodeTransaction case,
+     * the signedMessage based on previous encodedTransaction, and the functionName as to decide the SDK method endpoint.
      * @return the json string from SDK response.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.SEND_TRANSACTION, method = RequestMethod.POST)
@@ -98,9 +94,8 @@ public class TransactionController {
     /**
      * Invoke an SDK function.
      *
-     * @param invokeFunctionJsonArgs the json format args. It should contain three keys: the same
-     * inputParams as in the createEncodeTransaction case, the signedMessage based on previous
-     * encodedTransaction, and the functionName as to decide the SDK method endpoint.
+     * @param invokeFunctionJsonArgs the json format args. It should contain three keys: the same inputParams as in the createEncodeTransaction case,
+     * the signedMessage based on previous encodedTransaction, and the functionName as to decide the SDK method endpoint.
      * @return the json string from SDK response.
      */
     @RequestMapping(value = WeIdentityServiceEndpoint.INVOKE_FUNCTION, method = RequestMethod.POST)
@@ -176,8 +171,17 @@ public class TransactionController {
             if (authTokenNode == null) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.toString(),
-                CredentialPojo.class);
+            CredentialPojo authToken;
+            try {
+                authToken = DataToolUtils.deserialize(authTokenNode.toString(),
+                    CredentialPojo.class);
+            } catch (Exception e) {
+                try {
+                    authToken = CredentialPojo.fromJson(authTokenNode.toString());
+                } catch (Exception ex) {
+                    return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_NULL);
+                }
+            }
             JsonNode signedNonceNode = jsonNode.get(WeIdentityParamKeyConstant.AUTHO_SIGNED_NONCE);
             if (signedNonceNode == null) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
@@ -203,8 +207,17 @@ public class TransactionController {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             logger.info(authTokenNode.textValue());
-            CredentialPojo authToken = DataToolUtils.deserialize(authTokenNode.toString(),
-                CredentialPojo.class);
+            CredentialPojo authToken;
+            try {
+                authToken = DataToolUtils.deserialize(authTokenNode.toString(),
+                    CredentialPojo.class);
+            } catch (Exception e) {
+                try {
+                    authToken = CredentialPojo.fromJson(authTokenNode.toString());
+                } catch (Exception ex) {
+                    return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_NULL);
+                }
+            }
             return authService.requestNonce(authToken);
         } catch (Exception e) {
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
