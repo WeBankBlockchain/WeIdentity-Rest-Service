@@ -64,12 +64,18 @@ public class FixedLengthProtocol implements Protocol<String> {
     }
 
     public static ByteBuffer encode(String msg) {
-        logger.info("SmartSocket 开始编码");
         byte[] bytes = msg.getBytes();
         ByteBuffer buffer = ByteBuffer.allocate(INT_BYTES + bytes.length);
         buffer.putInt(bytes.length);//消息头
         buffer.put(bytes);//消息体
         buffer.flip();
         return buffer;
+    }
+
+    public static byte[] encodeStrToByte(String msg) {
+        ByteBuffer buffer = encode(msg);
+        byte[] resp = new byte[buffer.remaining()];
+        buffer.get(resp, 0, resp.length);
+        return resp;
     }
 }

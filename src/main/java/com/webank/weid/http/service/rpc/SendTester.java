@@ -19,23 +19,30 @@
 
 package com.webank.weid.http.service.rpc;
 
-import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
-import com.webank.weid.http.protocol.request.EndpointRequest;
+import com.webank.weid.http.service.rpc.proxy.AmopProxyCode;
+import com.webank.weid.http.service.rpc.proxy.AmopProxyServer;
+import com.webank.weid.http.service.rpc.proxy.AmopRpcConnectionHandler;
 
 public class SendTester {
 
     public static void main(String[] args) throws Exception {
-        // Test direct send via client
-        String hostport = "127.0.1:6095";
+        AmopProxyServer server = new AmopProxyServer();
         // need boot up server first
-        RpcClient rpcClient = new RpcClient(hostport);
-        EndpointRequest endpointRequest = new EndpointRequest();
-        endpointRequest.setRequestName(WeIdentityServiceEndpoint.FETCH_FUNCTION);
-        endpointRequest.setRequestBody("123");
-        String uuid = RpcConnectionHandler.send(hostport, endpointRequest).getRespBody();
-        String endpointInfoString = RpcConnectionHandler.get(uuid).getRespBody();
-        System.out.println(endpointInfoString);
-        RpcConnectionHandler.init();
+        server.run();
+        // Test direct send via client
+        AmopRpcConnectionHandler.init();
+        // Simulate server broadcast
+        server.broadcastToAllHosts("heartbeat!");
+        // Simulate blind register
+        AmopRpcConnectionHandler.registerListeningTopic("webank");
+        // Client connect
+        AmopRpcConnectionHandler.connect("did:weid:0x111", "12345");
+        // Client register
+        AmopRpcConnectionHandler.registerListeningTopic("webank");
+        AmopRpcConnectionHandler.sendMessage("welcome!" + "```" + "webank");
+        // simulate server send message
+        server.send("127.0.0.1", "welcome!", AmopProxyCode.SERVER_AMOP_SEND.getCode());
+        AmopRpcConnectionHandler.close();
     }
 
 }

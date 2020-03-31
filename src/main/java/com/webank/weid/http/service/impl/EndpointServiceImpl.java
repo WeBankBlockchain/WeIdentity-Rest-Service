@@ -32,7 +32,7 @@ import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.EndpointService;
-import com.webank.weid.http.service.rpc.RpcConnectionHandler;
+import com.webank.weid.http.service.rpc.endpoint.EndpointRpcConnectionHandler;
 import com.webank.weid.http.util.EndpointDataUtil;
 
 @Component
@@ -41,7 +41,7 @@ public class EndpointServiceImpl extends BaseService implements EndpointService 
     private Logger logger = LoggerFactory.getLogger(EndpointServiceImpl.class);
 
     static {
-        RpcConnectionHandler.init();
+        EndpointRpcConnectionHandler.init();
     }
 
     /**
@@ -73,12 +73,12 @@ public class EndpointServiceImpl extends BaseService implements EndpointService 
             String requestName = endpointInfo.getRequestName();
             if (requestName.equalsIgnoreCase(endpointRequest.getRequestName())) {
                 try {
-                    String uuid = RpcConnectionHandler
+                    String uuid = EndpointRpcConnectionHandler
                         .randomSend(endpointInfo.getInAddr(), endpointRequest).getRespBody();
                     if (StringUtils.isEmpty(uuid)) {
                         return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL);
                     }
-                    return RpcConnectionHandler.get(uuid);
+                    return EndpointRpcConnectionHandler.get(uuid);
                 } catch (Exception e) {
                     return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL.getCode(),
                         HttpReturnCode.RPC_GET_FAIL.getCodeDesc() + e.getMessage());

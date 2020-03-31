@@ -6,7 +6,7 @@ import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.AuthService;
 import com.webank.weid.http.service.BaseService;
-import com.webank.weid.http.service.rpc.RpcConnectionHandler;
+import com.webank.weid.http.service.rpc.endpoint.EndpointRpcConnectionHandler;
 import com.webank.weid.http.util.EndpointDataUtil;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.response.ResponseData;
@@ -28,7 +28,7 @@ public class AuthServiceImpl extends BaseService implements AuthService {
     //private WeIdService weIdService = new WeIdServiceImpl();
 
     static {
-        RpcConnectionHandler.init();
+        EndpointRpcConnectionHandler.init();
     }
 
     @Override
@@ -116,12 +116,12 @@ public class AuthServiceImpl extends BaseService implements AuthService {
         endpointRequest.setRequestBody((String) authToken.getClaim().get("resourceId"));
 
         try {
-            String uuid = RpcConnectionHandler
+            String uuid = EndpointRpcConnectionHandler
                 .send(endpointInAddr, endpointRequest).getRespBody();
             if (StringUtils.isEmpty(uuid)) {
                 return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL);
             }
-            return RpcConnectionHandler.get(uuid);
+            return EndpointRpcConnectionHandler.get(uuid);
         } catch (Exception e) {
             return new HttpResponseData<>(null, HttpReturnCode.RPC_SEND_FAIL.getCode(),
                 HttpReturnCode.RPC_GET_FAIL.getCodeDesc() + e.getMessage());

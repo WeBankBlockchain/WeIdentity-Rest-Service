@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2019) WeBank Co., Ltd.
+ *       Copyright© (2019-2020) WeBank Co., Ltd.
  *
  *       This file is part of weid-http-service.
  *
@@ -19,6 +19,8 @@
 
 package com.webank.weid.http.service.rpc;
 
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -40,7 +42,11 @@ import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 
-
+/**
+ * A universal class for RPC Client side connection.
+ *
+ * @author chaoxinhu 2019.8
+ */
 public class RpcClient {
 
     private static final Logger logger = LoggerFactory.getLogger(RpcClient.class);
@@ -68,15 +74,16 @@ public class RpcClient {
     /**
      * Constructor with supplied host and port String.
      */
-    protected RpcClient(String hostport) throws Exception {
+    public RpcClient(String hostport) throws Exception {
         setHostPort(hostport);
         session = getNewSession(this.host, this.port);
+        System.out.println("[Client] initiate session: " + session.getSessionID());
     }
 
     /**
      * Enforce a client re-connect based on pre-set host and port.
      */
-    protected void reconnect() throws Exception {
+    public void reconnect() throws Exception {
         if (isValid()) {
             session.close();
         }
@@ -86,19 +93,17 @@ public class RpcClient {
     /**
      * Return the validity of this client.
      */
-    protected boolean isValid() {
+    public boolean isValid() {
         return (session != null) && !session.isInvalid();
     }
 
     /**
      * Send the message to RPC server.
      */
-    protected HttpResponseData<String> send(String msg) {
+    public HttpResponseData<String> send(String msg) {
         String uuid = UUID.randomUUID().toString();
         String message = msg + WeIdentityServiceEndpoint.EPS_SEPARATOR + uuid;
-        ByteBuffer byteBuffer = FixedLengthProtocol.encode(message);
-        byte[] resp = new byte[byteBuffer.remaining()];
-        byteBuffer.get(resp, 0, resp.length);
+        byte[] resp = FixedLengthProtocol.encodeStrToByte(message);
         resultMap.put(uuid, StringUtils.EMPTY);
         stateMap.put(uuid, STATE_PENDING);
         try {
@@ -116,7 +121,7 @@ public class RpcClient {
     /**
      * Periodically fetch the result from the given UUID.
      */
-    protected HttpResponseData<String> get(String uuid) throws Exception {
+    public HttpResponseData<String> get(String uuid) throws Exception {
         for (int i = 0; i < MAX_RETRIES; i++) {
             if (stateMap.get(uuid) == STATE_RECEIVED) {
                 return new HttpResponseData<>(resultMap.get(uuid), HttpReturnCode.SUCCESS);
@@ -139,6 +144,7 @@ public class RpcClient {
         AioQuickClient<String> client = new AioQuickClient<String>(host, port,
             new FixedLengthProtocol(), new MessageProcessor<String>() {
             public void process(AioSession<String> session, String msg) {
+                System.out.println("[client] Current id is: " + session.getSessionID() + ", Received from server: " + msg);
                 String uuid = msg.substring(msg.length() - 36);
                 resultMap.put(uuid, msg.substring(0, msg.length() - 39));
                 stateMap.put(uuid, STATE_RECEIVED);

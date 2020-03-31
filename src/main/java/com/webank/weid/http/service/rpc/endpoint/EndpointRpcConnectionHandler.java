@@ -17,8 +17,9 @@
  *       along with weid-http-service.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.webank.weid.http.service.rpc;
+package com.webank.weid.http.service.rpc.endpoint;
 
+import com.webank.weid.http.service.rpc.RpcClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,10 +45,11 @@ import com.webank.weid.util.DataToolUtils;
 /**
  * Client side handler, build remote rpc server connection and simple rpc client management, e.g.
  * create/close, multi-active, and auto-clean. Provides simple interfaces for external call.
+ * This is specifically designed for Endpoint service.
  */
-public class RpcConnectionHandler {
+public class EndpointRpcConnectionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(RpcConnectionHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(EndpointRpcConnectionHandler.class);
 
     // Mapping key: request (UUID), value: a remote host/port
     private static Map<String, String> uuidHostMap = new ConcurrentHashMap<>();
