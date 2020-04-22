@@ -45,4 +45,7 @@ public final class WeIdentityParamKeyConstant {
 
     public static final String AUTHO_TOKEN = "authToken";
     public static final String AUTHO_SIGNED_NONCE = "signedNonce";
+
+    public static final String PUBKEY = "publicKey";
+    public static final String PRIVKEY = "privateKey";
 }

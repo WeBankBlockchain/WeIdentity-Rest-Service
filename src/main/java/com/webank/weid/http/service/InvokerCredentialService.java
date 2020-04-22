@@ -53,6 +53,12 @@ public interface InvokerCredentialService {
      */
     HttpResponseData<Object> createCredentialPojoInvoke(InputArg createCredentialPojoFuncArgs);
 
+    HttpResponseData<Object> createCredentialPojoAndEncryptInvoke(InputArg createCredentialPojoFuncArgs);
+
+    HttpResponseData<Object> eccEncrypt(InputArg encryptFuncArgs);
+
+    HttpResponseData<Object> eccDecrypt(InputArg decryptFuncArgs);
+
     /**
      * Verify the validity of a Credential Pojo. Need format conversion.
      *

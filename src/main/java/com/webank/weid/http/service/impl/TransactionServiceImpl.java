@@ -320,6 +320,29 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 return invokerAuthorityIssuerService.registerAuthorityIssuerInvoke(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG)) {
+                // 1. go authority issuer getAddressByName
+                // 2. call getweiddocumentjson
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL)) {
+                // 1. call createevidencewithcustomkeyandlog
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_AUTHORITY)) {
+                // directly call SDK interface
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
+                // 1. go evidence get via custom key
+                // 2. extra signature
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT_CREDENTIAL)) {
+                return invokerCredentialService.createCredentialPojoAndEncryptInvoke(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT)) {
+                return invokerCredentialService.eccEncrypt(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCDECRYPT)) {
+                return invokerCredentialService.eccDecrypt(inputArg);
+            }
             logger.error("Function name undefined: {}.", functionName);
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
         } catch (Exception e) {
@@ -327,7 +350,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 invokeFunctionJsonArgs,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
-                HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
+                HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
         }
     }
 }
