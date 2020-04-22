@@ -92,8 +92,8 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.5.2',
-        'org.fisco-bcos:web3sdk:2.1.2'
+        'com.webank:weid-java-sdk:1.6.1',
+        'org.fisco-bcos:web3sdk:2.3.0'
 ]
 
 List pdfbox = [
