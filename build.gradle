@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.4.0"
+version = "1.6.1"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -119,10 +119,10 @@ dependencies {
         compile weid_java_sdk
         testCompile weid_java_sdk
     }
-    compile("com.webank:weid-contract-java:1.2.12") {
+    compile("com.webank:weid-contract-java:1.2.17") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
-    testCompile("com.webank:weid-contract-java:1.2.12") {
+    testCompile("com.webank:weid-contract-java:1.2.17") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
     compile files("lib/WeDPR-Java-SDK.jar")
