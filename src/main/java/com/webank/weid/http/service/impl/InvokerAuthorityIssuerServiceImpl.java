@@ -21,6 +21,7 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.util.WeIdUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,6 +168,28 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             logger.error(
                 "[queryAuthorityIssuer]: unknow error. weId:{}.",
                 queryArgs,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> getWeIdByNameInvoke(InputArg arg) {
+        try {
+            JsonNode nameNode = new ObjectMapper()
+                .readTree(arg.getFunctionArg()).get(WeIdentityParamKeyConstant.ORG_ID);
+            if (nameNode == null || StringUtils.isEmpty(nameNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            // todo
+            //String address = authorityIssuerService.getAddressByName(nameNode.textValue());
+            String address = "0x1202577890076397e5ca661b37620ff5174f5605";
+            return new HttpResponseData<>(WeIdUtils.convertAddressToWeId(address), HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error(
+                "[queryAuthorityIssuer]: unknow error. weId:{}.",
+                arg,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));

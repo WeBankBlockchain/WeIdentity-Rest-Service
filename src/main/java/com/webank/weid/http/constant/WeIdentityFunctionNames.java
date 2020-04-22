@@ -46,7 +46,7 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_CREATE_CREDENTIALPOJO = "createCredentialPojo";
     public static final String FUNCNAME_VERIFY_CREDENTIALPOJO = "verifyCredentialPojo";
 
-    public static final String FUNCNAME_CREATE_WEID_AUTHORITY = "createWeIdForAuthority";
+    public static final String FUNCNAME_CREATE_WEID_WITH_PUBKEY = "createWeIdWithPubKey";
     public static final String FUNCNAME_GET_WEID_DOCUMENT_BY_ORG = "getWeIdDocumentByOrgId";
     public static final String FUNCNAME_VERIFY_LITE_CREDENTIAL = "verifyLiteCredential";
     public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL = "createEvidenceForLiteCredential";
