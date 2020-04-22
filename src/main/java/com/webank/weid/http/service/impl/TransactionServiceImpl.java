@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.config.ContractConfig;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -32,12 +33,15 @@ import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerAuthorityIssuerService;
 import com.webank.weid.http.service.InvokerCptService;
 import com.webank.weid.http.service.InvokerCredentialService;
+import com.webank.weid.http.service.InvokerEvidenceService;
 import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.service.TransactionService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +62,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     private InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();
     private InvokerCptService invokerCptService = new InvokerCptServiceImpl();
     private InvokerCredentialService invokerCredentialService = new InvokerCredentialServiceImpl();
+    private InvokerEvidenceService invokerEvidenceService = new InvokerEvidenceServiceImpl();
 
     /**
      * Create an Encoded Transaction.
@@ -321,18 +326,22 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return invokerAuthorityIssuerService.registerAuthorityIssuerInvoke(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG)) {
-                // 1. go authority issuer getAddressByName
-                // 2. call getweiddocumentjson
+                String weId = (String) invokerAuthorityIssuerService.getWeIdByNameInvoke(inputArg).getRespBody();
+                // Construct new InputArg
+                Map<String, Object> funcArgMap = new LinkedHashMap<>();
+                funcArgMap.put(ParamKeyConstant.WEID, weId);
+                inputArg.setFunctionArg(JsonUtil.objToJsonStr(funcArgMap));
+                return invokerWeIdService.getWeIdDocumentJsonInvoke(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL)) {
                 // 1. call createevidencewithcustomkeyandlog
+                return invokerEvidenceService.createEvidenceWithExtraInfo(inputArg);
             }
-            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_AUTHORITY)) {
-                // directly call SDK interface
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY)) {
+                return invokerWeIdService.createWeIdWithPubKey(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
-                // 1. go evidence get via custom key
-                // 2. extra signature
+                return invokerEvidenceService.getEvidenceSignatureByCustomKey(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT_CREDENTIAL)) {
                 return invokerCredentialService.createCredentialPojoAndEncryptInvoke(inputArg);
