@@ -396,10 +396,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         credential.setClaim(claimMap);
 
         WeIdAuthentication weIdAuthentication;
+        String privateKey;
         try {
             JsonNode txnArgNode = new ObjectMapper().readTree(createCredentialPojoFuncArgs.getTransactionArg());
             JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
-            String privateKey = KeyUtil
+            privateKey = KeyUtil
                 .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
             weIdAuthentication = KeyUtil.buildWeIdAuthenticationFromPrivKey(privateKey);
             if (weIdAuthentication == null) {
@@ -428,7 +429,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(createArg);
         // TODO unify with Credential
         CredentialPojo credentialPojo = createResp.getResult();
-        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger("111111"));
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
 
         try {
@@ -450,18 +451,22 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             JsonNode functionArgNode = new ObjectMapper().readTree(encryptFuncArgs.getFunctionArg());
             dataNode = functionArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
             if (dataNode == null || StringUtils.isEmpty(dataNode.textValue())) {
+                logger.error("Null or empty json node: data");
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             JsonNode txnArgNode = new ObjectMapper()
                 .readTree(encryptFuncArgs.getTransactionArg());
             keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                logger.error("Null or empty json node: keyIndex");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
         } catch (Exception e) {
             logger.error("[createCredentialPojoInvoke]: input args error: {}", encryptFuncArgs, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
         String privateKey = KeyUtil
             .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
-        System.out.println(privateKey);
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
         try {
@@ -498,9 +503,20 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         ECCDecrypt decrypt = new ECCDecrypt(ecKeyPair.getPrivateKey());
         byte[] nonDecryptedData = Hex.decode(dataNode.textValue());
         try {
-            byte[] decryptData = decrypt.decrypt(nonDecryptedData);
+            byte[] decryptData;
+            try {
+                decryptData = decrypt.decrypt(nonDecryptedData);
+            } catch (Exception e) {
+                logger.error("Failed to decrypt: " + e.getMessage());
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+            }
             String resp = new String(decryptData, "UTF-8");
-            return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
+            try {
+                Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(), resp);
+                return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
+            } catch (Exception e) {
+                return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);

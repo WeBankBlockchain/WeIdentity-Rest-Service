@@ -245,24 +245,21 @@ public class PureInvokerTest extends BaseTest {
         System.out.println(JsonUtil.objToJsonStr(resp11));
         Assert.assertTrue((Boolean) resp11.getRespBody());
 
-        String data = "12345";
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
-        funcArgMap = new LinkedHashMap<>();
-        funcArgMap.put("data", data);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
             WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
-            WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT);
+            WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT_CREDENTIAL);
         HttpResponseData<Object> resp12 =
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp12));
         Assert.assertNotNull(resp12.getRespBody());
 
-        data = (String) resp12.getRespBody();
+        String data = (String) resp12.getRespBody();
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         funcArgMap = new LinkedHashMap<>();
@@ -278,6 +275,41 @@ public class PureInvokerTest extends BaseTest {
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp13));
         Assert.assertNotNull(resp13.getRespBody());
+
+        // test pure encrypt and decrypt
+        data = "12345";
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("data", data);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT);
+        HttpResponseData<Object> resp14 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp14));
+        Assert.assertNotNull(resp14.getRespBody());
+
+        data = (String) resp14.getRespBody();
+        txnArgMap = new LinkedHashMap<>();
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("data", data);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_ECCDECRYPT);
+        HttpResponseData<Object> resp15 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp15));
+        Assert.assertNotNull(resp15.getRespBody());
     }
 
     @Test
