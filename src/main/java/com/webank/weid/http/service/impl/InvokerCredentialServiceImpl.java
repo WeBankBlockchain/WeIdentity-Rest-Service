@@ -421,17 +421,17 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         createArg.setContext(credential.getContext());
         createArg.setId(credential.getId());
         createArg.setWeIdAuthentication(weIdAuthentication);
-        ErrorCode errorCode = CredentialPojoUtils.isCreateCredentialPojoArgsValid(createArg);
-        if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
-            return new HttpResponseData<>(null, errorCode.getCode(),
-                errorCode.getCodeDesc());
-        }
+//        ErrorCode errorCode = CredentialPojoUtils.isCreateCredentialPojoArgsValid(createArg);
+//        if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
+//            return new HttpResponseData<>(null, errorCode.getCode(),
+//                errorCode.getCodeDesc());
+//        }
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(createArg);
         // TODO unify with Credential
         CredentialPojo credentialPojo = createResp.getResult();
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
-
+        System.out.println(credentialPojo);
         try {
             byte[] encryptData = encrypt.encrypt(DataToolUtils.serialize(credentialPojo).getBytes("utf-8"));
             String hexEncryptedData = Hex.toHexString(encryptData);

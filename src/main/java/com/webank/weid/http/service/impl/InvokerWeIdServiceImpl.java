@@ -19,6 +19,8 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.util.WeIdUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -207,6 +209,33 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 createWeIdJsonArgs,
                 e);
             return new HttpResponseData<>(new HashMap<>(), HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> createWeIdWithPubKey(InputArg arg) {
+        try {
+            JsonNode publicKeyNode = new ObjectMapper()
+                .readTree(arg.getFunctionArg())
+                .get(ParamKeyConstant.PUBLIC_KEY);
+            JsonNode txnArgNode = new ObjectMapper()
+                .readTree(arg.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (publicKeyNode == null || StringUtils.isEmpty(publicKeyNode.textValue())
+                || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String weId = WeIdUtils.convertPublicKeyToWeId(publicKeyNode.textValue());
+            // todo
+            // ResponseData<String> response = weIdService.getWeIdDocumentJson(publicKeyNode.textValue());
+            return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error(
+                "[getWeIdDocument]: unknow error. weId:{}.",
+                arg,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }

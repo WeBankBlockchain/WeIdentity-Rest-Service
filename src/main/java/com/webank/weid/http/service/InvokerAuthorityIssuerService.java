@@ -51,4 +51,6 @@ public interface InvokerAuthorityIssuerService {
      * @return the authorityIssuer
      */
     HttpResponseData<Object> queryAuthorityIssuerInfoInvoke(InputArg queryArgs);
+
+    HttpResponseData<Object> getWeIdByNameInvoke(InputArg args);
 }
