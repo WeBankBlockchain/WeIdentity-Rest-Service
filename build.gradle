@@ -29,6 +29,8 @@ repositories {
         url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
     maven { url "https://dl.bintray.com/ethereum/maven/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://oss.sonatype.org/content/groups/public/" }
     mavenLocal()
     mavenCentral()
 }
@@ -93,7 +95,7 @@ List jackson = [
 
 List weid_java_sdk = [
         'com.webank:weid-java-sdk:1.6.1',
-        'org.fisco-bcos:web3sdk:2.3.0'
+        'org.fisco-bcos:web3sdk:2.4.0-0423-SNAPSHOT'
 ]
 
 List pdfbox = [

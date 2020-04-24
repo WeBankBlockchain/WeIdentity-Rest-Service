@@ -229,6 +229,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeyNode.textValue());
             // todo
             // ResponseData<String> response = weIdService.getWeIdDocumentJson(publicKeyNode.textValue());
+            // after success:
+            KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
+                weId,
+                StringUtils.EMPTY);
             return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error(
