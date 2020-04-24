@@ -19,7 +19,9 @@
 
 package com.webank.weid.http.service;
 
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 import com.webank.weid.constant.ParamKeyConstant;
+import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -37,9 +39,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.Sign;
+import org.fisco.bcos.web3j.crypto.ECDSASign;
+import org.fisco.bcos.web3j.crypto.Hash;
+import org.fisco.bcos.web3j.crypto.SHA3Digest;
+import org.fisco.bcos.web3j.crypto.gm.GenCredential;
+import org.fisco.bcos.web3j.crypto.gm.sm2.util.encoders.Hex;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -491,5 +500,157 @@ public class PureInvokerTest extends BaseTest {
             transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
         System.out.println(JsonUtil.objToJsonStr(resp13));
         Assert.assertTrue((Boolean) resp13.getRespBody());
+    }
+
+    @Test
+    public void testSpecialInvokeIntegration() throws Exception {
+        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = GenCredential.createKeyPair();
+        Map<String, Object> funcArgMap = new LinkedHashMap<>();
+        Map<String, Object> txnArgMap = new LinkedHashMap<>();
+        Map<String, Object> inputParamMap = new LinkedHashMap<>();
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
+        funcArgMap.put(ParamKeyConstant.PUBLIC_KEY, ecKeyPair.getPublicKey().toString(10));
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY);
+        HttpResponseData<Object> resp1 = transactionService
+            .invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp1));
+        String weId = (String) resp1.getRespBody();
+        Assert.assertTrue(!StringUtils.isEmpty(weId));
+        System.out.println(weId);
+        String weIdPrivKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, weId);
+        System.out.println("Stored Private Key is: " + weIdPrivKey + ", should be empty/null");
+        Assert.assertTrue(StringUtils.isEmpty(weIdPrivKey));
+
+        // getWeIdDocument can be totally ignored - note that public key must be uploaded
+
+        // We firstly register this weid as an authority issuer:
+        inputParamMap = new LinkedHashMap<>();
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", weId);
+        String orgId = "id" + System.currentTimeMillis();
+        funcArgMap.put("name", orgId);
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER);
+        HttpResponseData<Object> resp2 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp2));
+        Assert
+            .assertTrue((resp2.getRespBody().toString()).equalsIgnoreCase(Boolean.TRUE.toString()));
+
+        // Search via orgId
+        inputParamMap = new LinkedHashMap<>();
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        funcArgMap.put(WeIdentityParamKeyConstant.ORG_ID, orgId);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG);
+        HttpResponseData<Object> resp3 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp3));
+        Assert.assertNotNull(resp3.getRespBody());
+
+        // Create evidence
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        String credId = UUID.randomUUID().toString();
+        String hash = DataToolUtils.sha3(credId);
+        String sig = DataToolUtils.sign(hash, adminPrivKey);
+        String log = "temp";
+        funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
+        funcArgMap.put(WeIdentityParamKeyConstant.HASH, hash);
+        funcArgMap.put(WeIdentityParamKeyConstant.LOG, log);
+        funcArgMap.put(WeIdentityParamKeyConstant.PROOF, sig);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL);
+        HttpResponseData<Object> resp4 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp4));
+        Assert.assertNotNull(resp4.getRespBody());
+
+        // verify lite credential
+        funcArgMap = new LinkedHashMap<>();
+        txnArgMap = new LinkedHashMap<>();
+        funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
+        inputParamMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL);
+        HttpResponseData<Object> resp5 =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(resp5));
+        Assert.assertNotNull(resp5.getRespBody());
+    }
+
+    @Test
+    public void testSecpSuite() throws Exception {
+        String txHexPubKey = "047ec4369a0a0ae43bb3bb85f4f098a226a21b84f9c5e11a090d5908a9e6b80c26e015d797de6dfd1f6f34542159720beefcfbf749b2d872cdae8033a8e20c43da";
+        String txHexPrivKey = "19dc7d4f64e70aec749270ccabc629052a9701104949001c6ecde277990ab82f";
+        String txHash = "64e604787cbf194841e7b68d7cd28786f6c9a0a3ab9f8b0a0e87cb4387ab0107";
+        String msg = "123";
+        String FIXED_PUBKEY_HEX_HEADER = "04";
+
+        // check hash and key
+        byte[] hashBytes = Hash.sha3(msg.getBytes());
+        String hash = Numeric.toHexString(hashBytes);
+        System.out.println("Converted hash: " + hash);
+        Assert.assertTrue(hash.equals(WeIdConstant.HEX_PREFIX + txHash));
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
+        SHA3Digest sha3Digest = new SHA3Digest();
+        Assert.assertTrue(Numeric.toHexString(sha3Digest.hash(msg.getBytes())).equals(hash));
+        String hexPubKey = FIXED_PUBKEY_HEX_HEADER + keyPair.getPublicKey().toString(16);
+        System.out.println("Converted pub key: " + hexPubKey);
+        Assert.assertTrue(hexPubKey.equals(txHexPubKey));
+
+        // check sign
+        ECDSASign ecdsaSign = new ECDSASign();
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign.secp256SignMessage(msg.getBytes(), keyPair);
+        Assert.assertTrue(ecdsaSign.secp256Verify(hashBytes, keyPair.getPublicKey(), sigData));
+
+        byte[] serializedSignatureData = new byte[65];
+        serializedSignatureData[0] = sigData.getV();
+        System.arraycopy(sigData.getR(), 0, serializedSignatureData, 1, 32);
+        System.arraycopy(sigData.getS(), 0, serializedSignatureData, 33, 32);
+        String sigBase64 = Base64.encode(serializedSignatureData);
+        System.out.println("sig: " + sigBase64);
+
+        // check verifysign
+        String receivedSign = sigBase64;
+        byte[] sigBytes = Base64.decode(receivedSign);
+        Assert.assertEquals(sigBytes.length, 65);
+        byte[] r = new byte[32];
+        byte[] s = new byte[32];
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData recSigData = null;
+        System.arraycopy(serializedSignatureData, 1, r, 0, 32);
+        System.arraycopy(serializedSignatureData, 33, s, 0, 32);
+        recSigData = new org.fisco.bcos.web3j.crypto.Sign.SignatureData(sigBytes[0], r, s);
+        boolean result = ecdsaSign.secp256Verify(hashBytes, keyPair.getPublicKey(), recSigData);
+        Assert.assertTrue(result);
     }
 }
