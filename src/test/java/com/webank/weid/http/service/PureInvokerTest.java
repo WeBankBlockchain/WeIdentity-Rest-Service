@@ -255,7 +255,7 @@ public class PureInvokerTest extends BaseTest {
         Assert.assertTrue((Boolean) resp11.getRespBody());
 
         txnArgMap = new LinkedHashMap<>();
-        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -270,7 +270,7 @@ public class PureInvokerTest extends BaseTest {
 
         String data = (String) resp12.getRespBody();
         txnArgMap = new LinkedHashMap<>();
-        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("data", data);
         inputParamMap = new LinkedHashMap<>();
@@ -530,7 +530,20 @@ public class PureInvokerTest extends BaseTest {
         System.out.println("Stored Private Key is: " + weIdPrivKey + ", should be empty/null");
         Assert.assertTrue(StringUtils.isEmpty(weIdPrivKey));
 
-        // getWeIdDocument can be totally ignored - note that public key must be uploaded
+        // get WeID document
+        funcArgMap = new LinkedHashMap<>();
+        funcArgMap.put("weId", weId);
+        txnArgMap = new LinkedHashMap<>();
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
+        inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
+            WeIdentityParamKeyConstant.DEFAULT_API_VERSION);
+        inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_NAME,
+            WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT);
+        HttpResponseData<Object> respget =
+            transactionService.invokeFunction(JsonUtil.objToJsonStr(inputParamMap));
+        System.out.println(JsonUtil.objToJsonStr(respget));
+        Assert.assertTrue(respget.getRespBody() != null);
 
         // We firstly register this weid as an authority issuer:
         inputParamMap = new LinkedHashMap<>();

@@ -182,10 +182,13 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             if (nameNode == null || StringUtils.isEmpty(nameNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            // todo
-            //String address = authorityIssuerService.getAddressByName(nameNode.textValue());
-            String address = "0x1202577890076397e5ca661b37620ff5174f5605";
-            return new HttpResponseData<>(WeIdUtils.convertAddressToWeId(address), HttpReturnCode.SUCCESS);
+            ResponseData<String> addressResp = authorityIssuerService.getWeIdByOrgId(nameNode.textValue());
+            if (StringUtils.isEmpty(addressResp.getResult())) {
+                return new HttpResponseData<>(StringUtils.EMPTY, addressResp.getErrorCode(),
+                    addressResp.getErrorMessage());
+            }
+            return new HttpResponseData<>(WeIdUtils.convertAddressToWeId(addressResp.getResult()),
+                HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error(
                 "[queryAuthorityIssuer]: unknow error. weId:{}.",

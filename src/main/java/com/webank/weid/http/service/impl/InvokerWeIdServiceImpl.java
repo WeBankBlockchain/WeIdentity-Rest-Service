@@ -20,6 +20,8 @@
 package com.webank.weid.http.service.impl;
 
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.protocol.base.WeIdAuthentication;
+import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.util.WeIdUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -227,13 +229,28 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeyNode.textValue());
-            // todo
-            // ResponseData<String> response = weIdService.getWeIdDocumentJson(publicKeyNode.textValue());
+            WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
+            weIdPublicKey.setPublicKey(publicKeyNode.textValue());
+            WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
+            weIdAuthentication.setWeId(weId);
+            String privateKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            if (!KeyUtil.isPrivateKeyLengthValid(privateKey)) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
+            weIdPrivateKey.setPrivateKey(privateKey);
+            weIdAuthentication.setWeIdPrivateKey(weIdPrivateKey);
+            ResponseData<String> response = weIdService.delegateCreateWeId(weIdPublicKey, weIdAuthentication);
             // after success:
-            KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
-                weId,
-                StringUtils.EMPTY);
-            return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+            if (!StringUtils.isEmpty(response.getResult())) {
+                KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
+                    weId,
+                    StringUtils.EMPTY);
+                return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+            } else {
+                return new HttpResponseData<>(StringUtils.EMPTY, response.getErrorCode(), response.getErrorMessage());
+            }
         } catch (Exception e) {
             logger.error(
                 "[getWeIdDocument]: unknow error. weId:{}.",

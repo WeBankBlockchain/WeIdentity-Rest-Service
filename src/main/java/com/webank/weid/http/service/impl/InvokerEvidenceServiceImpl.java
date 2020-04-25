@@ -9,11 +9,14 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerEvidenceService;
+import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
+import com.webank.weid.util.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +50,17 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.error("[createEvidenceWithExtraInfo]: input args error: {}", args, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
-        HashString hashStr = new HashString(hashNode.textValue());
-        String hashResp = hashStr.getHash();
-        // todo
-        //evidenceService.createEvidenceWithLogAndCustomKey(hashStr, null, logNode.textValue(), idNode.textValue()).getResult();
-        if (!hashStr.getHash().equalsIgnoreCase(hashResp)) {
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithCustomKey(
+            hashNode.textValue(),
+            proofNode.textValue(),
+            logNode.textValue(),
+            DateUtils.getNoMillisecondTimeStamp(),
+            idNode.textValue(),
+            adminPrivKey
+        );
+        if (!createResp.getResult()) {
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 ErrorCode.CREDENTIAL_EVIDENCE_HASH_MISMATCH.getCodeDesc());
         }

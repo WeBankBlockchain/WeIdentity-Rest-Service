@@ -20,6 +20,7 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.constant.CredentialType;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.WeIdAuthentication;
@@ -377,13 +378,6 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
         }
 
-        CredentialPojo credential = new CredentialPojo();
-        credential.setId(UUID.randomUUID().toString());
-        credential.setCptId(cptId);
-        credential.setIssuer(issuerNode.textValue());
-        credential.setExpirationDate(expirationDate);
-        credential.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
-        credential.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
         Map<String, Object> claimMap;
         try {
             claimMap = (Map<String, Object>) JsonUtil
@@ -393,7 +387,14 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
                 ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
         }
-        credential.setClaim(claimMap);
+        CreateCredentialPojoArgs args = new CreateCredentialPojoArgs();
+        args.setClaim(claimMap);
+        args.setIssuer(issuerNode.textValue());
+        args.setCptId(cptId);
+        args.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
+        args.setExpirationDate(expirationDate);
+        args.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
+        args.setId(UUID.randomUUID().toString());
 
         WeIdAuthentication weIdAuthentication;
         String privateKey;
@@ -411,29 +412,17 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS.getCodeDesc());
         }
 
-        // Client-side check of validity
-        CreateCredentialPojoArgs createArg = new CreateCredentialPojoArgs();
-        createArg.setClaim(claimMap);
-        createArg.setCptId(cptId);
-        createArg.setIssuer(issuerNode.textValue());
-        createArg.setIssuanceDate(credential.getIssuanceDate());
-        createArg.setExpirationDate(expirationDate);
-        createArg.setContext(credential.getContext());
-        createArg.setId(credential.getId());
-        createArg.setWeIdAuthentication(weIdAuthentication);
-//        ErrorCode errorCode = CredentialPojoUtils.isCreateCredentialPojoArgsValid(createArg);
-//        if (errorCode.getCode() != ErrorCode.SUCCESS.getCode()) {
-//            return new HttpResponseData<>(null, errorCode.getCode(),
-//                errorCode.getCodeDesc());
-//        }
-        ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(createArg);
-        // TODO unify with Credential
+        args.setWeIdAuthentication(weIdAuthentication);
+        args.setType(CredentialType.LITE1);
+
+        ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(args);
         CredentialPojo credentialPojo = createResp.getResult();
+        String toBeEncryptedCredentialPojo = credentialPojo.toJson();
+        System.out.println(toBeEncryptedCredentialPojo);
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
-        System.out.println(credentialPojo);
         try {
-            byte[] encryptData = encrypt.encrypt(DataToolUtils.serialize(credentialPojo).getBytes("utf-8"));
+            byte[] encryptData = encrypt.encrypt(toBeEncryptedCredentialPojo.getBytes("utf-8"));
             String hexEncryptedData = Hex.toHexString(encryptData);
             return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
         } catch (Exception e) {

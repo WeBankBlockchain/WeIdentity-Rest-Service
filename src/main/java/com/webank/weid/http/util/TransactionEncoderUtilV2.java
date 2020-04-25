@@ -552,7 +552,7 @@ public class TransactionEncoderUtilV2 {
                 result.setExpirationDate(newExpirationDate);
             }
             result.addType(CredentialConstant.DEFAULT_CREDENTIAL_TYPE);
-            result.addType(CredentialConstant.ORIGINAL_CREDENTIAL_TYPE);
+            result.addType(CredentialConstant.SELECTIVE_CREDENTIAL_TYPE);
             Object claimObject = args.getClaim();
             String claimStr;
             if (!(claimObject instanceof String)) {
