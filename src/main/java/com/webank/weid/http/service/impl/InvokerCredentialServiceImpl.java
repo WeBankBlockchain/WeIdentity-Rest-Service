@@ -426,8 +426,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             String hexEncryptedData = Hex.toHexString(encryptData);
             return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
-            e.printStackTrace();
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+            logger.error("Error when creating credential and encode: ", e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
         }
         //
     }
@@ -459,13 +459,19 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
         try {
-            byte[] nonEncryptedData = dataNode.textValue().getBytes("UTF-8");
-            byte[] encryptedData = encrypt.encrypt(nonEncryptedData);
+            byte[] nonEncryptedData = dataNode.textValue().getBytes();
+            byte[] encryptedData;
+            try {
+                encryptedData = encrypt.encrypt(nonEncryptedData);
+            } catch (Exception e) {
+                logger.error("Error: " + e.getMessage());
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
+            }
             String hexEncryptedData = Hex.toHexString(encryptedData);
             return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
-            e.printStackTrace();
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+            logger.error("Error encrypt: " + e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
         }
     }
 
@@ -488,6 +494,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         }
         String privateKey = KeyUtil
             .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+        logger.info("Privatekey: " + privateKey);
+        System.out.println(privateKey);
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCDecrypt decrypt = new ECCDecrypt(ecKeyPair.getPrivateKey());
         byte[] nonDecryptedData = Hex.decode(dataNode.textValue());
@@ -497,9 +505,9 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 decryptData = decrypt.decrypt(nonDecryptedData);
             } catch (Exception e) {
                 logger.error("Failed to decrypt: " + e.getMessage());
-                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
             }
-            String resp = new String(decryptData, "UTF-8");
+            String resp = new String(decryptData);
             try {
                 Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(), resp);
                 return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
@@ -507,8 +515,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+            logger.error("Error decrypt: " + e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
         }
     }
 
