@@ -187,7 +187,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
                 return new HttpResponseData<>(StringUtils.EMPTY, addressResp.getErrorCode(),
                     addressResp.getErrorMessage());
             }
-            return new HttpResponseData<>(WeIdUtils.convertAddressToWeId(addressResp.getResult()),
+            return new HttpResponseData<>(addressResp.getResult(),
                 HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error(
