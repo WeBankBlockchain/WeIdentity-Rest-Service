@@ -343,6 +343,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         JsonNode issuerNode;
         JsonNode expirationDateNode;
         JsonNode claimNode;
+        JsonNode typeNode;
         try {
             JsonNode functionArgNode = new ObjectMapper()
                 .readTree(createCredentialPojoFuncArgs.getFunctionArg());
@@ -350,10 +351,12 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             issuerNode = functionArgNode.get(ParamKeyConstant.ISSUER);
             expirationDateNode = functionArgNode.get(ParamKeyConstant.EXPIRATION_DATE);
             claimNode = functionArgNode.get(ParamKeyConstant.CLAIM);
+            typeNode = functionArgNode.get(ParamKeyConstant.PROOF_TYPE);
             if (cptIdNode == null || StringUtils.isEmpty(cptIdNode.toString())
                 || issuerNode == null || StringUtils.isEmpty(issuerNode.textValue())
-                || expirationDateNode == null || StringUtils.isEmpty(expirationDateNode.textValue())
-                || claimNode == null || StringUtils.isEmpty(claimNode.toString())) {
+                || expirationDateNode == null || StringUtils.isEmpty(expirationDateNode.toString())
+                || claimNode == null || StringUtils.isEmpty(claimNode.toString())
+                || typeNode == null || StringUtils.isEmpty(typeNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
         } catch (Exception e) {
@@ -370,8 +373,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
 
         Long expirationDate;
         try {
-            expirationDate = DateUtils
-                .convertUtcDateToTimeStamp(expirationDateNode.textValue());
+            expirationDate = Long.valueOf(JsonUtil.removeDoubleQuotes(expirationDateNode.toString()));
         } catch (Exception e) {
             return new HttpResponseData<>(null,
                 ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
@@ -413,7 +415,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         }
 
         args.setWeIdAuthentication(weIdAuthentication);
-        args.setType(CredentialType.LITE1);
+        if (typeNode.textValue().contains("lite")) {
+            args.setType(CredentialType.LITE1);
+        } else {
+            args.setType(CredentialType.ORIGINAL);
+        }
 
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(args);
         CredentialPojo credentialPojo = createResp.getResult();
