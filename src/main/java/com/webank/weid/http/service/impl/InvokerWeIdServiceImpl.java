@@ -19,6 +19,10 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.protocol.base.WeIdAuthentication;
+import com.webank.weid.protocol.base.WeIdPublicKey;
+import com.webank.weid.util.WeIdUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -207,6 +211,52 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 createWeIdJsonArgs,
                 e);
             return new HttpResponseData<>(new HashMap<>(), HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> createWeIdWithPubKey(InputArg arg) {
+        try {
+            JsonNode publicKeyNode = new ObjectMapper()
+                .readTree(arg.getFunctionArg())
+                .get(ParamKeyConstant.PUBLIC_KEY);
+            JsonNode txnArgNode = new ObjectMapper()
+                .readTree(arg.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (publicKeyNode == null || StringUtils.isEmpty(publicKeyNode.textValue())
+                || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String weId = WeIdUtils.convertPublicKeyToWeId(publicKeyNode.textValue());
+            WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
+            weIdPublicKey.setPublicKey(publicKeyNode.textValue());
+            WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
+            weIdAuthentication.setWeId(weId);
+            String privateKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            if (!KeyUtil.isPrivateKeyLengthValid(privateKey)) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+            WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
+            weIdPrivateKey.setPrivateKey(privateKey);
+            weIdAuthentication.setWeIdPrivateKey(weIdPrivateKey);
+            ResponseData<String> response = weIdService.delegateCreateWeId(weIdPublicKey, weIdAuthentication);
+            // after success:
+            if (!StringUtils.isEmpty(response.getResult())) {
+                KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
+                    weId,
+                    StringUtils.EMPTY);
+                return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+            } else {
+                return new HttpResponseData<>(StringUtils.EMPTY, response.getErrorCode(), response.getErrorMessage());
+            }
+        } catch (Exception e) {
+            logger.error(
+                "[getWeIdDocument]: unknow error. weId:{}.",
+                arg,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }

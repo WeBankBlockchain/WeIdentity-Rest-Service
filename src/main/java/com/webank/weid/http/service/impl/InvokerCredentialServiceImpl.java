@@ -20,6 +20,7 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.constant.CredentialType;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.WeIdAuthentication;
@@ -29,6 +30,7 @@ import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.DataToolUtils;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +38,11 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.util.encoders.Hex;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
+import org.fisco.bcos.web3j.crypto.gm.GenCredential;
+import org.fisco.bcos.web3j.crypto.tool.ECCDecrypt;
+import org.fisco.bcos.web3j.crypto.tool.ECCEncrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -328,6 +335,189 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(),
             DataToolUtils.serialize(createResp.getResult()));
         return new HttpResponseData<>(credMap, createResp.getErrorCode(), createResp.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> createCredentialPojoAndEncryptInvoke(InputArg createCredentialPojoFuncArgs) {
+        JsonNode cptIdNode;
+        JsonNode issuerNode;
+        JsonNode expirationDateNode;
+        JsonNode claimNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(createCredentialPojoFuncArgs.getFunctionArg());
+            cptIdNode = functionArgNode.get(ParamKeyConstant.CPT_ID);
+            issuerNode = functionArgNode.get(ParamKeyConstant.ISSUER);
+            expirationDateNode = functionArgNode.get(ParamKeyConstant.EXPIRATION_DATE);
+            claimNode = functionArgNode.get(ParamKeyConstant.CLAIM);
+            if (cptIdNode == null || StringUtils.isEmpty(cptIdNode.toString())
+                || issuerNode == null || StringUtils.isEmpty(issuerNode.textValue())
+                || expirationDateNode == null || StringUtils.isEmpty(expirationDateNode.textValue())
+                || claimNode == null || StringUtils.isEmpty(claimNode.toString())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+        } catch (Exception e) {
+            logger.error("[createCredentialPojoInvoke]: input args error: {}", createCredentialPojoFuncArgs, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+
+        Integer cptId;
+        try {
+            cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+        } catch (Exception e) {
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+
+        Long expirationDate;
+        try {
+            expirationDate = DateUtils
+                .convertUtcDateToTimeStamp(expirationDateNode.textValue());
+        } catch (Exception e) {
+            return new HttpResponseData<>(null,
+                ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
+                ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
+        }
+
+        Map<String, Object> claimMap;
+        try {
+            claimMap = (Map<String, Object>) JsonUtil
+                .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+        } catch (Exception e) {
+            return new HttpResponseData<>(null,
+                ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+        }
+        CreateCredentialPojoArgs args = new CreateCredentialPojoArgs();
+        args.setClaim(claimMap);
+        args.setIssuer(issuerNode.textValue());
+        args.setCptId(cptId);
+        args.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
+        args.setExpirationDate(expirationDate);
+        args.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
+        args.setId(UUID.randomUUID().toString());
+
+        WeIdAuthentication weIdAuthentication;
+        String privateKey;
+        try {
+            JsonNode txnArgNode = new ObjectMapper().readTree(createCredentialPojoFuncArgs.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            privateKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            weIdAuthentication = KeyUtil.buildWeIdAuthenticationFromPrivKey(privateKey);
+            if (weIdAuthentication == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+        } catch (Exception e) {
+            return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS.getCode(),
+                ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS.getCodeDesc());
+        }
+
+        args.setWeIdAuthentication(weIdAuthentication);
+        args.setType(CredentialType.LITE1);
+
+        ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(args);
+        CredentialPojo credentialPojo = createResp.getResult();
+        String toBeEncryptedCredentialPojo = credentialPojo.toJson();
+        System.out.println(toBeEncryptedCredentialPojo);
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
+        ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
+        try {
+            byte[] encryptData = encrypt.encrypt(toBeEncryptedCredentialPojo.getBytes("utf-8"));
+            String hexEncryptedData = Hex.toHexString(encryptData);
+            return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Error when creating credential and encode: ", e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+        }
+        //
+    }
+
+    @Override
+    public HttpResponseData<Object> eccEncrypt(InputArg encryptFuncArgs) {
+        JsonNode dataNode;
+        JsonNode keyIndexNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(encryptFuncArgs.getFunctionArg());
+            dataNode = functionArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
+            if (dataNode == null || StringUtils.isEmpty(dataNode.textValue())) {
+                logger.error("Null or empty json node: data");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode txnArgNode = new ObjectMapper()
+                .readTree(encryptFuncArgs.getTransactionArg());
+            keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                logger.error("Null or empty json node: keyIndex");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+        } catch (Exception e) {
+            logger.error("[createCredentialPojoInvoke]: input args error: {}", encryptFuncArgs, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+        String privateKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
+        ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
+        try {
+            byte[] nonEncryptedData = dataNode.textValue().getBytes();
+            byte[] encryptedData;
+            try {
+                encryptedData = encrypt.encrypt(nonEncryptedData);
+            } catch (Exception e) {
+                logger.error("Error: " + e.getMessage());
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
+            }
+            String hexEncryptedData = Hex.toHexString(encryptedData);
+            return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Error encrypt: " + e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> eccDecrypt(InputArg decryptFuncArgs) {
+        JsonNode dataNode;
+        JsonNode keyIndexNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(decryptFuncArgs.getFunctionArg());
+            dataNode = functionArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
+            if (dataNode == null || StringUtils.isEmpty(dataNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode txnArgNode = new ObjectMapper()
+                .readTree(decryptFuncArgs.getTransactionArg());
+            keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+        } catch (Exception e) {
+            logger.error("[createCredentialPojoInvoke]: input args error: {}", decryptFuncArgs, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+        String privateKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+        logger.info("Privatekey: " + privateKey);
+        System.out.println(privateKey);
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
+        ECCDecrypt decrypt = new ECCDecrypt(ecKeyPair.getPrivateKey());
+        byte[] nonDecryptedData = Hex.decode(dataNode.textValue());
+        try {
+            byte[] decryptData;
+            try {
+                decryptData = decrypt.decrypt(nonDecryptedData);
+            } catch (Exception e) {
+                logger.error("Failed to decrypt: " + e.getMessage());
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
+            }
+            String resp = new String(decryptData);
+            try {
+                Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(), resp);
+                return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
+            } catch (Exception e) {
+                return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
+            }
+        } catch (Exception e) {
+            logger.error("Error decrypt: " + e.getMessage());
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+        }
     }
 
     @Override
