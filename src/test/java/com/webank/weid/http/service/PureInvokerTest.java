@@ -34,6 +34,7 @@ import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.DateUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -257,6 +258,8 @@ public class PureInvokerTest extends BaseTest {
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, weId);
         inputParamMap = new LinkedHashMap<>();
+        funcArgMap.put("expirationDate", "1687971840");
+        funcArgMap.put(ParamKeyConstant.PROOF_TYPE, "lite");
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
