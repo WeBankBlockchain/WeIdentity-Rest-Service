@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.4.0"
+version = "1.6.1"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -29,6 +29,8 @@ repositories {
         url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
     maven { url "https://dl.bintray.com/ethereum/maven/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://oss.sonatype.org/content/groups/public/" }
     mavenLocal()
     mavenCentral()
 }
@@ -88,12 +90,15 @@ List jackson = [
         'com.github.fge:json-schema-validator:2.2.6',
         'org.apache.httpcomponents:httpclient:4.5.2',
         "com.github.reinert:jjschema:1.16",
-        "com.google.zxing:core:3.3.0"
+        "com.google.zxing:core:3.3.0",
+        "net.sf.oval:oval:1.90",
+        "com.github.ben-manes.caffeine:caffeine:2.8.0",
+        "com.google.protobuf:protobuf-java:3.9.1"
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.5.2',
-        'org.fisco-bcos:web3sdk:2.1.2'
+        //'com.webank:weid-java-sdk:1.6.1',
+        'org.fisco-bcos:web3sdk:2.4.0-0423-SNAPSHOT'
 ]
 
 List pdfbox = [
@@ -119,13 +124,14 @@ dependencies {
         compile weid_java_sdk
         testCompile weid_java_sdk
     }
-    compile("com.webank:weid-contract-java:1.2.12") {
+    compile("com.webank:weid-contract-java:1.2.19") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
-    testCompile("com.webank:weid-contract-java:1.2.12") {
+    testCompile("com.webank:weid-contract-java:1.2.19") {
         exclude group:"org.slf4j", module: "slf4j-log4j12"
     }
     compile files("lib/WeDPR-Java-SDK.jar")
+    compile files("lib/weid-java-sdk-1.6.2.jar")
     if (gradleVer.startsWith("4")) {
         compile lombok
         testCompile lombok
