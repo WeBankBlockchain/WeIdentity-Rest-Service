@@ -45,4 +45,10 @@ public final class WeIdentityParamKeyConstant {
 
     public static final String AUTHO_TOKEN = "authToken";
     public static final String AUTHO_SIGNED_NONCE = "signedNonce";
+
+    public static final String ORG_ID = "orgId";
+    public static final String CREDENTIAL_ID = "id";
+    public static final String HASH = "hash";
+    public static final String PROOF = "proof";
+    public static final String LOG = "log";
 }
