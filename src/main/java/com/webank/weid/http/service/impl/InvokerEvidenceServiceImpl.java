@@ -9,10 +9,10 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerEvidenceService;
+import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.protocol.base.EvidenceInfo;
-import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
@@ -61,28 +61,27 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             adminPrivKey
         );
         if (!createResp.getResult()) {
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+            return new HttpResponseData<>(false, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 ErrorCode.CREDENTIAL_EVIDENCE_HASH_MISMATCH.getCodeDesc());
         }
-        return new HttpResponseData<>(proofNode.textValue(), HttpReturnCode.SUCCESS);
+        return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
     }
 
     @Override
-    public HttpResponseData<Object> getEvidenceSignatureByCustomKey(InputArg args) {
+    public HttpResponseData<Object> getEvidenceByCustomKey(InputArg args) {
         JsonNode idNode;
         try {
             JsonNode functionArgNode = new ObjectMapper()
                 .readTree(args.getFunctionArg());
             idNode = functionArgNode.get(WeIdentityParamKeyConstant.CREDENTIAL_ID);
         } catch (Exception e) {
-            logger.error("[getEvidenceSignatureByCustomKey]: input args error: {}", args, e);
+            logger.error("[getEvidenceByCustomKey]: input args error: {}", args, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
         ResponseData<EvidenceInfo> respData = evidenceService.getEvidenceByCustomKey(idNode.textValue());
         if (respData.getResult() == null) {
             return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
         }
-        String signature = respData.getResult().getSignatures().get(0);
-        return new HttpResponseData<>(signature, HttpReturnCode.SUCCESS);
+        return new HttpResponseData<>(JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(respData.getResult())), HttpReturnCode.SUCCESS);
     }
 }
