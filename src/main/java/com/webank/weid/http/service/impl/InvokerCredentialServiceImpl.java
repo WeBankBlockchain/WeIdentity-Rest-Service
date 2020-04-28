@@ -475,6 +475,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             byte[] nonEncryptedData = dataNode.textValue().getBytes();
             byte[] encryptedData;
+            System.out.println(dataNode.textValue());
             try {
                 encryptedData = encrypt.encrypt(nonEncryptedData);
             } catch (Exception e) {
@@ -523,17 +524,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                     e.getMessage() + " (private key might mismatch or be mal-formatted)");
             }
             String resp = new String(decryptData);
-            try {
-                new ObjectMapper().readTree(resp);
-                Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(), resp);
-                // check if this is a PURE json
-                if (JsonUtil.mapToCompactJson(credMap).equalsIgnoreCase(resp)) {
-                    return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
-                }
-                return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
-            } catch (Exception e) {
-                return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
-            }
+            System.out.println(resp);
+            return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("Error decrypt: " + e.getMessage());
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
