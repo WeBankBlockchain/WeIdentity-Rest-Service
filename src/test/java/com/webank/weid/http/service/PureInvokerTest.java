@@ -289,7 +289,7 @@ public class PureInvokerTest extends BaseTest {
         //Assert.assertNotNull(resp13.getRespBody());
 
         // test pure encrypt and decrypt
-        data = "12345";
+        data = "{\"a\":\"b\"}|12345";
         txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "ecdsa_key");
         funcArgMap = new LinkedHashMap<>();
