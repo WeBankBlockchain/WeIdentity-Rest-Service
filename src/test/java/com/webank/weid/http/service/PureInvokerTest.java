@@ -515,7 +515,12 @@ public class PureInvokerTest extends BaseTest {
             PropertiesUtil.getProperty("default.passphrase"));
         KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
-        funcArgMap.put(ParamKeyConstant.PUBLIC_KEY, ecKeyPair.getPublicKey().toString(10));
+        String pubkeyBase64Str =
+            new String(DataToolUtils.base64Encode(ecKeyPair.getPublicKey().toString(10).getBytes()));
+        funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_SECP, pubkeyBase64Str);
+        String pubkeyRsaStr =
+            new String(DataToolUtils.base64Encode((ecKeyPair.getPublicKey().add(BigInteger.TEN)).toString(10).getBytes()));
+        funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_RSA, pubkeyRsaStr);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.API_VERSION,
@@ -527,7 +532,6 @@ public class PureInvokerTest extends BaseTest {
         System.out.println(JsonUtil.objToJsonStr(resp1));
         String weId = (String) resp1.getRespBody();
         Assert.assertTrue(!StringUtils.isEmpty(weId));
-        System.out.println(weId);
         String weIdPrivKey = KeyUtil
             .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, weId);
         System.out.println("Stored Private Key is: " + weIdPrivKey + ", should be empty/null");
@@ -626,47 +630,56 @@ public class PureInvokerTest extends BaseTest {
 
     @Test
     public void testSecpSuite() throws Exception {
-        String txHexPubKey = "047ec4369a0a0ae43bb3bb85f4f098a226a21b84f9c5e11a090d5908a9e6b80c26e015d797de6dfd1f6f34542159720beefcfbf749b2d872cdae8033a8e20c43da";
-        String txHexPrivKey = "19dc7d4f64e70aec749270ccabc629052a9701104949001c6ecde277990ab82f";
+        //String txHexPubKey = "0483a7e164ccd8eed1276b95653f3d6a091cb1c4c0e8e9bb097c922f913bd78e4b9fbdf23c1c472a63b0ed24703165ca79e4523805017f8ab2d621e1998ebff0cf";
+        String txHexPrivKey = "b774d1cdf59f98fc9ff027597a891a04e42f26965a9a9177d8a023ad91373d48";
         String txHash = "64e604787cbf194841e7b68d7cd28786f6c9a0a3ab9f8b0a0e87cb4387ab0107";
         String msg = "123";
         String FIXED_PUBKEY_HEX_HEADER = "04";
+        String txSig = "284b99fde19ca4a2135a6c32e1b05cd8b12cbb732948bf8f6c1a6ffc729a3d1f38d32733f07e5b87eff194c53295a7679713ba3e10bf47c445fe5f26e7156d5a00";
 
         // check hash and key
         byte[] hashBytes = Hash.sha3(msg.getBytes());
         String hash = Numeric.toHexString(hashBytes);
         System.out.println("Converted hash: " + hash);
         Assert.assertTrue(hash.equals(WeIdConstant.HEX_PREFIX + txHash));
-        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
-        SHA3Digest sha3Digest = new SHA3Digest();
-        Assert.assertTrue(Numeric.toHexString(sha3Digest.hash(msg.getBytes())).equals(hash));
-        String hexPubKey = FIXED_PUBKEY_HEX_HEADER + keyPair.getPublicKey().toString(16);
-        System.out.println("Converted pub key: " + hexPubKey);
-        Assert.assertTrue(hexPubKey.equals(txHexPubKey));
 
         // check sign
         ECDSASign ecdsaSign = new ECDSASign();
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign.secp256SignMessage(msg.getBytes(), keyPair);
-        Assert.assertTrue(ecdsaSign.secp256Verify(hashBytes, keyPair.getPublicKey(), sigData));
 
-        byte[] serializedSignatureData = new byte[65];
-        serializedSignatureData[0] = sigData.getV();
-        System.arraycopy(sigData.getR(), 0, serializedSignatureData, 1, 32);
-        System.arraycopy(sigData.getS(), 0, serializedSignatureData, 33, 32);
-        String sigBase64 = Base64.encode(serializedSignatureData);
-        System.out.println("sig: " + sigBase64);
-
-        // check verifysign
-        String receivedSign = sigBase64;
-        byte[] sigBytes = Base64.decode(receivedSign);
-        Assert.assertEquals(sigBytes.length, 65);
+        // recover txsign
+        byte[] txSigByte = Hex.decode(txSig);
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData txSigData;
+        Assert.assertEquals(txSigByte.length, 65);
         byte[] r = new byte[32];
         byte[] s = new byte[32];
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData recSigData = null;
-        System.arraycopy(serializedSignatureData, 1, r, 0, 32);
-        System.arraycopy(serializedSignatureData, 33, s, 0, 32);
-        recSigData = new org.fisco.bcos.web3j.crypto.Sign.SignatureData(sigBytes[0], r, s);
-        boolean result = ecdsaSign.secp256Verify(hashBytes, keyPair.getPublicKey(), recSigData);
+        System.arraycopy(txSigByte, 0, r, 0, 32);
+        System.arraycopy(txSigByte, 32, s, 0, 32);
+        txSigData = new org.fisco.bcos.web3j.crypto.Sign.SignatureData(txSigByte[64], r, s);
+        //String trunctedTxPubkey = txHexPubKey.substring(2);
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
+        //BigInteger txPubKeyBi = new BigInteger(trunctedTxPubkey, 16);
+        BigInteger txPubKeyBi = keyPair.getPublicKey();
+        boolean result = ecdsaSign.secp256Verify(hashBytes, txPubKeyBi, txSigData);
         Assert.assertTrue(result);
+
+        // send to txsign to verify
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair2 = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign.secp256SignMessage(msg.getBytes(), keyPair2);
+        byte[] serializedSignatureData = new byte[65];
+        serializedSignatureData[64] = sigData.getV();
+        System.arraycopy(sigData.getR(), 0, serializedSignatureData, 0, 32);
+        System.arraycopy(sigData.getS(), 0, serializedSignatureData, 32, 32);
+        String toHexStr = Hex.toHexString(serializedSignatureData);
+        Assert.assertEquals(toHexStr, txSig);
+
+        // integration test
+        String privKey = keyPair2.getPrivateKey().toString(16);
+        String pubKey = keyPair2.getPublicKey().toString(16);
+        System.out.println("privKey: " + privKey + ", pubkey: " + pubKey);
+
+        String priv = "109133513592087805746587031475659996081883766162039886922465775418059633608266";
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair3 = org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(priv));
+        System.out.println(keyPair3.getPublicKey().toString(10));
+        System.out.println(keyPair3.getPrivateKey().toString(10));
     }
 }
