@@ -20,6 +20,8 @@
 
 package com.webank.weid.http.service.impl;
 
+import static com.webank.weid.util.CredentialPojoUtils.getLiteCredentialThumbprintWithoutSig;
+
 import com.webank.weid.constant.CredentialType;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
@@ -423,8 +425,13 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
 
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(args);
         CredentialPojo credentialPojo = createResp.getResult();
+        logger.info("Thumbprint without sig: ", getLiteCredentialThumbprintWithoutSig(credentialPojo));
+        logger.info("Hash: " + DataToolUtils.sha3(getLiteCredentialThumbprintWithoutSig(credentialPojo)));
+        logger.info("Hash again: " + DataToolUtils.sha3(DataToolUtils.sha3(getLiteCredentialThumbprintWithoutSig(credentialPojo))));
+
         String toBeEncryptedCredentialPojo = credentialPojo.toJson();
-        System.out.println(toBeEncryptedCredentialPojo);
+        System.out.println("Lite Credential toJson: " + toBeEncryptedCredentialPojo);
+        logger.info("Lite CredentialPojo Json: ", toBeEncryptedCredentialPojo);
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
         try {

@@ -19,10 +19,14 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.constant.WeIdConstant.PublicKeyType;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPublicKey;
+import com.webank.weid.protocol.request.PublicKeyArgs;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -170,7 +174,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             CreateWeIdDataResult createWeIdDataResult = response.getResult();
             if (createWeIdDataResult != null) {
                 try {
-                    // host the weId which just got created
+                    // host the weId which just got crekated
                     KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
                         createWeIdDataResult.getWeId(),
                         createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
@@ -183,7 +187,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 setPublicKeyArgs.setWeId(createWeIdDataResult.getWeId());
                 setPublicKeyArgs
                     .setPublicKey(createWeIdDataResult.getUserWeIdPublicKey().getPublicKey());
-                setPublicKeyArgs.setType("secp256k1");
+                setPublicKeyArgs.setType(PublicKeyType.SECP256K1);
                 WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
                 weIdPrivateKey
                     .setPrivateKey(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
@@ -218,19 +222,25 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
     @Override
     public HttpResponseData<Object> createWeIdWithPubKey(InputArg arg) {
         try {
-            JsonNode publicKeyNode = new ObjectMapper()
+            JsonNode publicKeySecpNode = new ObjectMapper()
                 .readTree(arg.getFunctionArg())
-                .get(ParamKeyConstant.PUBLIC_KEY);
+                .get(WeIdentityParamKeyConstant.PUBKEY_SECP);
             JsonNode txnArgNode = new ObjectMapper()
                 .readTree(arg.getTransactionArg());
             JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
-            if (publicKeyNode == null || StringUtils.isEmpty(publicKeyNode.textValue())
+            if (publicKeySecpNode == null || StringUtils.isEmpty(publicKeySecpNode.textValue())
                 || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            String weId = WeIdUtils.convertPublicKeyToWeId(publicKeyNode.textValue());
+            if (!DataToolUtils.isValidBase64String(publicKeySecpNode.textValue())) {
+                logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
+            }
+            String publicKeySecp = new String(DataToolUtils.base64Decode(publicKeySecpNode.textValue().getBytes(StandardCharsets.UTF_8)));
+            String weId = WeIdUtils.convertPublicKeyToWeId(publicKeySecp);
             WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
-            weIdPublicKey.setPublicKey(publicKeyNode.textValue());
+            weIdPublicKey.setPublicKey(publicKeySecp);
             WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
             weIdAuthentication.setWeId(weId);
             String privateKey = KeyUtil
@@ -247,10 +257,38 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
                     weId,
                     StringUtils.EMPTY);
-                return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
             } else {
                 return new HttpResponseData<>(StringUtils.EMPTY, response.getErrorCode(), response.getErrorMessage());
             }
+
+            // Proceed on RSA public key
+            JsonNode publicKeyRsaNode;
+            String publicKeyRsa;
+            try {
+                publicKeyRsaNode = new ObjectMapper()
+                    .readTree(arg.getFunctionArg())
+                    .get(WeIdentityParamKeyConstant.PUBKEY_RSA);
+                publicKeyRsa = publicKeyRsaNode.textValue();
+                if (!DataToolUtils.isValidBase64String(publicKeyRsa)) {
+                    logger.info("Public key RSA secp256k1 format illegal: not Base64 encoded.");
+                    return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                        HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": RSA not base64");
+                }
+            } catch (Exception e) {
+                logger.info("Cannot find RSA public key, skipping..");
+                return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+            }
+            PublicKeyArgs publicKeyArgs = new PublicKeyArgs();
+            publicKeyArgs.setOwner(weId);
+            publicKeyArgs.setPublicKey(publicKeyRsa);
+            publicKeyArgs.setType(PublicKeyType.RSA);
+            publicKeyArgs.setWeId(weId);
+            ResponseData<Boolean> resp = weIdService
+                .delegateSetPublicKey(publicKeyArgs, weIdAuthentication);
+            if (!resp.getResult()) {
+                return new HttpResponseData<>(StringUtils.EMPTY, resp.getErrorCode(), resp.getErrorMessage());
+            }
+            return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error(
                 "[getWeIdDocument]: unknow error. weId:{}.",
