@@ -105,7 +105,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             try {
                 cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
             } catch (Exception e) {
-                return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+                return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
+                    HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
             }
 
             Long expirationDate;
@@ -271,7 +272,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
         } catch (Exception e) {
-            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
+                HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
         }
 
         Long expirationDate;
@@ -333,7 +335,6 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 errorCode.getCodeDesc());
         }
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(createArg);
-        // TODO unify with Credential
         Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(),
             DataToolUtils.serialize(createResp.getResult()));
         return new HttpResponseData<>(credMap, createResp.getErrorCode(), createResp.getErrorMessage());
@@ -370,7 +371,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
         } catch (Exception e) {
-            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
+                HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
         }
 
         Long expirationDate;
@@ -427,7 +429,6 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         CredentialPojo credentialPojo = createResp.getResult();
         logger.info("Thumbprint without sig: ", getLiteCredentialThumbprintWithoutSig(credentialPojo));
         logger.info("Hash: " + DataToolUtils.sha3(getLiteCredentialThumbprintWithoutSig(credentialPojo)));
-        logger.info("Hash again: " + DataToolUtils.sha3(DataToolUtils.sha3(getLiteCredentialThumbprintWithoutSig(credentialPojo))));
 
         String toBeEncryptedCredentialPojo = credentialPojo.toJson();
         System.out.println("Lite Credential toJson: " + toBeEncryptedCredentialPojo);
@@ -440,9 +441,9 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("Error when creating credential and encode: ", e.getMessage());
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                e.getMessage());
         }
-        //
     }
 
     @Override
@@ -484,7 +485,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("Error encrypt: " + e.getMessage());
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
         }
     }
 
@@ -518,18 +519,25 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                 decryptData = decrypt.decrypt(nonDecryptedData);
             } catch (Exception e) {
                 logger.error("Failed to decrypt: " + e.getMessage());
-                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                    e.getMessage() + " (private key might mismatch or be mal-formatted)");
             }
             String resp = new String(decryptData);
             try {
+                new ObjectMapper().readTree(resp);
                 Map<String, Object> credMap = (Map<String, Object>) JsonUtil.jsonStrToObj(new HashMap<String, Object>(), resp);
-                return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
+                // check if this is a PURE json
+                if (JsonUtil.mapToCompactJson(credMap).equalsIgnoreCase(resp)) {
+                    return new HttpResponseData<>(credMap, HttpReturnCode.SUCCESS);
+                }
+                return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
             } catch (Exception e) {
                 return new HttpResponseData<>(resp, HttpReturnCode.SUCCESS);
             }
         } catch (Exception e) {
             logger.error("Error decrypt: " + e.getMessage());
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                e.getMessage());
         }
     }
 

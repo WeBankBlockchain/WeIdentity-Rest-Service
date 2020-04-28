@@ -21,7 +21,9 @@ package com.webank.weid.http.service.impl;
 
 import com.webank.weid.constant.WeIdConstant.PublicKeyType;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.protocol.base.PublicKeyProperty;
 import com.webank.weid.protocol.base.WeIdAuthentication;
+import com.webank.weid.protocol.base.WeIdDocument;
 import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.protocol.request.PublicKeyArgs;
 import com.webank.weid.util.DataToolUtils;
@@ -147,9 +149,27 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            ResponseData<String> response = weIdService.getWeIdDocumentJson(weIdNode.textValue());
+            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weIdNode.textValue());
+            if (response.getResult() == null) {
+                return new HttpResponseData<>(null, response.getErrorCode(), response.getErrorMessage());
+            }
+            WeIdDocument weIdDocument = response.getResult();
+            List<PublicKeyProperty> publicKeyProperties = new ArrayList<>();
+            for (PublicKeyProperty publicKeyProperty : weIdDocument.getPublicKey()) {
+                publicKeyProperty.setPublicKey(new String(DataToolUtils.base64Encode(publicKeyProperty.getPublicKey().getBytes())));
+                publicKeyProperties.add(publicKeyProperty);
+            }
+            weIdDocument.setPublicKey(publicKeyProperties);
+            String weIdDocumentStr;
+            try {
+                weIdDocumentStr = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(weIdDocument);
+            } catch (Exception var7) {
+                logger.error("write object to String fail.", var7);
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
+            }
+            weIdDocumentStr = (new StringBuffer()).append(weIdDocumentStr).insert(1, "\"@context\" : \"https://github.com/WeBankFinTech/WeIdentity/blob/master/context/v1\",").toString();
             return new HttpResponseData<>(
-                JsonUtil.convertJsonToSortedMap(response.getResult()),
+                JsonUtil.convertJsonToSortedMap(weIdDocumentStr),
                 response.getErrorCode(),
                 response.getErrorMessage());
         } catch (Exception e) {
@@ -211,7 +231,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
         } catch (Exception e) {
             logger.error(
-                "[getWeIdDocumentJson]: unknow error. weId:{}.",
+                "[CreateWeID]: unknow error. weId:{}.",
                 createWeIdJsonArgs,
                 e);
             return new HttpResponseData<>(new HashMap<>(), HttpReturnCode.WEID_SDK_ERROR.getCode(),
@@ -291,7 +311,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error(
-                "[getWeIdDocument]: unknow error. weId:{}.",
+                "[CreateWeID]: unknow error. weId:{}.",
                 arg,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
