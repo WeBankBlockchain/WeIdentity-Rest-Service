@@ -19,7 +19,6 @@
 
 package com.webank.weid.http.service;
 
-import com.sun.org.apache.xml.internal.security.utils.Base64;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.BaseTest;
@@ -34,19 +33,19 @@ import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.DateUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.ECDSASign;
 import org.fisco.bcos.web3j.crypto.Hash;
-import org.fisco.bcos.web3j.crypto.SHA3Digest;
+import org.fisco.bcos.web3j.crypto.Keys;
 import org.fisco.bcos.web3j.crypto.gm.GenCredential;
 import org.fisco.bcos.web3j.crypto.gm.sm2.util.encoders.Hex;
 import org.fisco.bcos.web3j.utils.Numeric;
@@ -518,8 +517,7 @@ public class PureInvokerTest extends BaseTest {
         String pubkeyBase64Str =
             new String(DataToolUtils.base64Encode(ecKeyPair.getPublicKey().toString(10).getBytes()));
         funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_SECP, pubkeyBase64Str);
-        String pubkeyRsaStr =
-            new String(DataToolUtils.base64Encode((ecKeyPair.getPublicKey().add(BigInteger.TEN)).toString(10).getBytes()));
+        String pubkeyRsaStr = Base64.encodeBase64String(ecKeyPair.getPublicKey().add(BigInteger.TEN).toByteArray());
         funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_RSA, pubkeyRsaStr);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -681,5 +679,39 @@ public class PureInvokerTest extends BaseTest {
         org.fisco.bcos.web3j.crypto.ECKeyPair keyPair3 = org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(priv));
         System.out.println(keyPair3.getPublicKey().toString(10));
         System.out.println(keyPair3.getPrivateKey().toString(10));
+    }
+
+    @Test
+    public void testHexBase64BigInt() throws Exception {
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair2 = Keys.createEcKeyPair();
+        String correctEncodedBase64Str = org.apache.commons.codec.binary.Base64
+            .encodeBase64String(keyPair2.getPublicKey().toByteArray());
+        System.out.println("biginteger直接转换toString hex " + keyPair2.getPublicKey().toString(16));
+        System.out.println("biginteger的base64 " + correctEncodedBase64Str);
+        byte[] pubkey = org.apache.commons.codec.binary.Base64.decodeBase64(correctEncodedBase64Str);
+        BigInteger bi2 = Numeric.toBigInt(pubkey);
+        System.out.println("base64往返转换 " + bi2.toString(16));
+        Assert.assertEquals(bi2.toString(16), keyPair2.getPublicKey().toString(16));
+        String dex = bi2.toString(10);
+        System.out.println("十进制 " + dex);
+        BigInteger db = new BigInteger(dex, 10);
+        System.out.println("十进制转成的dex " + db.toString(16));
+        Assert.assertEquals(db.toString(16), bi2.toString(16));
+
+        String txHexPubKey = "dfa0a3c55931f26ced064a8f6f79770b44e8a04d183d26b1ff71bbf68fa26cfc6601f17fc9fe25a7179206294d9201ea46b435814bc96c9c80b71b17534d55a9";
+        String txBase64 = "36CjxVkx8mztBkqPb3l3C0TooE0YPSax/3G79o+ibPxmAfF/yf4lpxeSBilNkgHqRrQ1gUvJbJyAtxsXU01VqQ==";
+        pubkey = org.apache.commons.codec.binary.Base64.decodeBase64(txBase64);
+        bi2 = Numeric.toBigInt(pubkey);
+        System.out.println("new hex值 " + bi2.toString(16));
+        Assert.assertEquals(bi2.toString(16), txHexPubKey);
+        System.out.println("十进制 " + bi2.toString(10));
+
+        System.out.println();
+        // Base64 <> hex conversion
+        String hexFrom = Numeric.toHexStringNoPrefix(Base64.decodeBase64(txBase64));
+        System.out.println(hexFrom);
+        String base64To = Base64.encodeBase64String(Numeric.hexStringToByteArray(hexFrom));
+        System.out.println(base64To);
+
     }
 }
