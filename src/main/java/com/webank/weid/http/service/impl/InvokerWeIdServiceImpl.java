@@ -157,8 +157,9 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             List<PublicKeyProperty> publicKeyProperties = new ArrayList<>();
             for (PublicKeyProperty publicKeyProperty : weIdDocument.getPublicKey()) {
                 if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.SECP256K1.getTypeName())) {
-                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(new BigInteger(publicKeyProperty
-                        .getPublicKey(), 10).toByteArray()));
+                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(Numeric.
+                        hexStringToByteArray(new BigInteger(publicKeyProperty
+                        .getPublicKey(), 10).toString(16))));
                     publicKeyProperties.add(publicKeyProperty);
                 }
                 if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.RSA.getTypeName())) {
