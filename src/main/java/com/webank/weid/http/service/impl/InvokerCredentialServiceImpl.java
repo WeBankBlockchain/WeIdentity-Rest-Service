@@ -22,34 +22,10 @@ package com.webank.weid.http.service.impl;
 
 import static com.webank.weid.util.CredentialPojoUtils.getLiteCredentialThumbprintWithoutSig;
 
-import com.webank.weid.constant.CredentialType;
-import com.webank.weid.http.util.TransactionEncoderUtilV2;
-import com.webank.weid.protocol.base.CredentialPojo;
-import com.webank.weid.protocol.base.WeIdAuthentication;
-import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
-import com.webank.weid.rpc.CredentialPojoService;
-import com.webank.weid.service.impl.CredentialPojoServiceImpl;
-import com.webank.weid.util.CredentialPojoUtils;
-import com.webank.weid.util.DataToolUtils;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.util.encoders.Hex;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.gm.GenCredential;
-import org.fisco.bcos.web3j.crypto.tool.ECCDecrypt;
-import org.fisco.bcos.web3j.crypto.tool.ECCEncrypt;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.webank.weid.constant.CredentialConstant;
+import com.webank.weid.constant.CredentialType;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
@@ -60,14 +36,36 @@ import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerCredentialService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.Credential;
+import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CreateCredentialArgs;
+import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
 import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.rpc.CredentialPojoService;
 import com.webank.weid.rpc.CredentialService;
+import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.service.impl.CredentialServiceImpl;
+import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.CredentialUtils;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import com.webank.weid.util.WeIdUtils;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.util.encoders.Hex;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
+import org.fisco.bcos.web3j.crypto.tool.ECCDecrypt;
+import org.fisco.bcos.web3j.crypto.tool.ECCEncrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class InvokerCredentialServiceImpl extends BaseService implements InvokerCredentialService {
@@ -104,6 +102,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             Integer cptId;
             try {
                 cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+                if (cptId < 1) {
+                    return new HttpResponseData<>(null, ErrorCode.CPT_ID_ILLEGAL.getCode(),
+                        ErrorCode.CPT_ID_ILLEGAL.getCodeDesc());
+                }
             } catch (Exception e) {
                 return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
                     HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
@@ -122,6 +124,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             Credential credential = new Credential();
             credential.setId(UUID.randomUUID().toString());
             credential.setCptId(cptId);
+            if (!WeIdUtils.isWeIdValid(issuerNode.textValue())) {
+                return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ISSUER_INVALID.getCode(),
+                    ErrorCode.CREDENTIAL_ISSUER_INVALID.getCodeDesc());
+            }
             credential.setIssuer(issuerNode.textValue());
             credential.setExpirationDate(expirationDate);
             credential.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
@@ -133,6 +139,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             try {
                 claimMap = (Map<String, Object>) JsonUtil
                     .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+                if (claimMap.size() < 1) {
+                    return new HttpResponseData<>(null,
+                        ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                        ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+                }
             } catch (Exception e) {
                 return new HttpResponseData<>(null,
                     ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
@@ -271,6 +282,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         Integer cptId;
         try {
             cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+            if (cptId < 1) {
+                return new HttpResponseData<>(null, ErrorCode.CPT_ID_ILLEGAL.getCode(),
+                    ErrorCode.CPT_ID_ILLEGAL.getCodeDesc());
+            }
         } catch (Exception e) {
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
                 HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
@@ -289,6 +304,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         CredentialPojo credential = new CredentialPojo();
         credential.setId(UUID.randomUUID().toString());
         credential.setCptId(cptId);
+        if (!WeIdUtils.isWeIdValid(issuerNode.textValue())) {
+            return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ISSUER_INVALID.getCode(),
+                ErrorCode.CREDENTIAL_ISSUER_INVALID.getCodeDesc());
+        }
         credential.setIssuer(issuerNode.textValue());
         credential.setExpirationDate(expirationDate);
         credential.setContext(CredentialConstant.DEFAULT_CREDENTIAL_CONTEXT);
@@ -297,6 +316,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             claimMap = (Map<String, Object>) JsonUtil
                 .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+            if (claimMap.size() < 1) {
+                return new HttpResponseData<>(null,
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+            }
         } catch (Exception e) {
             return new HttpResponseData<>(null,
                 ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
@@ -370,6 +394,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         Integer cptId;
         try {
             cptId = Integer.valueOf(JsonUtil.removeDoubleQuotes(cptIdNode.toString()));
+            if (cptId < 1) {
+                return new HttpResponseData<>(null, ErrorCode.CPT_ID_ILLEGAL.getCode(),
+                    ErrorCode.CPT_ID_ILLEGAL.getCodeDesc());
+            }
         } catch (Exception e) {
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCode(),
                 HttpReturnCode.VALUE_FORMAT_ILLEGAL.getCodeDesc() + ": CPT ID");
@@ -378,6 +406,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         Long expirationDate;
         try {
             expirationDate = Long.valueOf(JsonUtil.removeDoubleQuotes(expirationDateNode.toString()));
+            if (expirationDate <= 0) {
+                return new HttpResponseData<>(null,
+                    ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCodeDesc());
+            }
         } catch (Exception e) {
             return new HttpResponseData<>(null,
                 ErrorCode.CREDENTIAL_EXPIRE_DATE_ILLEGAL.getCode(),
@@ -388,6 +421,11 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         try {
             claimMap = (Map<String, Object>) JsonUtil
                 .jsonStrToObj(new HashMap<String, Object>(), claimNode.toString());
+            if (claimMap.size() < 1) {
+                return new HttpResponseData<>(null,
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
+                    ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCodeDesc());
+            }
         } catch (Exception e) {
             return new HttpResponseData<>(null,
                 ErrorCode.CREDENTIAL_CLAIM_DATA_ILLEGAL.getCode(),
@@ -395,6 +433,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         }
         CreateCredentialPojoArgs args = new CreateCredentialPojoArgs();
         args.setClaim(claimMap);
+        if (!WeIdUtils.isWeIdValid(issuerNode.textValue())) {
+            return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ISSUER_INVALID.getCode(),
+                ErrorCode.CREDENTIAL_ISSUER_INVALID.getCodeDesc());
+        }
         args.setIssuer(issuerNode.textValue());
         args.setCptId(cptId);
         args.setIssuanceDate(DateUtils.getNoMillisecondTimeStamp());
