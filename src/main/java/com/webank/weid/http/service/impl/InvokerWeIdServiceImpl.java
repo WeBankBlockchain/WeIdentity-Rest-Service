@@ -28,14 +28,16 @@ import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.protocol.request.PublicKeyArgs;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
-import java.nio.charset.StandardCharsets;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -44,11 +46,9 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.protocol.request.InputArg;
-import com.webank.weid.http.protocol.response.EndpointInfo;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerWeIdService;
-import com.webank.weid.http.util.EndpointDataUtil;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -156,8 +156,16 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             WeIdDocument weIdDocument = response.getResult();
             List<PublicKeyProperty> publicKeyProperties = new ArrayList<>();
             for (PublicKeyProperty publicKeyProperty : weIdDocument.getPublicKey()) {
-                publicKeyProperty.setPublicKey(new String(DataToolUtils.base64Encode(publicKeyProperty.getPublicKey().getBytes())));
-                publicKeyProperties.add(publicKeyProperty);
+                if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.SECP256K1.getTypeName())) {
+                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(new BigInteger(publicKeyProperty
+                        .getPublicKey(), 10).toByteArray()));
+                    publicKeyProperties.add(publicKeyProperty);
+                }
+                if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.RSA.getTypeName())) {
+                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(Numeric
+                        .hexStringToByteArray(publicKeyProperty.getPublicKey())));
+                    publicKeyProperties.add(publicKeyProperty);
+                }
             }
             weIdDocument.setPublicKey(publicKeyProperties);
             String weIdDocumentStr;
@@ -167,7 +175,8 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 logger.error("write object to String fail.", var7);
                 return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
             }
-            weIdDocumentStr = (new StringBuffer()).append(weIdDocumentStr).insert(1, "\"@context\" : \"https://github.com/WeBankFinTech/WeIdentity/blob/master/context/v1\",").toString();
+            weIdDocumentStr = (new StringBuffer()).append(weIdDocumentStr)
+                .insert(1, "\"@context\" : \"https://github.com/WeBankFinTech/WeIdentity/blob/master/context/v1\",").toString();
             return new HttpResponseData<>(
                 JsonUtil.convertJsonToSortedMap(weIdDocumentStr),
                 response.getErrorCode(),
@@ -257,7 +266,8 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
             }
-            String publicKeySecp = new String(DataToolUtils.base64Decode(publicKeySecpNode.textValue().getBytes(StandardCharsets.UTF_8)));
+            String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(publicKeySecpNode
+                .textValue())).toString(10);
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeySecp);
             WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
             weIdPublicKey.setPublicKey(publicKeySecp);
@@ -300,7 +310,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
             PublicKeyArgs publicKeyArgs = new PublicKeyArgs();
             publicKeyArgs.setOwner(weId);
-            publicKeyArgs.setPublicKey(publicKeyRsa);
+            publicKeyArgs.setPublicKey(Numeric.toHexStringNoPrefix(Base64.decodeBase64(publicKeyRsa)));
             publicKeyArgs.setType(PublicKeyType.RSA);
             publicKeyArgs.setWeId(weId);
             ResponseData<Boolean> resp = weIdService
