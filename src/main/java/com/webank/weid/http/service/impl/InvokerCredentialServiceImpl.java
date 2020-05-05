@@ -545,6 +545,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             JsonNode txnArgNode = new ObjectMapper()
                 .readTree(decryptFuncArgs.getTransactionArg());
             keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                logger.error("Null or empty json node: keyIndex");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
         } catch (Exception e) {
             logger.error("[createCredentialPojoInvoke]: input args error: {}", decryptFuncArgs, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);

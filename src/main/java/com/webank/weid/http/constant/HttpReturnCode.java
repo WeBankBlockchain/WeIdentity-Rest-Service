@@ -75,7 +75,7 @@ public enum HttpReturnCode {
     /**
      * Nonce value illegal.
      */
-    NONCE_ILLEGAL(201009, "Cannot find the private key by the invoker index. "),
+    NONCE_ILLEGAL(201009, "Nonce value illegal. "),
 
     /**
      * function arg illegal.
