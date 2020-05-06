@@ -54,7 +54,7 @@ public class TransactionTestV2 {
     TransactionService transactionService = new TransactionServiceImpl();
     InvokerWeIdService invokerWeIdService = new InvokerWeIdServiceImpl();
 
-    @Test
+    //@Test
     public void testCreateWeIdAll() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
@@ -112,7 +112,7 @@ public class TransactionTestV2 {
         Assert.assertTrue(invokerWeIdService.isWeIdExist(weId).getResult());
     }
 
-    @Test
+    //@Test
     public void testClientSign() {
         BigInteger priv = new BigInteger("1113",
             10);
@@ -125,7 +125,7 @@ public class TransactionTestV2 {
         System.out.println(base64SignedMsg);
     }
 
-    @Test
+    //@Test
     public void TestAuthorityIssuerAll() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
@@ -203,7 +203,7 @@ public class TransactionTestV2 {
     }
 
 
-    @Test
+    //@Test
     public void TestCptAll() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
@@ -289,7 +289,7 @@ public class TransactionTestV2 {
         System.out.println("invoke done, step 3 done");
     }
 
-    @Test
+    //@Test
     public void testSetAttribute() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
@@ -356,7 +356,7 @@ public class TransactionTestV2 {
         }
     }
 
-    @Test
+    //@Test
     public void testRemoveAuthIssuer() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
