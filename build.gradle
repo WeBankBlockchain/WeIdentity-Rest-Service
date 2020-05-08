@@ -123,7 +123,6 @@ dependencies {
         compile weid_java_sdk
         testCompile weid_java_sdk
     }
-    compile files("lib/WeDPR-Java-SDK.jar")
     if (gradleVer.startsWith("4")) {
         compile lombok
         testCompile lombok
