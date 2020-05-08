@@ -19,13 +19,15 @@
 
 package com.webank.weid.http.service.rpc;
 
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
+import com.webank.weid.http.protocol.response.HttpResponseData;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -35,10 +37,6 @@ import org.smartboot.socket.MessageProcessor;
 import org.smartboot.socket.StateMachineEnum;
 import org.smartboot.socket.transport.AioQuickClient;
 import org.smartboot.socket.transport.AioSession;
-
-import com.webank.weid.http.constant.HttpReturnCode;
-import com.webank.weid.http.constant.WeIdentityServiceEndpoint;
-import com.webank.weid.http.protocol.response.HttpResponseData;
 
 
 public class RpcClient {
@@ -148,7 +146,13 @@ public class RpcClient {
                 Throwable throwable) {
             }
         });
-        return client.start();
+        try {
+            return client.start();
+        } catch (Exception e) {
+            client.shutdownNow();
+            logger.error("Exception occurred during establishing RPC Client task: ", e);
+            return null;
+        }
     }
 
     protected void setHostPort(String hostPort) {

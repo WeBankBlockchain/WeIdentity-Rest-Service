@@ -31,6 +31,7 @@ import java.io.OutputStreamWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.abi.datatypes.Address;
 import org.fisco.bcos.web3j.crypto.ECKeyPair;
@@ -177,13 +178,7 @@ public class KeyUtil {
         } catch (IOException e) {
             logger.error("getDataByPath error", e);
         } finally {
-            if (null != fis) {
-                try {
-                    fis.close();
-                } catch (IOException e) {
-                    logger.error("fis close error", e);
-                }
-            }
+            IOUtils.closeQuietly(fis);
         }
         return str;
     }
@@ -199,21 +194,18 @@ public class KeyUtil {
 
         logger.info("save data in to [{}]", filePath);
         OutputStreamWriter ow = null;
+        FileOutputStream fos = null;
         try {
             File file = new File(filePath);
-            ow = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+            fos = new FileOutputStream(file);
+            ow = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
             ow.write(dataStr);
             return file.getAbsolutePath();
         } catch (IOException e) {
             logger.error("writer file exception", e);
         } finally {
-            if (null != ow) {
-                try {
-                    ow.close();
-                } catch (IOException e) {
-                    logger.error("OutputStreamWriter close exception", e);
-                }
-            }
+            IOUtils.closeQuietly(ow);
+            IOUtils.closeQuietly(fos);
         }
         return StringUtils.EMPTY;
     }
