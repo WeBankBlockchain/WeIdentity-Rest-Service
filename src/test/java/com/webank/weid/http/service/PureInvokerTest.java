@@ -505,8 +505,34 @@ public class PureInvokerTest extends BaseTest {
     }
 
     @Test
+    public void testPubKeyValidity() {
+        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair;
+        int failed = 0;
+        int totalRuns = 10000;
+        for (int i = 0; i < totalRuns; i++) {
+            ecKeyPair = GenCredential.createKeyPair();
+            int times = 0;
+            while (!KeyUtil.isKeyPairValid(ecKeyPair)) {
+                ecKeyPair = GenCredential.createKeyPair();
+                times ++;
+            }
+            System.out.println("Regenerate a valid one after times: " + times);
+            if (times > 0) {
+                failed ++;
+            }
+        }
+        System.out.println("Total failure rate: " + (double)failed/(double)totalRuns);
+    }
+
+    @Test
     public void testSpecialInvokeIntegration() throws Exception {
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = GenCredential.createKeyPair();
+        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair;
+        byte[] pubkeybytes = new byte[64];
+        while (!KeyUtil.isPubkeyBytesValid(pubkeybytes)) {
+            ecKeyPair = GenCredential.createKeyPair();
+            pubkeybytes = ecKeyPair.getPublicKey().toByteArray();
+            System.out.println("Re-generating public key..");
+        }
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
         Map<String, Object> inputParamMap = new LinkedHashMap<>();
@@ -514,7 +540,7 @@ public class PureInvokerTest extends BaseTest {
             PropertiesUtil.getProperty("default.passphrase"));
         KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
-        String pubkeyBase64Str = Base64.encodeBase64String(ecKeyPair.getPublicKey().toByteArray());
+        String pubkeyBase64Str = Base64.encodeBase64String(pubkeybytes);
         System.out.println("Original pubkey base64: " + pubkeyBase64Str);
         funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_SECP, pubkeyBase64Str);
         String pubkeyRsaStr = Base64.encodeBase64String(Numeric.hexStringToByteArray("da99f21026f0b214e03ec2ed61473621fd634507c62d9ddea6f0a2e474adf22914f4564eaaecfffb54e866cf9ab1bfba11e58a7cd8b09ddc22cf8da503211695"));
