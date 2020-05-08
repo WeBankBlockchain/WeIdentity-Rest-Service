@@ -61,12 +61,17 @@ public class RpcConnectionHandler {
     public static void init() {
         Runnable runnable = new Runnable() {
             public void run() {
-                List<String> inAddrList = Arrays
-                    .asList(PropertiesUtil.getProperty("server.hostport.list").split(","));
-                fetchAndMergeEndpoints(inAddrList);
+                String lists = PropertiesUtil.getProperty("server.hostport.list");
+                if (!StringUtils.isEmpty(lists)) {
+                    List<String> inAddrList = Arrays.asList(lists.split(","));
+                    if (!inAddrList.isEmpty()) {
+                        fetchAndMergeEndpoints(inAddrList);
+                    }
+                }
             }
         };
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+        // Default core-size 2, 4, and 8
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         scheduler.scheduleAtFixedRate(runnable, 1,
             Integer.valueOf(PropertiesUtil.getProperty("fetch.period.seconds")), TimeUnit.SECONDS);
     }
@@ -87,7 +92,12 @@ public class RpcConnectionHandler {
                     rpcClient.reconnect();
                 }
             } else {
-                rpcClient = new RpcClient(hostport);
+                try {
+                    rpcClient = new RpcClient(hostport);
+                } catch (Exception e) {
+                    logger.debug("Failed to send to remote server: ", hostport);
+                    return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.RPC_SEND_FAIL);
+                }
                 hostClientsMap.put(hostport, rpcClient);
             }
             String uuid = rpcClient
@@ -170,11 +180,16 @@ public class RpcConnectionHandler {
         EndpointRequest endpointRequest = new EndpointRequest();
         endpointRequest.setRequestName(WeIdentityServiceEndpoint.FETCH_FUNCTION);
         EndpointDataUtil.clearProps();
+        boolean deltaChanges = false;
         for (String hostport : addrList) {
             try {
                 String uuid = send(hostport, endpointRequest).getRespBody();
                 if (!StringUtils.isEmpty(uuid)) {
                     String reply = get(uuid).getRespBody();
+                    if (StringUtils.isEmpty(reply)) {
+                        continue;
+                    }
+                    deltaChanges = true;
                     List<String> endpointInfoList = new ArrayList<>(
                         Arrays.asList(reply.split("```")));
                     for (String endpointInfoString : endpointInfoList) {
@@ -195,7 +210,9 @@ public class RpcConnectionHandler {
             }
         }
         try {
-            EndpointDataUtil.saveEndpointsToFile();
+            if (deltaChanges) {
+                EndpointDataUtil.saveEndpointsToFile();
+            }
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
