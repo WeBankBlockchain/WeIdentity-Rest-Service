@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.6.1"
+version = "1.6.2"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -160,7 +160,7 @@ sourceSets {
 
 jar {
     destinationDir file('dist/apps')
-    archiveName project.name + '.jar'
+    archiveName project.name + '-' + version + '.jar'
     exclude '**/*.xml', '**/*.properties'
 
     doLast {
