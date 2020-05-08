@@ -29,6 +29,7 @@ import com.webank.weid.protocol.request.PublicKeyArgs;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -266,6 +267,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
+            }
+            if (!KeyUtil.isPubkeyBytesValid(Base64.decodeBase64(publicKeySecpNode.textValue()))) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key security risk");
             }
             String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(publicKeySecpNode
                 .textValue())).toString(10);

@@ -254,4 +254,17 @@ public class KeyUtil {
         }
         return false;
     }
+
+    public static boolean isPubkeyBytesValid(byte[] publicKey) {
+        return publicKey.length == 64 && publicKey[0] >= 16;
+    }
+
+    public static boolean isSecretKeyValid(byte[] secretKey) {
+        return secretKey.length == 32 && secretKey[0] != 0;
+    }
+
+    public static boolean isKeyPairValid(ECKeyPair ecKeyPair) {
+        return isSecretKeyValid(ecKeyPair.getPrivateKey().toByteArray())
+            && isPubkeyBytesValid(ecKeyPair.getPublicKey().toByteArray());
+    }
 }
