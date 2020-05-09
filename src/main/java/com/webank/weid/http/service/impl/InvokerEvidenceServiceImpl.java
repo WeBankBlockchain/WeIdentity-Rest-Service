@@ -2,7 +2,6 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -52,6 +51,10 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
         }
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
+        if (StringUtils.isEmpty(adminPrivKey)) {
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
+        }
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithCustomKey(
             hashNode.textValue(),
             proofNode.textValue(),
@@ -61,8 +64,8 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             adminPrivKey
         );
         if (!createResp.getResult()) {
-            return new HttpResponseData<>(false, HttpReturnCode.UNKNOWN_ERROR.getCode(),
-                ErrorCode.CREDENTIAL_EVIDENCE_HASH_MISMATCH.getCodeDesc());
+            return new HttpResponseData<>(false, createResp.getErrorCode(),
+                createResp.getErrorMessage());
         }
         return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
     }
