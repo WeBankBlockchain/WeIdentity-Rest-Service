@@ -150,7 +150,7 @@ public class RpcClient {
             return client.start();
         } catch (Exception e) {
             client.shutdownNow();
-            logger.error("Exception occurred during establishing RPC Client task: ", e);
+            logger.debug("Exception occurred during trying to establish RPC Client task: ", e);
             return null;
         }
     }
