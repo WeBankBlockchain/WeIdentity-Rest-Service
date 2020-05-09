@@ -19,6 +19,8 @@
 
 package com.webank.weid.http.util;
 
+import com.webank.weid.http.protocol.response.EndpointInfo;
+import com.webank.weid.util.DataToolUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -30,14 +32,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-
-import com.webank.weid.http.protocol.response.EndpointInfo;
-import com.webank.weid.util.DataToolUtils;
 
 public class EndpointDataUtil {
 
@@ -46,7 +45,6 @@ public class EndpointDataUtil {
     /**
      * Properties object and keep-maint endpoint info.
      */
-    private static Properties props;
     private static List<EndpointInfo> endpointInfoList;
 
     /**
@@ -62,23 +60,31 @@ public class EndpointDataUtil {
      * Clear all properties.
      */
     public static void clearProps() {
-        props = new Properties();
         endpointInfoList = new ArrayList<>();
     }
 
     /**
      * load configuration file.
      */
-    private static synchronized void loadPropsFromFile() {
-        props = new Properties();
+    private static synchronized Properties loadPropsFromFile() {
+        Properties props = new Properties();
+        InputStream input = null;
         try {
             ClassPathResource resource = new ClassPathResource(CENTRAL_DATA);
-            InputStream input = resource.getInputStream();
+            input = resource.getInputStream();
             props.load(input);
             logger.info("loadPropsFromFile finish...");
+            return props;
         } catch (Exception e) {
             logger.error("loadPropsFromFile error", e);
+        } finally {
+            try {
+                IOUtils.closeQuietly(input);
+            } catch (Exception ex) {
+                logger.error("Input Stream close failed!");
+            }
         }
+        return null;
     }
 
     /**
@@ -86,25 +92,37 @@ public class EndpointDataUtil {
      *
      * @return true if succeed, false otherwise
      */
-    public static synchronized void saveEndpointsToFile() throws Exception {
-        ClassPathResource resource = new ClassPathResource(CENTRAL_DATA);
-        File file = resource.getFile();
-        props = new Properties();
-        int index = 1;
-        for (EndpointInfo endpointInfo : endpointInfoList) {
-            props.setProperty("ep." + index + ".name", endpointInfo.getRequestName());
-            props.setProperty("ep." + index + ".in", stringListToString(endpointInfo.getInAddr()));
-            props.setProperty("ep." + index + ".desc", endpointInfo.getDescription());
-            index++;
+    public static synchronized void saveEndpointsToFile() {
+        FileOutputStream fos = null;
+        try {
+            ClassPathResource resource = new ClassPathResource(CENTRAL_DATA);
+            File file = resource.getFile();
+            Properties props = new Properties();
+            int index = 1;
+            for (EndpointInfo endpointInfo : endpointInfoList) {
+                props.setProperty("ep." + index + ".name", endpointInfo.getRequestName());
+                props.setProperty("ep." + index + ".in", stringListToString(endpointInfo.getInAddr()));
+                props.setProperty("ep." + index + ".desc", endpointInfo.getDescription());
+                index++;
+            }
+            fos = new FileOutputStream(file);
+            props.store(fos, null);
+        } catch (Exception e) {
+            logger.error("Error occurred during saving endpoints to file: " + e.getMessage());
+        } finally {
+            try {
+                IOUtils.closeQuietly(fos);
+            } catch (Exception ex) {
+                logger.error("File outputstream close failed: " + ex.getMessage());
+            }
         }
-        props.store(new FileOutputStream(file), null);
     }
 
     /**
      * Wrapper class, load all endpoint info from in-mem props into Endpoint list.
      */
     public static void loadAllEndpointInfoFromProps() {
-        loadPropsFromFile();
+        Properties props = loadPropsFromFile();
         List<EndpointInfo> allEndpoints = new ArrayList<>();
         Map<Integer, EndpointInfo> endpointMap = new ConcurrentHashMap<>();
         try {
@@ -147,7 +165,8 @@ public class EndpointDataUtil {
         return (StringUtils.isEmpty(endpointInfo.getRequestName()) && StringUtils.isEmpty(endpointInfo.getDescription())
             && (endpointInfo.getInAddr() == null || endpointInfo.getInAddr().size() == 0));
     }
-    
+
+
     /**
      * Fetch each entry one by one into the in-memory endpoint table.
      */
@@ -201,8 +220,8 @@ public class EndpointDataUtil {
     }
 
     /**
-     * Wrapper class, remove an endpoint info from props from properties file. Finer granular
-     * removal.
+     * Wrapper class, remove an endpoint info from props from properties file. Finer granular removal. Wrapper class, remove an endpoint info from
+     * props from properties file. Finer granular removal.
      */
     public static boolean removeEndpoint(EndpointInfo endpointInfo) {
         List<EndpointInfo> localList = new ArrayList<>(endpointInfoList);
