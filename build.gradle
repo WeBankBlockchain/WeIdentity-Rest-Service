@@ -118,6 +118,8 @@ dependencies {
         println "Pipeline jar for WeIdentity Java SDK found."
         compile files('./dependencies/weid-java-sdk-pipeline.jar')
         testCompile files('./dependencies/weid-java-sdk-pipeline.jar')
+        compile fileTree(dir: 'libs', include: '*.jar')
+        testCompile fileTree(dir: 'libs', include: '*.jar')
     } else {
         println "No pipeline jar found for WeIdentity Java SDK, using gradle version.."
         compile weid_java_sdk
