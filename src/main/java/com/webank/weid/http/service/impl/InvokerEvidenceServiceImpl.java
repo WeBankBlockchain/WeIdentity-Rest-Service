@@ -2,6 +2,7 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.constant.ProcessingMode;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -17,6 +18,7 @@ import com.webank.weid.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
 import com.webank.weid.util.DateUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +26,10 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
     InvokerEvidenceService {
 
     private Logger logger = LoggerFactory.getLogger(InvokerEvidenceServiceImpl.class);
-    private EvidenceService evidenceService = new EvidenceServiceImpl();
+    private String evidenceGroupIdStr = PropertiesUtil.getProperty("evidence.group.id");
+    private EvidenceService evidenceService = NumberUtils.isDigits(evidenceGroupIdStr) ?
+        new EvidenceServiceImpl(ProcessingMode.IMMEDIATE, Integer.parseInt(evidenceGroupIdStr)) :
+        new EvidenceServiceImpl();
 
     @Override
     public HttpResponseData<Object> createEvidenceWithExtraInfo(InputArg args) {
