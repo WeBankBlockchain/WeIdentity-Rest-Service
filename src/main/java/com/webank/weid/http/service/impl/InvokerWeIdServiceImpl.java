@@ -20,6 +20,8 @@
 package com.webank.weid.http.service.impl;
 
 import com.webank.weid.constant.WeIdConstant.PublicKeyType;
+import com.webank.weid.exception.InitWeb3jException;
+import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.protocol.base.PublicKeyProperty;
 import com.webank.weid.protocol.base.WeIdAuthentication;
@@ -82,6 +84,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
         ResponseData<CreateWeIdDataResult> response = new ResponseData<CreateWeIdDataResult>();
         try {
             response = weIdService.createWeId();
+        } catch (LoadContractException e) {
+            return new ResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new ResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[createWeId]: unknow error, please check the error log.", e);
             return new ResponseData<>(null, ErrorCode.BASE_ERROR);
@@ -100,6 +106,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
         ResponseData<Boolean> response = new ResponseData<Boolean>();
         try {
             response = weIdService.isWeIdExist(weId);
+        } catch (LoadContractException e) {
+            return new ResponseData<>(false, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new ResponseData<>(false, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[isWeIdExist]: unknow error. weId:{}.",
@@ -125,6 +135,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
             return new HttpResponseData<>(responseData.getResult(), responseData.getErrorCode(),
                 responseData.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[createWeId]: unknown error, input arguments:{}",
                 transactionHex,
@@ -183,6 +197,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 JsonUtil.convertJsonToSortedMap(weIdDocumentStr),
                 response.getErrorCode(),
                 response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[getWeIdDocument]: unknow error. weId:{}.",
@@ -240,6 +258,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(null, response.getErrorCode(),
                     response.getErrorMessage());
             }
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[CreateWeID]: unknow error. weId:{}.",
@@ -325,6 +347,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(StringUtils.EMPTY, resp.getErrorCode(), resp.getErrorMessage());
             }
             return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[CreateWeID]: unknow error. weId:{}.",

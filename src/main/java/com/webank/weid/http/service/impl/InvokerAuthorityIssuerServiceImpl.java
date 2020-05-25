@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
+import com.webank.weid.exception.InitWeb3jException;
+import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -106,6 +108,10 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             return new HttpResponseData<>(
                 response.getResult(),
                 response.getErrorCode(), response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[registerAuthorityIssuer]: unknow error. weId:{}.",
@@ -133,6 +139,10 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             }
             return new HttpResponseData<>(responseData.getResult(), responseData.getErrorCode(),
                 responseData.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[registerAuthorityIssuer]: unknown error, input arguments:{}",
                 transactionHex,
@@ -164,6 +174,10 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
                 JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[queryAuthorityIssuer]: unknow error. weId:{}.",
@@ -189,6 +203,10 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             }
             return new HttpResponseData<>(addressResp.getResult(),
                 HttpReturnCode.SUCCESS);
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[queryAuthorityIssuer]: unknow error. weId:{}.",

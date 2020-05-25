@@ -28,6 +28,8 @@ import org.springframework.stereotype.Component;
 
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
+import com.webank.weid.exception.InitWeb3jException;
+import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -100,6 +102,10 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
                 JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[queryCpt]: unknow error. cptId:{}.",
@@ -125,6 +131,10 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
             }
             return new HttpResponseData<>(responseData.getResult(), responseData.getErrorCode(),
                 responseData.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[registerCpt]: unknown error, input arguments:{}",
                 transactionHex,
@@ -181,6 +191,10 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
                 JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(response.getResult())),
                 response.getErrorCode(),
                 response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error(
                 "[queryCpt]: unknow error. cptId:{}.",
