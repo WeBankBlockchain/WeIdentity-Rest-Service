@@ -28,6 +28,8 @@ import com.webank.weid.constant.CredentialConstant;
 import com.webank.weid.constant.CredentialType;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
+import com.webank.weid.exception.InitWeb3jException;
+import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -246,6 +248,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             ResponseData<Boolean> responseData = credentialService.verify(credential);
             return new HttpResponseData<>(responseData.getResult(),
                 responseData.getErrorCode(), responseData.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[verifyCredentialInvoke]: SDK error. reqCredentialArgs:{}",
                 verifyCredentialFuncArgs,
@@ -603,6 +609,10 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             ResponseData<Boolean> responseData = credentialPojoService.verify(credential.getIssuer(), credential);
             return new HttpResponseData<>(responseData.getResult(),
                 responseData.getErrorCode(), responseData.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.error("[verifyCredentialInvoke]: SDK error. reqCredentialArgs:{}",
                 verifyCredentialPojoFuncArgs,
