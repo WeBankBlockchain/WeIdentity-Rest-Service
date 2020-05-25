@@ -103,6 +103,16 @@ public enum HttpReturnCode {
     DATA_ILLEGAL(201014, "data segment format illegal or missing. "),
 
     /**
+     * web3j error.
+     */
+    WEB3J_ERROR(201015, "Failed to load web3j (maybe from illegal certs, Group ID, networking, or secp256k1 settings)"),
+
+    /**
+     * contract error.
+     */
+    CONTRACT_ERROR(201016, "Failed to load contract (maybe from un-deployed site, DB not storing CNS, or CNS hash illegal)"),
+
+    /**
      * RPC related error codes.
      */
     RPC_SEND_FAIL(205001, "Sending RPC request failure"),
