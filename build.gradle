@@ -97,7 +97,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.6.3-rc.2-SNAPSHOT'
+        'com.webank:weid-java-sdk:1.6.3-rc.3-SNAPSHOT'
 ]
 
 List pdfbox = [
