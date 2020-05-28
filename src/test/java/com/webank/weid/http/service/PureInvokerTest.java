@@ -478,16 +478,13 @@ public class PureInvokerTest extends BaseTest {
         String sig = (String) proofMap.get("signatureValue");
         // step 1: client do base64 decode
         byte[] rawData = DataToolUtils.base64Decode(sig.getBytes(StandardCharsets.UTF_8));
-        // step 2: client do an extra sha3
-        byte[] hashedRawData = DataToolUtils.sha3(rawData);
-        // step 3: client do sign
+        // step 2: client do sign
         org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair2 =
             org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(weIdPrivKey));
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData =
-            org.fisco.bcos.web3j.crypto.Sign.getSignInterface().signMessage(hashedRawData, ecKeyPair2);
-        // step 4: client do go-style serialization
-        String signedSig = new String(DataToolUtils.base64Encode(TransactionEncoderUtilV2
-            .goSignatureSerialization(sigData)), StandardCharsets.UTF_8);
+        ECDSASign ecdsaSign = new ECDSASign();
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign
+            .secp256SignMessage(rawData, ecKeyPair2);
+        String signedSig = DataToolUtils.secp256k1SigBase64Serialization(sigData);
         System.out.println(signedSig);
         proofMap.put("signatureValue", signedSig);
         credJsonMap.put("proof", proofMap);
@@ -619,7 +616,7 @@ public class PureInvokerTest extends BaseTest {
         txnArgMap = new LinkedHashMap<>();
         String credId = UUID.randomUUID().toString();
         String hash = DataToolUtils.sha3(credId);
-        String sig = DataToolUtils.sign(hash, adminPrivKey);
+        String sig = DataToolUtils.secp256k1Sign(hash, new BigInteger(adminPrivKey));
         String log = "temp";
         funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
         funcArgMap.put(WeIdentityParamKeyConstant.HASH, hash);
@@ -658,7 +655,7 @@ public class PureInvokerTest extends BaseTest {
         txnArgMap = new LinkedHashMap<>();
         credId = UUID.randomUUID().toString();
         hash = DataToolUtils.sha3(credId);
-        sig = DataToolUtils.sign(hash, adminPrivKey);
+        sig = DataToolUtils.secp256k1Sign(hash, new BigInteger(adminPrivKey));
         log = "temp";
         funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
         funcArgMap.put(WeIdentityParamKeyConstant.HASH, hash);

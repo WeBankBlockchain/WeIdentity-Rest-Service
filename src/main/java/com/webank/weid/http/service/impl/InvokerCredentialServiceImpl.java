@@ -599,12 +599,12 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc().concat(e.getMessage()));
             }
         }
-        String unifiedSig = TransactionEncoderUtilV2.convertIfGoSigToWeIdJavaSdkSig(credential.getSignature());
-        if (StringUtils.isEmpty(unifiedSig)) {
-            return new HttpResponseData<>(false, ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCode(),
-                ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCodeDesc());
-        }
-        credential.putProofValue("signatureValue", unifiedSig);
+//        String unifiedSig = TransactionEncoderUtilV2.convertIfGoSigToWeIdJavaSdkSig(credential.getSignature());
+//        if (StringUtils.isEmpty(unifiedSig)) {
+//            return new HttpResponseData<>(false, ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCode(),
+//                ErrorCode.CREDENTIAL_SIGNATURE_BROKEN.getCodeDesc());
+//        }
+//        credential.putProofValue("signatureValue", unifiedSig);
         try {
             ResponseData<Boolean> responseData = credentialPojoService.verify(credential.getIssuer(), credential);
             return new HttpResponseData<>(responseData.getResult(),
