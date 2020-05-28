@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.bcos.web3j.crypto.ECKeyPair;
 import org.bcos.web3j.crypto.Sign;
+import org.fisco.bcos.web3j.crypto.ECDSASign;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -149,13 +150,12 @@ public class CredentialTest extends BaseTest {
         System.out.println(base64EncRawData);
         String rawData = new String(DataToolUtils.base64Decode(base64EncRawData.getBytes()));
         System.out.println(rawData);
-        String signature = DataToolUtils.sign(rawData,
-            createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
-        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey()));
-        String sig2 = new String(DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(
-            Sign.signMessage(DataToolUtils.sha3(rawData.getBytes()), ecKeyPair))));
-        Assert.assertTrue(sig2.equals(signature));
-        // Verify Credential
+        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair2 =
+            org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey()));
+        ECDSASign ecdsaSign = new ECDSASign();
+        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign
+            .secp256SignMessage(rawData.getBytes(), ecKeyPair2);
+        String signature = DataToolUtils.secp256k1SigBase64Serialization(sigData);
         proofMap.put("signatureValue", signature);
         credMap.put("proof", proofMap);
         CredentialPojo credentialPojo = DataToolUtils
