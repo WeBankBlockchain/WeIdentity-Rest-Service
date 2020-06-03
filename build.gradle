@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.5.1"
+version = "1.5.2"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -97,7 +97,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.6.2'
+        'com.webank:weid-java-sdk:1.6.3'
 ]
 
 List pdfbox = [
@@ -118,6 +118,8 @@ dependencies {
         println "Pipeline jar for WeIdentity Java SDK found."
         compile files('./dependencies/weid-java-sdk-pipeline.jar')
         testCompile files('./dependencies/weid-java-sdk-pipeline.jar')
+        compile fileTree(dir: 'libs', include: '*.jar')
+        testCompile fileTree(dir: 'libs', include: '*.jar')
     } else {
         println "No pipeline jar found for WeIdentity Java SDK, using gradle version.."
         compile weid_java_sdk

@@ -19,6 +19,7 @@
 
 package com.webank.weid.http;
 
+import com.webank.weid.config.FiscoConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -32,11 +33,11 @@ import org.springframework.context.annotation.ComponentScan;
 )
 @ComponentScan
 public class Application {
-
     private static Logger logger = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class);
+        FiscoConfig.topic = "weid-http-service";
         logger.info("#### Start finished");
     }
 }
