@@ -231,29 +231,8 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                     return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
                 }
 
-                // set publicKey
-                SetPublicKeyArgs setPublicKeyArgs = new SetPublicKeyArgs();
-                setPublicKeyArgs.setWeId(createWeIdDataResult.getWeId());
-                setPublicKeyArgs
-                    .setPublicKey(createWeIdDataResult.getUserWeIdPublicKey().getPublicKey());
-                setPublicKeyArgs.setType(PublicKeyType.SECP256K1);
-                WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
-                weIdPrivateKey
-                    .setPrivateKey(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
-                setPublicKeyArgs.setUserWeIdPrivateKey(weIdPrivateKey);
-                ResponseData<Boolean> responseSetPub = weIdService.setPublicKey(setPublicKeyArgs);
-
-                // set authentication
-                SetAuthenticationArgs setAuthenticationArgs = new SetAuthenticationArgs();
-                setAuthenticationArgs.setWeId(createWeIdDataResult.getWeId());
-                setAuthenticationArgs
-                    .setPublicKey(createWeIdDataResult.getUserWeIdPublicKey().getPublicKey());
-                setAuthenticationArgs.setUserWeIdPrivateKey(weIdPrivateKey);
-                ResponseData<Boolean> responseSetAuth = weIdService
-                    .setAuthentication(setAuthenticationArgs);
-
                 return new HttpResponseData<>(createWeIdDataResult.getWeId(),
-                    responseSetAuth.getErrorCode(), responseSetAuth.getErrorMessage());
+                		response.getErrorCode(), response.getErrorMessage());
             } else {
                 return new HttpResponseData<>(null, response.getErrorCode(),
                     response.getErrorMessage());
@@ -340,10 +319,9 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             publicKeyArgs.setOwner(weId);
             publicKeyArgs.setPublicKey(Numeric.toHexStringNoPrefix(Base64.decodeBase64(publicKeyRsa)));
             publicKeyArgs.setType(PublicKeyType.RSA);
-            publicKeyArgs.setWeId(weId);
-            ResponseData<Boolean> resp = weIdService
-                .delegateSetPublicKey(publicKeyArgs, weIdAuthentication);
-            if (!resp.getResult()) {
+            ResponseData<Integer> resp = weIdService
+                .delegateAddPublicKey(weId, publicKeyArgs, weIdAuthentication.getWeIdPrivateKey());
+            if (resp.getResult() < 0) {
                 return new HttpResponseData<>(StringUtils.EMPTY, resp.getErrorCode(), resp.getErrorMessage());
             }
             return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
