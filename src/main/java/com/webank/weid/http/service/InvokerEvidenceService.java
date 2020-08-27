@@ -10,4 +10,6 @@ public interface InvokerEvidenceService {
     HttpResponseData<Object> createEvidenceWithExtraInfo(InputArg args);
 
     HttpResponseData<Object> getEvidenceByCustomKey(InputArg args);
+
+    HttpResponseData<Object> getEvidenceByHash(InputArg args);
 }

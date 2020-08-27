@@ -206,4 +206,48 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
         }
         return new HttpResponseData<>(JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(respData.getResult())), HttpReturnCode.SUCCESS);
     }
+
+    @Override
+    public HttpResponseData<Object> getEvidenceByHash(InputArg args) {
+        JsonNode idNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(args.getFunctionArg());
+            idNode = functionArgNode.get(WeIdentityParamKeyConstant.HASH_VALUE);
+        } catch (Exception e) {
+            logger.error("[getEvidenceByCustomKey]: input args error: {}", args, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+        JsonNode groupIdNode;
+        EvidenceService evidenceService;
+        try {
+            JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+            groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
+            if (groupIdNode == null || StringUtils.isEmpty(groupIdNode.toString())) {
+                logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
+                evidenceService = lazyInitializeEvidenceServiceImpl();
+            } else {
+                Integer groupId;
+                groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+                evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
+            }
+            if (evidenceService == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                    HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
+            }
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.info("Cannot find groupId definition: {}", e);
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
+        }
+        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(idNode.textValue());
+        if (respData.getResult() == null) {
+            return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
+        }
+        return new HttpResponseData<>(JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(respData.getResult())), HttpReturnCode.SUCCESS);
+    }
 }

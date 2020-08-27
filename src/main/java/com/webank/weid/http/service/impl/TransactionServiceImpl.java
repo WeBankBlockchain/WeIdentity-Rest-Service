@@ -343,6 +343,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
                 return invokerEvidenceService.getEvidenceByCustomKey(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_EVIDENCE_BY_HASH)) {
+                return invokerEvidenceService.getEvidenceByHash(inputArg);
+            }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT_CREDENTIAL)) {
                 return invokerCredentialService.createCredentialPojoAndEncryptInvoke(inputArg);
             }
