@@ -352,6 +352,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCDECRYPT)) {
                 return invokerCredentialService.eccDecrypt(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_EVIDENCE_BY_HASH)) {
+                return invokerEvidenceService.getEvidenceByHash(inputArg);
+            }
             logger.error("Function name undefined: {}.", functionName);
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
         } catch (Exception e) {
