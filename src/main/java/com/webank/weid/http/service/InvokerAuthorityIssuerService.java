@@ -53,4 +53,18 @@ public interface InvokerAuthorityIssuerService {
     HttpResponseData<Object> queryAuthorityIssuerInfoInvoke(InputArg queryArgs);
 
     HttpResponseData<Object> getWeIdByNameInvoke(InputArg args);
+    
+    /**
+     * Register Issuer Type  on chain.
+     * @param registerArgs the args
+     * @return the Boolean response data
+     */
+    HttpResponseData<Object> addWeIdToIssuerTypeInvoke(InputArg args);
+    
+    /**
+     * Check weId is exists in IssuerType on chain.
+     * @param CheckArgs the args
+     * @return the Boolean response data
+     */
+    HttpResponseData<Object> checkWeIdByIssuerTypeInvoke(InputArg args);
 }
