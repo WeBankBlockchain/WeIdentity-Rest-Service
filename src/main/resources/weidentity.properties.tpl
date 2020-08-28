@@ -46,6 +46,7 @@ salt.length=5
 # AMOP Config
 # Timeout for amop request, default: 5000ms
 amop.request.timeout=5000
+amop.id=1
 
 # Blockchain node info.
 nodes=${BLOCKCHIAN_NODE_INFO}
