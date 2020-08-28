@@ -53,6 +53,7 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_ECCENCRYPT_CREDENTIAL = "createCredentialAndEncrypt";
     public static final String FUNCNAME_ECCDECRYPT = "eccDecrypt";
     public static final String FUNCNAME_ECCENCRYPT = "eccEncrypt";
+    public static final String FUNCNAME_GET_EVIDENCE_BY_HASH = "getEvidence";
 
     /**
      * Function names to be assembled in SDK Function call. Case sensitive. FISCO-BCOS v1.
