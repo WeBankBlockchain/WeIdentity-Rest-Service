@@ -36,15 +36,15 @@ repositories {
 }
 
 List lombok = [
-        'org.projectlombok:lombok:1.18.10'
+        'org.projectlombok:lombok:1.18.12'
 ]
 
 List logger = [
-        "org.slf4j:jcl-over-slf4j:1.7.12",
+        "org.slf4j:jcl-over-slf4j:1.7.30",
         "com.lmax:disruptor:3.3.7"
 ]
 
-def spring_version = "4.3.16.RELEASE"
+def spring_version = "4.3.27.RELEASE"
 List spring = [
         "org.springframework:spring-core:$spring_version",
         "org.springframework:spring-beans:$spring_version",
@@ -84,9 +84,9 @@ List apache_commons = [
 
 // In this section you declare the dependencies for your production and test code
 List jackson = [
-        "com.fasterxml.jackson.core:jackson-databind:2.8.8.1",
-        'io.netty:netty-all:4.1.15.Final',
-        'io.netty:netty-tcnative:2.0.0.Final',
+        "com.fasterxml.jackson.core:jackson-databind:2.11.0",
+        'io.netty:netty-all:4.1.50.Final',
+        'io.netty:netty-tcnative:2.0.18.Final',
         'com.github.fge:json-schema-validator:2.2.6',
         'org.apache.httpcomponents:httpclient:4.5.2',
         "com.github.reinert:jjschema:1.16",
@@ -97,7 +97,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.6.3-hotfix-1-SNAPSHOT'
+        'com.webank:weid-java-sdk:1.6.3-hotfix-1'
 ]
 
 List pdfbox = [
