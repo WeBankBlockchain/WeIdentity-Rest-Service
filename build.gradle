@@ -25,12 +25,10 @@ targetCompatibility = 1.8
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 // In this section you declare where to find the dependencies of your project
 repositories {
-    maven {
-        url "http://maven.aliyun.com/nexus/content/groups/public/"
-    }
-    maven { url "https://dl.bintray.com/ethereum/maven/" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url "https://oss.sonatype.org/content/groups/public/" }
+    maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+    maven { url "https://dl.bintray.com/ethereum/maven/" }
     mavenLocal()
     mavenCentral()
 }
@@ -85,8 +83,6 @@ List apache_commons = [
 // In this section you declare the dependencies for your production and test code
 List jackson = [
         "com.fasterxml.jackson.core:jackson-databind:2.11.0",
-        'io.netty:netty-all:4.1.50.Final',
-        'io.netty:netty-tcnative:2.0.18.Final',
         'com.github.fge:json-schema-validator:2.2.6',
         'org.apache.httpcomponents:httpclient:4.5.2',
         "com.github.reinert:jjschema:1.16",
@@ -97,7 +93,7 @@ List jackson = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.6.3-hotfix-1'
+        'com.webank:weid-java-sdk:1.6.3-hotfix-1-rc.2-SNAPSHOT'
 ]
 
 List pdfbox = [
