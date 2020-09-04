@@ -219,15 +219,15 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
     }
 
     @Override
-    public HttpResponseData<Object> addWeIdToIssuerTypeInvoke(InputArg args) {
+    public HttpResponseData<Object> addWeIdToWhitelist(InputArg args) {
         try {
             JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
             JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
-            JsonNode issuerTypeNode = functionArgNode.get(WeIdentityParamKeyConstant.ISSUER_TYPE);
+            JsonNode whiteListNameNode = functionArgNode.get(WeIdentityParamKeyConstant.WHITELIST_NAME);
             JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
             JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
             if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())
-                || issuerTypeNode == null || StringUtils.isEmpty(issuerTypeNode.textValue())
+                || whiteListNameNode == null || StringUtils.isEmpty(whiteListNameNode.textValue())
                 || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
@@ -238,7 +238,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             }
             String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(weIdPrivKey);
             WeIdAuthentication callerAuth = new WeIdAuthentication(issuer, weIdPrivKey);
-            ResponseData<Boolean> response = authorityIssuerService.addIssuerIntoIssuerType(callerAuth, issuerTypeNode.textValue(), weIdNode.textValue());
+            ResponseData<Boolean> response = authorityIssuerService.addIssuerIntoIssuerType(callerAuth, whiteListNameNode.textValue(), weIdNode.textValue());
             return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
         } catch (LoadContractException e) {
             return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
@@ -255,16 +255,16 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
     }
 
     @Override
-    public HttpResponseData<Object> checkWeIdByIssuerTypeInvoke(InputArg args) {
+    public HttpResponseData<Object> isWeIdInWhitelist(InputArg args) {
         try {
             JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
             JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
-            JsonNode issuerTypeNode = functionArgNode.get(WeIdentityParamKeyConstant.ISSUER_TYPE);
+            JsonNode whiteListNameNode = functionArgNode.get(WeIdentityParamKeyConstant.WHITELIST_NAME);
             if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())
-                || issuerTypeNode == null || StringUtils.isEmpty(issuerTypeNode.textValue())) {
+                || whiteListNameNode == null || StringUtils.isEmpty(whiteListNameNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            ResponseData<Boolean> response = authorityIssuerService.isSpecificTypeIssuer(issuerTypeNode.textValue(), weIdNode.textValue());
+            ResponseData<Boolean> response = authorityIssuerService.isSpecificTypeIssuer(whiteListNameNode.textValue(), weIdNode.textValue());
             return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
         } catch (LoadContractException e) {
             return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
