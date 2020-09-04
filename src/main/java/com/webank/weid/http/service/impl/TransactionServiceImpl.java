@@ -326,12 +326,12 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return invokerAuthorityIssuerService.registerAuthorityIssuerInvoke(inputArg);
             }
             if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ADD_ISSUER_TO_TYPE)) {
-                return invokerAuthorityIssuerService.addWeIdToIssuerTypeInvoke(inputArg);
+                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ADD_WEID_TO_WHITELIST)) {
+                return invokerAuthorityIssuerService.addWeIdToWhitelist(inputArg);
             }
             if (functionName
-                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CHECK_ISSUER_BY_TYPE)) {
-                return invokerAuthorityIssuerService.checkWeIdByIssuerTypeInvoke(inputArg);
+                .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_IS_WEID_IN_WHITELIST)) {
+                return invokerAuthorityIssuerService.isWeIdInWhitelist(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG)) {
                 String weId = (String) invokerAuthorityIssuerService.getWeIdByNameInvoke(inputArg).getRespBody();

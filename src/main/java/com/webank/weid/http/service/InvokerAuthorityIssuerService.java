@@ -59,12 +59,12 @@ public interface InvokerAuthorityIssuerService {
      * @param registerArgs the args
      * @return the Boolean response data
      */
-    HttpResponseData<Object> addWeIdToIssuerTypeInvoke(InputArg args);
+    HttpResponseData<Object> addWeIdToWhitelist(InputArg args);
     
     /**
      * Check weId is exists in IssuerType on chain.
      * @param CheckArgs the args
      * @return the Boolean response data
      */
-    HttpResponseData<Object> checkWeIdByIssuerTypeInvoke(InputArg args);
+    HttpResponseData<Object> isWeIdInWhitelist(InputArg args);
 }
