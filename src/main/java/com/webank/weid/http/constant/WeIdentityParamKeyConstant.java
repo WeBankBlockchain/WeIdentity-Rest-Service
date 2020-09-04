@@ -55,4 +55,5 @@ public final class WeIdentityParamKeyConstant {
     public static final String PUBKEY_RSA = "publicKeyRSA";
 
     public static final String GROUP_ID = "groupId";
+    public static final String HASH_VALUE = "hashValue";
 }
