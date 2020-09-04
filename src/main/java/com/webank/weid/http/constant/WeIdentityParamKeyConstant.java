@@ -53,6 +53,8 @@ public final class WeIdentityParamKeyConstant {
     public static final String LOG = "log";
     public static final String PUBKEY_SECP = "publicKeySecp256k1";
     public static final String PUBKEY_RSA = "publicKeyRSA";
+    
+    public static final String WHITELIST_NAME = "whitelistName";
 
     public static final String GROUP_ID = "groupId";
     public static final String HASH_VALUE = "hashValue";
