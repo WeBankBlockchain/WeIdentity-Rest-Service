@@ -49,7 +49,7 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_CREATE_WEID_WITH_PUBKEY = "createWeIdWithPubKey";
     public static final String FUNCNAME_GET_WEID_DOCUMENT_BY_ORG = "getWeIdDocumentByOrgId";
     public static final String FUNCNAME_VERIFY_LITE_CREDENTIAL = "verifyLiteCredential";
-    public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL = "createEvidence";
+    public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL = "delegateCreateEvidence";
     public static final String FUNCNAME_ECCENCRYPT_CREDENTIAL = "createCredentialAndEncrypt";
     public static final String FUNCNAME_ECCDECRYPT = "eccDecrypt";
     public static final String FUNCNAME_ECCENCRYPT = "eccEncrypt";
