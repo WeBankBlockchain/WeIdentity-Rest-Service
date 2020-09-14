@@ -55,11 +55,11 @@ import org.junit.Test;
 
 public class PureInvokerTest extends BaseTest {
 
-    TransactionService transactionService = new TransactionServiceImpl();
 
     @Test
     public void testInvokeIntegration() throws Exception {
         // create a WeID
+        TransactionService transactionService = new TransactionServiceImpl();
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
         Map<String, Object> inputParamMap = new LinkedHashMap<>();
@@ -326,6 +326,7 @@ public class PureInvokerTest extends BaseTest {
 
     @Test
     public void testInvokeEncodeIntegration() throws Exception {
+        TransactionService transactionService = new TransactionServiceImpl();
         // create a WeID
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
@@ -523,7 +524,17 @@ public class PureInvokerTest extends BaseTest {
     }
 
     @Test
+    public void testKeyValidity() {
+        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = GenCredential.createKeyPair();
+        while (!KeyUtil.isKeyPairValid(ecKeyPair)) {
+            ecKeyPair = GenCredential.createKeyPair();
+            System.out.println("Re-generating key pair..");
+        }
+    }
+
+    @Test
     public void testSpecialInvokeIntegration() throws Exception {
+        TransactionService transactionService = new TransactionServiceImpl();
         org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair;
         byte[] pubkeybytes = new byte[64];
         while (!KeyUtil.isPubkeyBytesValid(pubkeybytes)) {
