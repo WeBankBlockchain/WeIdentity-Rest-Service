@@ -39,6 +39,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String CLAIM_HASH = "claimHash";
     public static final String KEY_INDEX = "invokerWeId";
     public static final String BODY = "body";
+    public static final String LIST = "list";
 
     public static final String DEFAULT_API_VERSION = "1.0.0";
     public static final String DEFAULT_PRIVATE_KEY_FILE_NAME = "ecdsa_key";
@@ -50,6 +51,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String CREDENTIAL_ID = "id";
     public static final String HASH = "hash";
     public static final String PROOF = "proof";
+    public static final String SIGN = "sign";
     public static final String LOG = "log";
     public static final String PUBKEY_SECP = "publicKeySecp256k1";
     public static final String PUBKEY_RSA = "publicKeyRSA";
