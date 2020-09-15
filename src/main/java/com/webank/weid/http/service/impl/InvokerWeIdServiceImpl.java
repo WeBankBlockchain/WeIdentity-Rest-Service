@@ -269,10 +269,10 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
             }
-            if (!KeyUtil.isPubkeyBytesValid(Base64.decodeBase64(publicKeySecpNode.textValue()))) {
-                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
-                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key security risk");
-            }
+//            if (!KeyUtil.isPubkeyBytesValid(Base64.decodeBase64(publicKeySecpNode.textValue()))) {
+//                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+//                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key security risk");
+//            }
             String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(publicKeySecpNode
                 .textValue())).toString(10);
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeySecp);
