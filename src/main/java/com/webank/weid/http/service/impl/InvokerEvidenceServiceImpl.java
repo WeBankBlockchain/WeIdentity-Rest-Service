@@ -384,7 +384,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             JsonNode functionArgNode = new ObjectMapper()
                 .readTree(args.getFunctionArg());
             listNode = functionArgNode.get(WeIdentityParamKeyConstant.LIST);
-            // 不是数组节点则异常
+            // 濡傛灉鑺傜偣涓嶆槸鏁扮粍
             if (!listNode.isArray()) {
                 logger.error("[createEvidenceWithBatch] input does not an Array.");
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
