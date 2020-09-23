@@ -346,10 +346,10 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return invokerEvidenceService.createEvidenceWithExtraInfo(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE)) {
-                return invokerEvidenceService.createEvidence(inputArg);
+                return invokerEvidenceService.delegateCreateEvidence(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE_BATCH)) {
-                return invokerEvidenceService.createEvidenceWithBatch(inputArg);
+                return invokerEvidenceService.delegateCreateEvidenceBatch(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY)) {
                 return invokerWeIdService.createWeIdWithPubKey(inputArg);
