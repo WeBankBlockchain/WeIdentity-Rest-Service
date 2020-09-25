@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.utils.Numeric;
 import org.slf4j.Logger;
@@ -317,18 +318,18 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                     HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
             }
         } catch (LoadContractException e) {
-            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+            return new HttpResponseData<>(false, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
         } catch (InitWeb3jException e) {
-            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+            return new HttpResponseData<>(false, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.info("Cannot find groupId definition: {}", e);
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
         if (StringUtils.isEmpty(adminPrivKey)) {
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
         String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
@@ -412,10 +413,9 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             JsonNode hashNode = jsonNode.get(WeIdentityParamKeyConstant.HASH);
             JsonNode signNode = jsonNode.get(WeIdentityParamKeyConstant.SIGN);
             JsonNode logNode = jsonNode.get(WeIdentityParamKeyConstant.LOG);
-            if ( hashNode == null || StringUtils.isEmpty(hashNode.textValue())
-                || signNode == null || StringUtils.isEmpty(signNode.textValue())) {
+            if ( hashNode == null || signNode == null ) {
                 logger.error("[delegateCreateEvidenceBatch] input params has null.");
-                return new HttpResponseData<>(false, HttpReturnCode.INPUT_NULL);
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
             hashValues.add(Numeric.prependHexPrefix(hashNode.textValue()));
