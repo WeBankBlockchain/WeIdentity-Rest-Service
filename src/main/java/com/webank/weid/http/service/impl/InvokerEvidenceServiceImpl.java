@@ -1,7 +1,5 @@
 package com.webank.weid.http.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -32,7 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +171,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithCustomKey(
-            hashNode.textValue(),
+            Numeric.prependHexPrefix(hashNode.textValue()),
             proofNode.textValue(),
             logNode.textValue(),
             DateUtils.getNoMillisecondTimeStamp(),
@@ -222,7 +222,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
-        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(idNode.textValue());
+        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(Numeric.prependHexPrefix(idNode.textValue()));
         if (respData.getResult() == null) {
             return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
         }
@@ -290,7 +290,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
     }
 
     @Override
-    public HttpResponseData<Object> createEvidence(InputArg args) {
+    public HttpResponseData<Object> delegateCreateEvidence(InputArg args) {
         JsonNode hashNode;
         JsonNode signNode;
         JsonNode logNode;
@@ -305,7 +305,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 return new HttpResponseData<>(false, HttpReturnCode.INPUT_NULL);
             }
         } catch (Exception e) {
-            logger.error("[createEvidenceWithExtraInfo]: input args error: {}", args, e);
+            logger.error("[delegateCreateEvidence]: input args error: {}", args, e);
             return new HttpResponseData<>(false, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
         String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
@@ -318,23 +318,23 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                     HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
             }
         } catch (LoadContractException e) {
-            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+            return new HttpResponseData<>(false, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
         } catch (InitWeb3jException e) {
-            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+            return new HttpResponseData<>(false, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
         } catch (Exception e) {
             logger.info("Cannot find groupId definition: {}", e);
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
         if (StringUtils.isEmpty(adminPrivKey)) {
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
         String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithSpecificSigner(
-            hashNode.textValue(), 
+            Numeric.prependHexPrefix(hashNode.textValue()), 
             signNode.textValue(), 
             log, 
             DateUtils.getNoMillisecondTimeStamp(),
@@ -378,19 +378,19 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
     }
 
     @Override
-    public HttpResponseData<Object> createEvidenceWithBatch(InputArg args) {
+    public HttpResponseData<Object> delegateCreateEvidenceBatch(InputArg args) {
         JsonNode listNode;
         try {
             JsonNode functionArgNode = new ObjectMapper()
                 .readTree(args.getFunctionArg());
             listNode = functionArgNode.get(WeIdentityParamKeyConstant.LIST);
-            // 不是数组节点则异常
+            // 濡傛灉鑺傜偣涓嶆槸鏁扮粍
             if (!listNode.isArray()) {
-                logger.error("[createEvidenceWithBatch] input does not an Array.");
+                logger.error("[delegateCreateEvidenceBatch] input does not an Array.");
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
         } catch (Exception e) {
-            logger.error("[createEvidenceWithExtraInfo]: input args error: {}", args, e);
+            logger.error("[delegateCreateEvidenceBatch]: input args error: {}", args, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
 
@@ -413,13 +413,12 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             JsonNode hashNode = jsonNode.get(WeIdentityParamKeyConstant.HASH);
             JsonNode signNode = jsonNode.get(WeIdentityParamKeyConstant.SIGN);
             JsonNode logNode = jsonNode.get(WeIdentityParamKeyConstant.LOG);
-            if ( hashNode == null || StringUtils.isEmpty(hashNode.textValue())
-                || signNode == null || StringUtils.isEmpty(signNode.textValue())) {
-                logger.error("[createEvidenceWithBatch] input params has null.");
-                return new HttpResponseData<>(false, HttpReturnCode.INPUT_NULL);
+            if ( hashNode == null || signNode == null ) {
+                logger.error("[delegateCreateEvidenceBatch] input params has null.");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
-            hashValues.add(hashNode.textValue());
+            hashValues.add(Numeric.prependHexPrefix(hashNode.textValue()));
             signatures.add(signNode.textValue());
             logs.add(log);
             timestamps.add(timeStamp);

@@ -9,9 +9,9 @@ public interface InvokerEvidenceService {
 
     HttpResponseData<Object> createEvidenceWithExtraInfo(InputArg args);
 
-    HttpResponseData<Object> createEvidence(InputArg args);
+    HttpResponseData<Object> delegateCreateEvidence(InputArg args);
 
-    HttpResponseData<Object> createEvidenceWithBatch(InputArg args);
+    HttpResponseData<Object> delegateCreateEvidenceBatch(InputArg args);
 
     HttpResponseData<Object> getEvidenceByCustomKey(InputArg args);
 
