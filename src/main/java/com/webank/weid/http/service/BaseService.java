@@ -19,10 +19,22 @@
 
 package com.webank.weid.http.service;
 
+import java.math.BigInteger;
+
+import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.crypto.Sign;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.webank.payment.protocol.base.Authentication;
+import com.webank.payment.protocol.base.PrivateKey;
+import com.webank.weid.exception.WeIdBaseException;
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
 
 public abstract class BaseService {
 
@@ -39,5 +51,28 @@ public abstract class BaseService {
             "classpath:SpringApplicationContext.xml"});
         logger.info("initializing spring containers finish...");
 
+    }
+    
+    private PrivateKey buildPrivateKey(String value) {
+        PrivateKey pri = new PrivateKey();
+        pri.setValue(value);
+        return pri;
+    }
+    
+    protected Authentication getAuthentication(String weId) {
+        Authentication authentication = getAuthenticationByWeId(weId);;
+        authentication.setUserAddress(WeIdUtils.convertWeIdToAddress(weId));
+        return authentication;
+    }
+    
+    private Authentication getAuthenticationByWeId(String weId) {
+        String weIdPrivKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, weId);
+        if (StringUtils.isEmpty(weIdPrivKey)) {
+            throw new WeIdBaseException(HttpReturnCode.INVOKER_ILLEGAL.getCodeDesc());
+        }
+        Authentication authentication = new Authentication();
+        authentication.setPrivateKey(buildPrivateKey(weIdPrivKey));
+        return authentication;
     }
 }

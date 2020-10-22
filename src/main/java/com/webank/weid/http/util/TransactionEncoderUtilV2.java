@@ -12,6 +12,7 @@ import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.base.CredentialPojo;
@@ -585,6 +586,57 @@ public class TransactionEncoderUtilV2 {
             logger.error("Generate Credential failed due to system error. ", e);
             return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ERROR.getCode(),
                 ErrorCode.CREDENTIAL_ERROR.getCodeDesc());
+        }
+    }
+    
+    /**
+     * Extract and build Input arg for all Service APIs.
+     *
+     * @param inputJson the inputJson String
+     * @return An InputArg instance
+     */
+    public static HttpResponseData<InputArg> buildInputArg(String inputJson) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(inputJson);
+            if (jsonNode == null) {
+                logger.error("Null input within: {}", inputJson);
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode functionNameNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_NAME);
+            JsonNode versionNode = jsonNode.get(WeIdentityParamKeyConstant.API_VERSION);
+            if (functionNameNode == null || StringUtils.isEmpty(functionNameNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            }
+            if (versionNode == null || StringUtils.isEmpty(versionNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.VER_ILLEGAL);
+            }
+            // Need to use toString() for pure Objects and textValue() for pure String
+            JsonNode functionArgNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_ARG);
+            if (functionArgNode == null || StringUtils.isEmpty(functionArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCARG_ILLEGAL);
+            }
+            JsonNode txnArgNode = jsonNode.get(WeIdentityParamKeyConstant.TRANSACTION_ARG);
+            if (txnArgNode == null || StringUtils.isEmpty(txnArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.TXNARG_ILLEGAL);
+            }
+
+            String functionArg = functionArgNode.toString();
+            String txnArg = txnArgNode.toString();
+            InputArg inputArg = new InputArg();
+            inputArg.setFunctionArg(functionArg);
+            inputArg.setTransactionArg(txnArg);
+            inputArg.setFunctionName(functionNameNode.textValue());
+            inputArg.setV(versionNode.textValue());
+            return new HttpResponseData<>(inputArg, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Json Extraction error within: {}", inputJson);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
 }

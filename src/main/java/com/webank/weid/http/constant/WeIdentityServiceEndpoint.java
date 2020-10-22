@@ -31,9 +31,12 @@ public final class WeIdentityServiceEndpoint {
      * API endpoint.
      */
     public static final String API_ROOT = "weid/api";
+    public static final String PAYMENT_ROOT = "payment";
     public static final String ENCODE_TRANSACTION = "encode";
     public static final String SEND_TRANSACTION = "transact";
     public static final String INVOKE_FUNCTION = "invoke";
+    public static final String WALLET_AGENT_BAC004_FUNCTION = "bac004/api/invoke";
+    public static final String WALLET_AGENT_BAC005_FUNCTION = "bac005/api/invoke";
 
     /**
      * EP Service endpoint.
