@@ -19,13 +19,18 @@
 
 package com.webank.weid.http;
 
+import com.webank.payment.rpc.BAC005AssetService;
+import com.webank.payment.service.impl.BAC005AssetServiceImpl;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.rpc.WeIdService;
+import com.webank.weid.service.impl.WeIdServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication(
@@ -39,5 +44,15 @@ public class Application {
         SpringApplication.run(Application.class);
         FiscoConfig.topic = "weid-http-service";
         logger.info("#### Start finished");
+    }
+
+    @Bean
+    public WeIdService weIdService() {
+        return new WeIdServiceImpl();
+    }
+
+    @Bean
+    public BAC005AssetService getBAC005AssetService() {
+        return new BAC005AssetServiceImpl();
     }
 }
