@@ -42,4 +42,12 @@ public final class WalletAgentFunctionNames {
     public static final String FUNCNAME_WALLETAGENT_GETBASEINFO = "getBaseInfo";
     public static final String FUNCNAME_WALLETAGENT_GETBASEINFOBYWEID = "getBaseInfoByWeId";
 
+    // public static final String FUNCNAME_WALLETAGENT_BATCHISSUE = "batchIssue";
+    // public static final String FUNCNAME_WALLETAGENT_CONSTRUCTANDBATCHISSUE = "constructAndBatchIssue";
+    public static final String FUNCNAME_WALLETAGENT_QUERYASSETOWNER = "queryAssetOwner";
+    public static final String FUNCNAME_WALLETAGENT_QUERYASSETNUM = "queryAssetNum";
+    // public static final String FUNCNAME_WALLETAGENT_QUERYASSETLIST = "queryAssetList";
+    public static final String FUNCNAME_WALLETAGENT_QUERYOWNEDASSETNUM = "queryOwnedAssetNum";
+    // public static final String FUNCNAME_WALLETAGENT_QUERYOWNEDASSETLIST = "queryOwnedAssetList";
+
 }

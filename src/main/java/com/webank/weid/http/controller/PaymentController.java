@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.controller;
 
+import com.webank.weid.http.service.WalletAgentBAC005Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +41,10 @@ public class PaymentController {
     
     @Autowired
     private WalletAgentBAC004Service walletAgentBAC004Service;
-  
-    
+
+    @Autowired
+    private WalletAgentBAC005Service walletAgentBAC005Service;
+
     /**
      * Invoke an SDK function.
      *
@@ -54,5 +57,19 @@ public class PaymentController {
         @RequestBody String invokeFunctionJsonArgs
     ) {
         return walletAgentBAC004Service.invokeFunction(invokeFunctionJsonArgs);
+    }
+
+    /**
+     * Invoke an SDK function.
+     *
+     * @param invokeFunctionJsonArgs the json format args. It should contain three keys: the same inputParams as in the createEncodeTransaction case,
+     * the signedMessage based on previous encodedTransaction, and the functionName as to decide the SDK method endpoint.
+     * @return the json string from SDK response.
+     */
+    @RequestMapping(value = WeIdentityServiceEndpoint.WALLET_AGENT_BAC005_FUNCTION, method = RequestMethod.POST)
+    public HttpResponseData<Object> invokeWalletAgentBac005(
+            @RequestBody String invokeFunctionJsonArgs
+    ) {
+        return walletAgentBAC005Service.invokeFunction(invokeFunctionJsonArgs);
     }
 }
