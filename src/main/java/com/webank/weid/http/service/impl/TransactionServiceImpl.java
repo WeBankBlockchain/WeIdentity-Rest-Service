@@ -333,6 +333,12 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_IS_WEID_IN_WHITELIST)) {
                 return invokerAuthorityIssuerService.isWeIdInWhitelist(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_RECOGNIZE_AUTHORITY_ISSUER)) {
+                return invokerAuthorityIssuerService.recognizeAuthorityIssuer(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_DERECOGNIZE_AUTHORITY_ISSUER)) {
+                return invokerAuthorityIssuerService.deRecognizeAuthorityIssuer(inputArg);
+            }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG)) {
                 String weId = (String) invokerAuthorityIssuerService.getWeIdByNameInvoke(inputArg).getRespBody();
                 // Construct new InputArg
