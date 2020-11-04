@@ -67,4 +67,8 @@ public interface InvokerAuthorityIssuerService {
      * @return the Boolean response data
      */
     HttpResponseData<Object> isWeIdInWhitelist(InputArg args);
+
+    HttpResponseData<Object> recognizeAuthorityIssuer(InputArg args);
+
+    HttpResponseData<Object> deRecognizeAuthorityIssuer(InputArg args);
 }
