@@ -1,5 +1,6 @@
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.exception.WeIdBaseException;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WalletAgentFunctionNames;
 import com.webank.weid.http.protocol.request.FunctionArg;
@@ -45,12 +46,20 @@ public class WalletAgentBAC005ServiceImpl extends BaseService implements WalletA
                 return bac005AssetService.issue(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCTANDISSUE:
                 return bac005AssetService.constructAndIssue(req);
+            case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHISSUE:
+                return bac005AssetService.batchIssue(req);
+            case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCTANDBATCHISSUE:
+                return bac005AssetService.constructAndBatchIssue(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_QUERYASSETOWNER:
                 return bac005AssetService.queryAssetOwner(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_QUERYASSETNUM:
                 return bac005AssetService.queryAssetNum(req);
+            case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_QUERYASSETLIST:
+                return bac005AssetService.queryAssetList(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_QUERYOWNEDASSETNUM:
                 return bac005AssetService.queryOwnedAssetNum(req);
+            case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_QUERYOWNEDASSETLIST:
+                return bac005AssetService.queryOwnedAssetList(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_SEND:
                 return bac005AssetService.send(req);
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHSEND:
@@ -62,6 +71,12 @@ public class WalletAgentBAC005ServiceImpl extends BaseService implements WalletA
             }
             logger.error("Function name undefined: {}.", functionName);
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+        } catch (WeIdBaseException e) {
+            logger.error("[invokeFunction]: invoke {} failed, input argument {}",
+                    functionName,
+                    invokeFunctionJsonArgs,
+                    e);
+            return new HttpResponseData<>(null, e.getErrorCode().getCode(), e.getMessage());
         } catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
                 invokeFunctionJsonArgs,

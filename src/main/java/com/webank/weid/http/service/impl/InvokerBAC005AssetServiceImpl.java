@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class InvokerBAC005AssetServiceImpl extends BaseService implements InvokerBAC005AssetService {
@@ -75,17 +76,10 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         FunctionArg functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
 
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = 
-            this.weIdService.isWeIdExist(functionArg.getRecipient());
-        if (!weIdExist.getResult()) {
-            return new HttpResponseData<>(
-                weIdExist.getResult(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
-        }
-        
-        // 获取用户身份信息
+        HttpResponseData<Object> checkWeIdExistRsp = super.checkWeIdExist(
+                this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
+
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         BAC005AssetInfo bac005AssetInfo = new BAC005AssetInfo();
         bac005AssetInfo.setUserAddress(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
@@ -119,27 +113,26 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         FunctionArg functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
 
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist =
-                this.weIdService.isWeIdExist(functionArg.getRecipient());
-        if (!weIdExist.getResult()) {
-            return new HttpResponseData<>(
-                    weIdExist.getResult(),
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(),
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
+        List<BAC005AssetInfo> assetInfoList = new ArrayList<>();
+        List<FunctionArg> objectList = inputArg.getFunctionArg().getObjectList();
+        HttpResponseData<Object> checkWeIdExistRsp = null;
+        for (FunctionArg fa : objectList) {
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, fa.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) break;
+            BAC005AssetInfo assetInfo = new BAC005AssetInfo();
+            assetInfo.setAssetId(BigInteger.valueOf(fa.getAssetId()));
+            assetInfo.setAssetUri(fa.getAssetUri());
+            assetInfo.setUserAddress(WeIdUtils.convertWeIdToAddress(fa.getRecipient()));
+            assetInfo.setData(fa.getData());
+            assetInfoList.add(assetInfo);
         }
 
-        // 获取用户身份信息
-        Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
-        BAC005AssetInfo bac005AssetInfo = new BAC005AssetInfo();
-        bac005AssetInfo.setUserAddress(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
-        bac005AssetInfo.setAssetId(BigInteger.valueOf(functionArg.getAssetId()));
-        bac005AssetInfo.setAssetUri(functionArg.getAssetUri());
-        bac005AssetInfo.setData(functionArg.getData());
+        if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
 
+        Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         ResponseData<Boolean> res = this.bac005Service.batchIssueAsset(
                 functionArg.getAssetAddress(),
-                functionArg.getBac005AssetInfoList(),
+                assetInfoList,
                 auth
         );
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
@@ -149,7 +142,12 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<Object> constructAndBatchIssue(ReqInput inputArg) {
         HttpResponseData<Object> publishRes = this.construct(inputArg);
         if (publishRes.getErrorCode() == ErrorCode.SUCCESS.getCode()) {
-            return this.batchIssue(inputArg);
+            BaseAsset respBody = (BaseAsset) publishRes.getRespBody();
+            inputArg.getFunctionArg().setAssetAddress(respBody.getAssetAddress());
+            HttpResponseData<Object> batchIssueRsp = this.batchIssue(inputArg);
+            if (batchIssueRsp.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
+                return batchIssueRsp;
+            }
         }
         return publishRes;
     }
@@ -199,8 +197,8 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<Object> queryOwnedAssetList(ReqInput inputArg) {
         FunctionArg functionArg = inputArg.getFunctionArg();
         ResponseData<List<BAC005AssetInfo>> ownedAssetList = this.bac005Service.queryOwnedAssetList(
+                functionArg.getAssetAddress(),
                 WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()),
-                functionArg.getAssetHolder(),
                 functionArg.getIndex(),
                 functionArg.getNum());
 
@@ -214,17 +212,10 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<Object> send(ReqInput inputArg) {
         FunctionArg functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist =
-                this.weIdService.isWeIdExist(functionArg.getRecipient());
-        if (!weIdExist.getResult()) {
-            return new HttpResponseData<>(
-                weIdExist.getResult(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
-        }
-            
-        // 获取用户身份信息
+        HttpResponseData<Object> checkWeIdExistRsp = super.checkWeIdExist(
+                this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
+
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         SendAssetArgs sendAssetArgs = new SendAssetArgs();
         sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAssetId()));
@@ -242,17 +233,21 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<Object> batchSend(ReqInput inputArg) {
         FunctionArg functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
-        // 获取用户身份信息
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         List<SendAssetArgs> sendAssetArgList = new ArrayList<>();
         List<FunctionArg> objectList = functionArg.getObjectList();
-        objectList.forEach(input -> {
+        HttpResponseData<Object> checkWeIdExistRsp = null;
+        for (FunctionArg arg : objectList) {
             SendAssetArgs sendAssetArgs = new SendAssetArgs();
-            sendAssetArgs.setAmount(BigInteger.valueOf(input.getAssetId()));
-            sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
+            sendAssetArgs.setAmount(BigInteger.valueOf(arg.getAssetId()));
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) break;
+            sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(arg.getRecipient()));
             sendAssetArgs.setData(functionArg.getData());
             sendAssetArgList.add(sendAssetArgs);
-        });
+        }
+
+        if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
 
         ResponseData<Boolean> res = this.bac005Service.batchSendAsset(
                 functionArg.getAssetAddress(),
