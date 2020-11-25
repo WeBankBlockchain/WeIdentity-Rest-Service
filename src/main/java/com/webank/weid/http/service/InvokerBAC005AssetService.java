@@ -19,25 +19,27 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.payment.protocol.base.BaseAsset;
 import com.webank.weid.http.protocol.request.ReqInput;
+import com.webank.weid.http.protocol.request.payment.*;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import org.springframework.stereotype.Service;
 
 @Service
 public interface InvokerBAC005AssetService {
 
-    HttpResponseData<Object> construct(ReqInput inputArg);
-    HttpResponseData<Object> issue(ReqInput inputArg);
-    HttpResponseData<Object> constructAndIssue(ReqInput inputArg);
-    HttpResponseData<Object> batchIssue(ReqInput inputArg);
-    HttpResponseData<Object> constructAndBatchIssue(ReqInput inputArg);
-    HttpResponseData<Object> queryAssetOwner(ReqInput inputArg);
-    HttpResponseData<Object> queryAssetNum(ReqInput inputArg);
-    HttpResponseData<Object> queryAssetList(ReqInput inputArg);
-    HttpResponseData<Object> queryOwnedAssetNum(ReqInput inputArg);
-    HttpResponseData<Object> queryOwnedAssetList(ReqInput inputArg);
-    HttpResponseData<Object> send(ReqInput inputArg);
-    HttpResponseData<Object> batchSend(ReqInput inputArg);
-    HttpResponseData<Object> queryBaseInfo(ReqInput inputArg);
-    HttpResponseData<Object> queryBaseInfoByWeId(ReqInput inputArg);
+    HttpResponseData<Object> construct(ReqInput<BAC005Info> inputArg);
+    HttpResponseData<Object> issue(ReqInput<BAC005Info> inputArg);
+    HttpResponseData<Object> constructAndIssue(ReqInput<BAC005Info> inputArg);
+    HttpResponseData<Object> batchIssue(ReqInput<BAC005BatchInfo> inputArg);
+    HttpResponseData<Object> constructAndBatchIssue(ReqInput<BAC005BatchInfo> inputArg);
+    HttpResponseData<Object> queryAssetOwner(ReqInput<BAC005Info> inputArg);
+    HttpResponseData<Object> queryAssetNum(ReqInput<BaseAsset> inputArg);
+    HttpResponseData<Object> queryAssetList(ReqInput<PageQuery> inputArg);
+    HttpResponseData<Object> queryOwnedAssetNum(ReqInput<BaseQuery> inputArg);
+    HttpResponseData<Object> queryOwnedAssetList(ReqInput<PageQuery> inputArg);
+    HttpResponseData<Object> send(ReqInput<BAC005Info> inputArg);
+    HttpResponseData<Object> batchSend(ReqInput<BAC005BatchInfo> inputArg);
+    HttpResponseData<Object> queryBaseInfo(ReqInput<AssetAddressList> inputArg);
+    HttpResponseData<Object> queryBaseInfoByWeId(ReqInput<PageQuery> inputArg);
 }

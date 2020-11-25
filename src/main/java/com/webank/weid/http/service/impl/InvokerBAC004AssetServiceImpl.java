@@ -35,9 +35,14 @@ import com.webank.payment.protocol.response.ResponseData;
 import com.webank.payment.rpc.BAC004AssetService;
 import com.webank.payment.service.impl.BAC004AssetServiceImpl;
 import com.webank.weid.constant.ErrorCode;
-import com.webank.weid.http.protocol.request.FunctionArg;
 import com.webank.weid.http.protocol.request.ReqInput;
 import com.webank.weid.http.protocol.request.TransactionArg;
+import com.webank.weid.http.protocol.request.payment.AssetAddressList;
+import com.webank.weid.http.protocol.request.payment.BAC004BatchSendInfo;
+import com.webank.weid.http.protocol.request.payment.BAC004Info;
+import com.webank.weid.http.protocol.request.payment.BAC004SendInfo;
+import com.webank.weid.http.protocol.request.payment.BaseQuery;
+import com.webank.weid.http.protocol.request.payment.PageQuery;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerBAC004AssetService;
@@ -61,8 +66,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> construct(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> construct(ReqInput<BAC004Info> inputArg) {
+        BAC004Info functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
         // 获取用户身份信息
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
@@ -76,8 +81,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> issue(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> issue(ReqInput<BAC004Info> inputArg) {
+        BAC004Info functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
 
         com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = 
@@ -103,7 +108,7 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> constructAndIssue(ReqInput inputArg) {
+    public HttpResponseData<Object> constructAndIssue(ReqInput<BAC004Info> inputArg) {
         HttpResponseData<Object> puhlishRes = construct(inputArg);
         if (puhlishRes.getErrorCode().intValue() ==  ErrorCode.SUCCESS.getCode()) {
             BaseAsset assetInfo = (BaseAsset)puhlishRes.getRespBody();
@@ -119,8 +124,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> getBalance(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> getBalance(ReqInput<BaseQuery> inputArg) {
+        BaseQuery functionArg = inputArg.getFunctionArg();
         ResponseData<BAC004Balance> res = getBac004Service().getBalance(
             functionArg.getAssetAddress(), 
             WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder())
@@ -129,8 +134,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> getBatchBalance(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> getBatchBalance(ReqInput<AssetAddressList> inputArg) {
+        AssetAddressList functionArg = inputArg.getFunctionArg();
         ResponseData<List<BAC004Balance>> res = getBac004Service().getBatchBalance(
             functionArg.getAssetAddressList(), 
             WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder())
@@ -139,8 +144,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> getBalanceByWeId(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> getBalanceByWeId(ReqInput<PageQuery> inputArg) {
+        PageQuery functionArg = inputArg.getFunctionArg();
         ResponseData<List<BAC004Balance>> res = getBac004Service().getBalanceByWeId(
             WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()),
             functionArg.getIndex(), 
@@ -150,8 +155,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> send(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> send(ReqInput<BAC004SendInfo> inputArg) {
+        BAC004SendInfo functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
         com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = 
             weIdService.isWeIdExist(functionArg.getRecipient());
@@ -178,18 +183,18 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> batchSend(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> batchSend(ReqInput<BAC004BatchSendInfo> inputArg) {
+        BAC004BatchSendInfo functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
         // 获取用户身份信息
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         List<SendAssetArgs> sendAssetArgList = new ArrayList<SendAssetArgs>();
-        List<FunctionArg> objectList = functionArg.getObjectList();
-        for (FunctionArg input : objectList) {
+        List<BAC004SendInfo> objectList = functionArg.getList();
+        for (BAC004SendInfo input : objectList) {
             SendAssetArgs sendAssetArgs = new  SendAssetArgs();
             sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
-            sendAssetArgs.setData(functionArg.getData());
+            sendAssetArgs.setData(input.getData());
             sendAssetArgList.add(sendAssetArgs);
         }
         ResponseData<List<BatchSendAssetResult>> res = getBac004Service().batchSend(
@@ -201,8 +206,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> getBaseInfo(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> getBaseInfo(ReqInput<AssetAddressList> inputArg) {
+        AssetAddressList functionArg = inputArg.getFunctionArg();
         ResponseData<List<BAC004BaseInfo>> res = getBac004Service().getBaseInfo(
             functionArg.getAssetAddressList()
         );
@@ -210,8 +215,8 @@ public class InvokerBAC004AssetServiceImpl
     }
 
     @Override
-    public HttpResponseData<Object> getBaseInfoByWeId(ReqInput inputArg) {
-        FunctionArg functionArg = inputArg.getFunctionArg();
+    public HttpResponseData<Object> getBaseInfoByWeId(ReqInput<PageQuery> inputArg) {
+        PageQuery functionArg = inputArg.getFunctionArg();
         ResponseData<List<BAC004BaseInfo>> res = getBac004Service().getBaseInfoByWeId(
             WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()),
             functionArg.getIndex(), 

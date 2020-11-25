@@ -3,11 +3,11 @@ package com.webank.weid.http.protocol.request;
 import lombok.Data;
 
 @Data
-public class ReqInput {
+public class ReqInput<F> {
     /**
      * Required: the function related arguments.
      */
-    FunctionArg functionArg;
+    F functionArg;
 
     /**
      * Required: the transaction related arguments.

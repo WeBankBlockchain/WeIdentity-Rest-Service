@@ -22,19 +22,25 @@ package com.webank.weid.http.service;
 import org.springframework.stereotype.Service;
 
 import com.webank.weid.http.protocol.request.ReqInput;
+import com.webank.weid.http.protocol.request.payment.AssetAddressList;
+import com.webank.weid.http.protocol.request.payment.BAC004BatchSendInfo;
+import com.webank.weid.http.protocol.request.payment.BAC004Info;
+import com.webank.weid.http.protocol.request.payment.BAC004SendInfo;
+import com.webank.weid.http.protocol.request.payment.BaseQuery;
+import com.webank.weid.http.protocol.request.payment.PageQuery;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 
 @Service
 public interface InvokerBAC004AssetService {
 
-    HttpResponseData<Object> construct(ReqInput inputArg);
-    HttpResponseData<Object> issue(ReqInput inputArg);
-    HttpResponseData<Object> constructAndIssue(ReqInput inputArg);
-    HttpResponseData<Object> getBalance(ReqInput inputArg);
-    HttpResponseData<Object> getBatchBalance(ReqInput inputArg);
-    HttpResponseData<Object> getBalanceByWeId(ReqInput inputArg);
-    HttpResponseData<Object> send(ReqInput inputArg);
-    HttpResponseData<Object> batchSend(ReqInput inputArg);
-    HttpResponseData<Object> getBaseInfo(ReqInput inputArg);
-    HttpResponseData<Object> getBaseInfoByWeId(ReqInput inputArg);
+    HttpResponseData<Object> construct(ReqInput<BAC004Info> inputArg);
+    HttpResponseData<Object> issue(ReqInput<BAC004Info> inputArg);
+    HttpResponseData<Object> constructAndIssue(ReqInput<BAC004Info> inputArg);
+    HttpResponseData<Object> getBalance(ReqInput<BaseQuery> inputArg);
+    HttpResponseData<Object> getBatchBalance(ReqInput<AssetAddressList> inputArg);
+    HttpResponseData<Object> getBalanceByWeId(ReqInput<PageQuery> inputArg);
+    HttpResponseData<Object> send(ReqInput<BAC004SendInfo> inputArg);
+    HttpResponseData<Object> batchSend(ReqInput<BAC004BatchSendInfo> inputArg);
+    HttpResponseData<Object> getBaseInfo(ReqInput<AssetAddressList> inputArg);
+    HttpResponseData<Object> getBaseInfoByWeId(ReqInput<PageQuery> inputArg);
 }
