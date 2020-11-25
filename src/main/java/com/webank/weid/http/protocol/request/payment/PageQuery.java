@@ -8,7 +8,7 @@ import lombok.ToString;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class PageQuery extends BaseQuery{
-    private Integer amount;
+    // private Integer amount;
     private Integer index;
     private Integer num;
 }

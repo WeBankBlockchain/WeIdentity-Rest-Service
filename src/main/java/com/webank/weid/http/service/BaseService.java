@@ -21,6 +21,10 @@ package com.webank.weid.http.service;
 
 import java.math.BigInteger;
 
+import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.PropertiesUtil;
+import com.webank.weid.rpc.WeIdService;
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.crypto.Sign;
 import org.slf4j.Logger;
@@ -60,7 +64,12 @@ public abstract class BaseService {
     }
     
     protected Authentication getAuthentication(String weId) {
-        Authentication authentication = getAuthenticationByWeId(weId);;
+        Authentication authentication = getAuthenticationByWeId(weId);
+        String passphrase = PropertiesUtil.getProperty("default.passphrase");
+        if (StringUtils.isNotBlank(weId) && weId.equalsIgnoreCase(passphrase)) {
+            //将私钥转换成公钥，将公钥转换成weId地址
+            weId = DataToolUtils.convertPrivateKeyToDefaultWeId(authentication.getPrivateKey().getValue());
+        }
         authentication.setUserAddress(WeIdUtils.convertWeIdToAddress(weId));
         return authentication;
     }
@@ -74,5 +83,17 @@ public abstract class BaseService {
         Authentication authentication = new Authentication();
         authentication.setPrivateKey(buildPrivateKey(weIdPrivKey));
         return authentication;
+    }
+
+    protected HttpResponseData<Object> checkWeIdExist(WeIdService weIdService, String weId) {
+        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = weIdService.isWeIdExist(weId);
+        if (!weIdExist.getResult()) {
+            return new HttpResponseData<>(
+                    weIdExist.getResult(),
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(),
+                    "the weId:[" + weId + "] does not exist on blockchain."
+            );
+        }
+        return null;
     }
 }
