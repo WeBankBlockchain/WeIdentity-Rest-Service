@@ -7,10 +7,15 @@ import org.springframework.stereotype.Component;
 
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WalletAgentFunctionNames;
-import com.webank.weid.http.protocol.request.FunctionArg;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.request.ReqInput;
 import com.webank.weid.http.protocol.request.TransactionArg;
+import com.webank.weid.http.protocol.request.payment.AssetAddressList;
+import com.webank.weid.http.protocol.request.payment.BAC004BatchSendInfo;
+import com.webank.weid.http.protocol.request.payment.BAC004Info;
+import com.webank.weid.http.protocol.request.payment.BAC004SendInfo;
+import com.webank.weid.http.protocol.request.payment.BaseQuery;
+import com.webank.weid.http.protocol.request.payment.PageQuery;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerBAC004AssetService;
@@ -35,30 +40,29 @@ public class WalletAgentBAC004ServiceImpl extends BaseService implements WalletA
             logger.error("Failed to build input argument: {}", invokeFunctionJsonArgs);
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
-        ReqInput req = toReqInput(inputArg);
         String functionName = inputArg.getFunctionName();
         try {
             switch(functionName) {
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCT:
-                return bac004AssetService.construct(req);
+                return bac004AssetService.construct(toReqInput(inputArg, BAC004Info.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_ISSUE:
-                return bac004AssetService.issue(req);
+                return bac004AssetService.issue(toReqInput(inputArg, BAC004Info.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCTANDISSUE:
-                return bac004AssetService.constructAndIssue(req);
+                return bac004AssetService.constructAndIssue(toReqInput(inputArg, BAC004Info.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBALANCE:
-                return bac004AssetService.getBalance(req);
+                return bac004AssetService.getBalance(toReqInput(inputArg, BaseQuery.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBATCHBALANCE:
-                return bac004AssetService.getBatchBalance(req);
+                return bac004AssetService.getBatchBalance(toReqInput(inputArg, AssetAddressList.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBALANCEBYWEID:
-                return bac004AssetService.getBalanceByWeId(req);
+                return bac004AssetService.getBalanceByWeId(toReqInput(inputArg, PageQuery.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_SEND:
-                return bac004AssetService.send(req);
+                return bac004AssetService.send(toReqInput(inputArg, BAC004SendInfo.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHSEND:
-                return bac004AssetService.batchSend(req);
+                return bac004AssetService.batchSend(toReqInput(inputArg, BAC004BatchSendInfo.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBASEINFO:
-                return bac004AssetService.getBaseInfo(req);
+                return bac004AssetService.getBaseInfo(toReqInput(inputArg, AssetAddressList.class));
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBASEINFOBYWEID:
-                return bac004AssetService.getBaseInfoByWeId(req);
+                return bac004AssetService.getBaseInfoByWeId(toReqInput(inputArg, PageQuery.class));
             }
             logger.error("Function name undefined: {}.", functionName);
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
@@ -71,12 +75,12 @@ public class WalletAgentBAC004ServiceImpl extends BaseService implements WalletA
         }
     }
     
-    private ReqInput toReqInput(InputArg inputArg) {
-        ReqInput reqInput = new ReqInput();
+    private <F> ReqInput<F> toReqInput(InputArg inputArg, Class<F> functionClass) {
+        ReqInput<F> reqInput = new ReqInput<F>();
         reqInput.setV(inputArg.getV());
         reqInput.setFunctionName(inputArg.getFunctionName());
         reqInput.setFunctionArg(
-            DataToolUtils.deserialize(inputArg.getFunctionArg(), FunctionArg.class));
+            DataToolUtils.deserialize(inputArg.getFunctionArg(), functionClass));
         reqInput.setTransactionArg(
             DataToolUtils.deserialize(inputArg.getTransactionArg(), TransactionArg.class));
         return reqInput;
