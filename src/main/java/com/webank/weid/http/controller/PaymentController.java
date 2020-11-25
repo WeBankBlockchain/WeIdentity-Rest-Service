@@ -72,4 +72,20 @@ public class PaymentController {
     ) {
         return walletAgentBAC005Service.invokeFunction(invokeFunctionJsonArgs);
     }
+    
+
+    @RequestMapping(value = WeIdentityServiceEndpoint.WALLET_AGENT_BAC004_FUNCTION_ENCODE, method = RequestMethod.POST)
+    public HttpResponseData<Object> encodeWalletAgentBac004(
+        @RequestBody String encodeTransactionJsonArgs
+    ) {
+        return walletAgentBAC004Service.encodeTransaction(encodeTransactionJsonArgs);
+    }
+    
+
+    @RequestMapping(value = WeIdentityServiceEndpoint.WALLET_AGENT_BAC004_FUNCTION_TRANSACT, method = RequestMethod.POST)
+    public HttpResponseData<Object> transactWalletAgentBac004(
+        @RequestBody String sendTransactionJsonArgs
+    ) {
+        return walletAgentBAC004Service.sendTransaction(sendTransactionJsonArgs);
+    }
 }

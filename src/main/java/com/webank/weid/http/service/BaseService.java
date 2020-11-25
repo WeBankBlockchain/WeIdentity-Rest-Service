@@ -19,14 +19,12 @@
 
 package com.webank.weid.http.service;
 
-import java.math.BigInteger;
-
+import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.rpc.WeIdService;
 import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.crypto.Sign;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -49,10 +47,14 @@ public abstract class BaseService {
      */
     protected static final ApplicationContext context;
 
+    protected static FiscoConfig fiscoConfig;
+    
     static {
         // initializing spring containers
         context = new ClassPathXmlApplicationContext(new String[]{
             "classpath:SpringApplicationContext.xml"});
+        fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
         logger.info("initializing spring containers finish...");
 
     }

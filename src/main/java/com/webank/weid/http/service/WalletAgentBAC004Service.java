@@ -22,6 +22,6 @@ package com.webank.weid.http.service;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface WalletAgentBAC004Service extends InvokeService {
+public interface WalletAgentBAC004Service extends InvokeService, RawTransaction  {
 
 }

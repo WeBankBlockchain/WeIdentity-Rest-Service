@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service;
 
+import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.springframework.stereotype.Service;
 
 import com.webank.weid.http.protocol.request.ReqInput;
@@ -43,4 +44,14 @@ public interface InvokerBAC004AssetService {
     HttpResponseData<Object> batchSend(ReqInput<BAC004BatchSendInfo> inputArg);
     HttpResponseData<Object> getBaseInfo(ReqInput<AssetAddressList> inputArg);
     HttpResponseData<Object> getBaseInfoByWeId(ReqInput<PageQuery> inputArg);
+    
+    //
+    HttpResponseData<String> issueEncoder(ReqInput<BAC004Info> inputArg);
+    HttpResponseData<Object> issueDeCoder(TransactionReceipt receipt);
+    HttpResponseData<String> constructEncoder(ReqInput<BAC004Info> inputArg);
+    HttpResponseData<Object> constructDeCoder(TransactionReceipt receipt);
+    HttpResponseData<String> sendEncoder(ReqInput<BAC004SendInfo> inputArg);
+    HttpResponseData<Object> sendDecoder(TransactionReceipt receipt);
+    HttpResponseData<String> batchSendEncoder(ReqInput<BAC004BatchSendInfo> inputArg);
+    HttpResponseData<Object> batchSendDecoder(TransactionReceipt receipt);
 }
