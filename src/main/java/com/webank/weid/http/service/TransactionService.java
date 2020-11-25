@@ -21,42 +21,12 @@ package com.webank.weid.http.service;
 
 import org.springframework.stereotype.Service;
 
-import com.webank.weid.http.protocol.response.HttpResponseData;
-
 /**
  * Handling Transaction related services.
  *
  * @author chaoxinhu and darwindu
  **/
 @Service
-public interface TransactionService {
+public interface TransactionService extends InvokeService, RawTransaction {
 
-    /**
-     * Create an Encoded Transaction.
-     *
-     * @param encodeTransactionJsonArgs json format args. It should contain 4 keys: functionArgs
-     * (including all business related params), transactionArgs, functionName and apiVersion.
-     * Hereafter, functionName will decide which WeID SDK method to engage, and assemble all input
-     * params into SDK readable format to send there; apiVersion is for extensibility purpose.
-     * @return encoded transaction in Base64 format, and the data segment in RawTransaction.
-     */
-    HttpResponseData<Object> encodeTransaction(String encodeTransactionJsonArgs);
-
-    /**
-     * Send Transaction to Blockchain.
-     *
-     * @param sendTransactionJsonArgs the json format args. It should contain 4 keys: functionArgs
-     * (including all business related params), transactionArgs, functionName and apiVersion.
-     * @return the json string from SDK response.
-     */
-    HttpResponseData<Object> sendTransaction(String sendTransactionJsonArgs);
-
-    /**
-     * Directly invoke an SDK function. No client-side sign needed.
-     *
-     * @param invokeFunctionJsonArgs the json format args. It should contain 4 keys: functionArgs,
-     * (including all business related params), EMPTY transactionArgs, functionName and apiVersion.
-     * @return the json string from SDK response.
-     */
-    HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs);
 }

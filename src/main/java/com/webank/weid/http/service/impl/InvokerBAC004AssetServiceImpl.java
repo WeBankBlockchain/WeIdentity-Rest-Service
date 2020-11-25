@@ -22,7 +22,10 @@ package com.webank.weid.http.service.impl;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.springframework.stereotype.Component;
 
 import com.webank.payment.protocol.base.Authentication;
@@ -30,7 +33,6 @@ import com.webank.payment.protocol.base.BAC004Balance;
 import com.webank.payment.protocol.base.BAC004BaseInfo;
 import com.webank.payment.protocol.base.BaseAsset;
 import com.webank.payment.protocol.request.SendAssetArgs;
-import com.webank.payment.protocol.response.BatchSendAssetResult;
 import com.webank.payment.protocol.response.ResponseData;
 import com.webank.payment.rpc.BAC004AssetService;
 import com.webank.payment.service.impl.BAC004AssetServiceImpl;
@@ -85,15 +87,15 @@ public class InvokerBAC004AssetServiceImpl
         BAC004Info functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
 
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = 
-            weIdService.isWeIdExist(functionArg.getRecipient());
-        if (!weIdExist.getResult()) { //用户不存在
+        HttpResponseData<Object> checkWeIdExistRsp = 
+            super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) {
             return new HttpResponseData<>(
-                weIdExist.getResult(), 
+                StringUtils.EMPTY, 
                 ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
                 ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
             );
-        }
+        };
         
         // 获取用户身份信息
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
@@ -158,15 +160,15 @@ public class InvokerBAC004AssetServiceImpl
     public HttpResponseData<Object> send(ReqInput<BAC004SendInfo> inputArg) {
         BAC004SendInfo functionArg = inputArg.getFunctionArg();
         TransactionArg transactionArg = inputArg.getTransactionArg();
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = 
-            weIdService.isWeIdExist(functionArg.getRecipient());
-        if (!weIdExist.getResult()) { //用户不存在
+        HttpResponseData<Object> checkWeIdExistRsp = 
+            super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) {
             return new HttpResponseData<>(
-                weIdExist.getResult(), 
+                StringUtils.EMPTY, 
                 ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
                 ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
             );
-        }
+        };
             
         // 获取用户身份信息
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
@@ -196,8 +198,17 @@ public class InvokerBAC004AssetServiceImpl
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
             sendAssetArgs.setData(input.getData());
             sendAssetArgList.add(sendAssetArgs);
+            HttpResponseData<Object> checkWeIdExistRsp = 
+                super.checkWeIdExist(this.weIdService, input.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) {
+                return new HttpResponseData<>(
+                    StringUtils.EMPTY, 
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+                );
+            };
         }
-        ResponseData<List<BatchSendAssetResult>> res = getBac004Service().batchSend(
+        ResponseData<Boolean> res = getBac004Service().batchSend(
             functionArg.getAssetAddress(), 
             sendAssetArgList, 
             auth
@@ -222,6 +233,108 @@ public class InvokerBAC004AssetServiceImpl
             functionArg.getIndex(), 
             functionArg.getNum()
         );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+    
+    @Override
+    public HttpResponseData<String> issueEncoder(ReqInput<BAC004Info> inputArg) {
+        BAC004Info functionArg = inputArg.getFunctionArg();
+        HttpResponseData<Object> checkWeIdExistRsp = 
+            super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+            );
+        };
+        ResponseData<String> res = getBac004Service().issueEncoder(
+            WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()), 
+            BigInteger.valueOf(functionArg.getAmount()), 
+            functionArg.getData()
+        );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> issueDeCoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac004Service().issueDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+    
+    @Override
+    public HttpResponseData<String> constructEncoder(ReqInput<BAC004Info> inputArg) {
+        BAC004Info functionArg = inputArg.getFunctionArg();
+        ResponseData<String> res = getBac004Service().constructEncoder(
+            functionArg.getShortName(), 
+            functionArg.getDescription()
+        );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> constructDeCoder(TransactionReceipt receipt) {
+        ResponseData<String> res = getBac004Service().constructDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> sendEncoder(ReqInput<BAC004SendInfo> inputArg) {
+        BAC004SendInfo functionArg = inputArg.getFunctionArg();
+        HttpResponseData<Object> checkWeIdExistRsp = 
+            super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+            );
+        };
+
+        // 获取用户身份信息
+        SendAssetArgs sendAssetArgs = new  SendAssetArgs();
+        sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAmount()));
+        sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
+        sendAssetArgs.setData(functionArg.getData());
+        ResponseData<String> res = getBac004Service().sendEncoder(sendAssetArgs);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> sendDecoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac004Service().sendDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> batchSendEncoder(ReqInput<BAC004BatchSendInfo> inputArg) {
+        BAC004BatchSendInfo functionArg = inputArg.getFunctionArg();
+        // 获取用户身份信息
+        List<SendAssetArgs> sendAssetArgList = new ArrayList<SendAssetArgs>();
+        List<BAC004SendInfo> objectList = functionArg.getList();
+        for (BAC004SendInfo input : objectList) {
+            SendAssetArgs sendAssetArgs = new  SendAssetArgs();
+            sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
+            sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
+            sendAssetArgs.setData(input.getData());
+            sendAssetArgList.add(sendAssetArgs);
+            HttpResponseData<Object> checkWeIdExistRsp = 
+                super.checkWeIdExist(this.weIdService, input.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) {
+                return new HttpResponseData<>(
+                    StringUtils.EMPTY, 
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+                );
+            };
+        }
+        ResponseData<String> res = getBac004Service().batchSendEncoder(sendAssetArgList);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> batchSendDecoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac004Service().batchSendDecoder(receipt);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
 }

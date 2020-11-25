@@ -276,12 +276,16 @@ public class TransactionEncoderUtilV2 {
     public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
         // 1. encode the Function
         String data = FunctionEncoder.encode(function);
+        return createClientEncodeResult(data, nonce, to, groupId);
+    }
+    
+    public static String createClientEncodeResult(String functionEncode, String nonce, String to, String groupId) {
         // 2. server generate encodedTransaction
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            groupId, data, to);
+            groupId, functionEncode, to);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
-        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
+        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, functionEncode);
     }
 
     public static BigInteger getNonce() {

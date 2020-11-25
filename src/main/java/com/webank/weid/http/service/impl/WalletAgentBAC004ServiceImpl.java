@@ -1,15 +1,16 @@
 package com.webank.weid.http.service.impl;
 
+import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.webank.payment.protocol.base.BaseAsset;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WalletAgentFunctionNames;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.request.ReqInput;
-import com.webank.weid.http.protocol.request.TransactionArg;
 import com.webank.weid.http.protocol.request.payment.AssetAddressList;
 import com.webank.weid.http.protocol.request.payment.BAC004BatchSendInfo;
 import com.webank.weid.http.protocol.request.payment.BAC004Info;
@@ -17,14 +18,15 @@ import com.webank.weid.http.protocol.request.payment.BAC004SendInfo;
 import com.webank.weid.http.protocol.request.payment.BaseQuery;
 import com.webank.weid.http.protocol.request.payment.PageQuery;
 import com.webank.weid.http.protocol.response.HttpResponseData;
-import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerBAC004AssetService;
 import com.webank.weid.http.service.WalletAgentBAC004Service;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.util.DataToolUtils;
 
 @Component
-public class WalletAgentBAC004ServiceImpl extends BaseService implements WalletAgentBAC004Service {
+public class WalletAgentBAC004ServiceImpl 
+    extends AbstractRawTransactionService 
+    implements WalletAgentBAC004Service {
     
     private Logger logger = LoggerFactory.getLogger(WalletAgentBAC004ServiceImpl.class);
     
@@ -74,16 +76,49 @@ public class WalletAgentBAC004ServiceImpl extends BaseService implements WalletA
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
         }
     }
-    
-    private <F> ReqInput<F> toReqInput(InputArg inputArg, Class<F> functionClass) {
-        ReqInput<F> reqInput = new ReqInput<F>();
-        reqInput.setV(inputArg.getV());
-        reqInput.setFunctionName(inputArg.getFunctionName());
-        reqInput.setFunctionArg(
-            DataToolUtils.deserialize(inputArg.getFunctionArg(), functionClass));
-        reqInput.setTransactionArg(
-            DataToolUtils.deserialize(inputArg.getTransactionArg(), TransactionArg.class));
-        return reqInput;
+
+    @Override
+    protected HttpResponseData<String> doEncodeTransaction(InputArg inputArg) {
+        String functionName = inputArg.getFunctionName();
+        switch(functionName) {
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_ISSUE:
+            return bac004AssetService.issueEncoder(toReqInput(inputArg, BAC004Info.class));
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCT:
+            return bac004AssetService.constructEncoder(toReqInput(inputArg, BAC004Info.class));
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_SEND:
+            return bac004AssetService.sendEncoder(toReqInput(inputArg, BAC004SendInfo.class));
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHSEND:
+            return bac004AssetService.batchSendEncoder(toReqInput(inputArg, BAC004BatchSendInfo.class));
+        default:
+            logger.error("Function name undefined: {}.", functionName);
+            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+        }
     }
 
+    @Override
+    protected HttpResponseData<Object> doSendTransaction(
+        InputArg inputArg, 
+        TransactionReceipt receipt
+    ) {
+        String functionName =  inputArg.getFunctionName();
+        switch(functionName) {
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_ISSUE:
+            return bac004AssetService.issueDeCoder(receipt);
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCT:
+            return bac004AssetService.constructDeCoder(receipt);
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_SEND:
+            return bac004AssetService.sendDecoder(receipt);
+        case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHSEND:
+            return bac004AssetService.batchSendDecoder(receipt);
+        default:
+            logger.error("Function name undefined: {}.", functionName);
+            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+        }
+    }
+
+    @Override
+    protected String doGetTo(ReqInput<String> req) {
+        BaseAsset asset = DataToolUtils.deserialize(req.getFunctionArg(), BaseAsset.class);
+        return asset.getAssetAddress();
+    }
 }
