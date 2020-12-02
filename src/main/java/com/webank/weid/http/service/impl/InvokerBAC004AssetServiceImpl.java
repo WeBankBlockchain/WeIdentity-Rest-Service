@@ -103,7 +103,7 @@ public class InvokerBAC004AssetServiceImpl
             functionArg.getAssetAddress(), 
             WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()), 
             BigInteger.valueOf(functionArg.getAmount()), 
-            functionArg.getData(), 
+            functionArg.getRemark(), 
             auth
         );
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
@@ -175,7 +175,7 @@ public class InvokerBAC004AssetServiceImpl
         SendAssetArgs sendAssetArgs = new  SendAssetArgs();
         sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAmount()));
         sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
-        sendAssetArgs.setData(functionArg.getData());
+        sendAssetArgs.setData(functionArg.getRemark());
         ResponseData<Boolean> res = getBac004Service().send(
             functionArg.getAssetAddress(), 
             sendAssetArgs, 
@@ -196,7 +196,7 @@ public class InvokerBAC004AssetServiceImpl
             SendAssetArgs sendAssetArgs = new  SendAssetArgs();
             sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
-            sendAssetArgs.setData(input.getData());
+            sendAssetArgs.setData(input.getRemark());
             sendAssetArgList.add(sendAssetArgs);
             HttpResponseData<Object> checkWeIdExistRsp = 
                 super.checkWeIdExist(this.weIdService, input.getRecipient());
@@ -251,7 +251,7 @@ public class InvokerBAC004AssetServiceImpl
         ResponseData<String> res = getBac004Service().issueEncoder(
             WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()), 
             BigInteger.valueOf(functionArg.getAmount()), 
-            functionArg.getData()
+            functionArg.getRemark()
         );
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
@@ -295,7 +295,7 @@ public class InvokerBAC004AssetServiceImpl
         SendAssetArgs sendAssetArgs = new  SendAssetArgs();
         sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAmount()));
         sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
-        sendAssetArgs.setData(functionArg.getData());
+        sendAssetArgs.setData(functionArg.getRemark());
         ResponseData<String> res = getBac004Service().sendEncoder(sendAssetArgs);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
@@ -316,7 +316,7 @@ public class InvokerBAC004AssetServiceImpl
             SendAssetArgs sendAssetArgs = new  SendAssetArgs();
             sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
-            sendAssetArgs.setData(input.getData());
+            sendAssetArgs.setData(input.getRemark());
             sendAssetArgList.add(sendAssetArgs);
             HttpResponseData<Object> checkWeIdExistRsp = 
                 super.checkWeIdExist(this.weIdService, input.getRecipient());
