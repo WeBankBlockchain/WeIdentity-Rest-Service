@@ -41,10 +41,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.bcos.web3j.crypto.ECKeyPair;
-import org.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.ECDSASign;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class CredentialTest extends BaseTest {
