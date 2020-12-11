@@ -22,6 +22,7 @@ package com.webank.weid.http.service;
 import java.math.BigInteger;
 
 import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.http.protocol.request.TransactionArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.rpc.WeIdService;
@@ -95,5 +96,10 @@ public abstract class BaseService {
             );
         }
         return null;
+    }
+
+    protected static Object getLoopBack(String transactionArgStr) {
+        TransactionArg transactionArg = DataToolUtils.deserialize(transactionArgStr, TransactionArg.class);
+        return transactionArg.getLoopback();
     }
 }

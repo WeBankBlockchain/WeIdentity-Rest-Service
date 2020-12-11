@@ -6,4 +6,6 @@ import lombok.Data;
 public class TransactionArg {
     
     String invokerWeId;
+
+    private Object loopback;
 }

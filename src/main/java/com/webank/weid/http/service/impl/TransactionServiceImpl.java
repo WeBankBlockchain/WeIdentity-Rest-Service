@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.config.ContractConfig;
@@ -288,50 +289,80 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             logger.error("Failed to build input argument: {}", invokeFunctionJsonArgs);
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
+
+        Object loopBack = getLoopBack(inputArg.getTransactionArg());
+        HttpResponseData<Object> invokeResponseData;
+
         String functionName = inputArg.getFunctionName();
         try {
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIAL)) {
-                return invokerCredentialService.createCredentialInvoke(inputArg);
+                invokeResponseData = invokerCredentialService.createCredentialInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO)) {
-                return invokerCredentialService.createCredentialPojoInvoke(inputArg);
+                invokeResponseData = invokerCredentialService.createCredentialPojoInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIAL)) {
-                return invokerCredentialService.verifyCredentialInvoke(inputArg);
+                invokeResponseData = invokerCredentialService.verifyCredentialInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_CREDENTIALPOJO)) {
                 HttpResponseData<Boolean> respData = invokerCredentialService.verifyCredentialPojoInvoke(inputArg);
-                return new HttpResponseData<>(respData.getRespBody(), respData.getErrorCode(), respData.getErrorMessage());
+                return new HttpResponseData<>(
+                        respData.getRespBody(),
+                        loopBack,
+                        respData.getErrorCode(),
+                        respData.getErrorMessage());
             }
             if (functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_QUERY_AUTHORITY_ISSUER)) {
-                return invokerAuthorityIssuerService.queryAuthorityIssuerInfoInvoke(inputArg);
+                invokeResponseData = invokerAuthorityIssuerService.queryAuthorityIssuerInfoInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT)
                 || functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_JSON)) {
-                return invokerWeIdService.getWeIdDocumentJsonInvoke(inputArg);
+                invokeResponseData = invokerWeIdService.getWeIdDocumentJsonInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_QUERY_CPT)) {
-                return invokerCptService.queryCptInvoke(inputArg);
+                invokeResponseData = invokerCptService.queryCptInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                return invokerWeIdService.createWeIdInvoke(inputArg);
+                invokeResponseData = invokerWeIdService.createWeIdInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                return invokerCptService.registerCptInvoke(inputArg);
+                invokeResponseData = invokerCptService.registerCptInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                return invokerAuthorityIssuerService.registerAuthorityIssuerInvoke(inputArg);
+                invokeResponseData = invokerAuthorityIssuerService.registerAuthorityIssuerInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ADD_WEID_TO_WHITELIST)) {
-                return invokerAuthorityIssuerService.addWeIdToWhitelist(inputArg);
+                invokeResponseData = invokerAuthorityIssuerService.addWeIdToWhitelist(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName
                 .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_IS_WEID_IN_WHITELIST)) {
-                return invokerAuthorityIssuerService.isWeIdInWhitelist(inputArg);
+                invokeResponseData = invokerAuthorityIssuerService.isWeIdInWhitelist(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_WEID_DOCUMENT_BY_ORG)) {
                 String weId = (String) invokerAuthorityIssuerService.getWeIdByNameInvoke(inputArg).getRespBody();
@@ -339,43 +370,63 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 Map<String, Object> funcArgMap = new LinkedHashMap<>();
                 funcArgMap.put(ParamKeyConstant.WEID, weId);
                 inputArg.setFunctionArg(JsonUtil.objToJsonStr(funcArgMap));
-                return invokerWeIdService.getWeIdDocumentJsonInvoke(inputArg);
+                invokeResponseData = invokerWeIdService.getWeIdDocumentJsonInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL)) {
                 // 1. call createevidencewithcustomkeyandlog
-                return invokerEvidenceService.createEvidenceWithExtraInfo(inputArg);
+                invokeResponseData = invokerEvidenceService.createEvidenceWithExtraInfo(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE)) {
-                return invokerEvidenceService.delegateCreateEvidence(inputArg);
+                invokeResponseData = invokerEvidenceService.delegateCreateEvidence(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE_BATCH)) {
-                return invokerEvidenceService.delegateCreateEvidenceBatch(inputArg);
+                invokeResponseData = invokerEvidenceService.delegateCreateEvidenceBatch(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY)) {
-                return invokerWeIdService.createWeIdWithPubKey(inputArg);
+                invokeResponseData = invokerWeIdService.createWeIdWithPubKey(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
-                return invokerEvidenceService.getEvidenceByCustomKey(inputArg);
+                invokeResponseData = invokerEvidenceService.getEvidenceByCustomKey(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT_CREDENTIAL)) {
-                return invokerCredentialService.createCredentialPojoAndEncryptInvoke(inputArg);
+                invokeResponseData = invokerCredentialService.createCredentialPojoAndEncryptInvoke(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCENCRYPT)) {
-                return invokerCredentialService.eccEncrypt(inputArg);
+                invokeResponseData = invokerCredentialService.eccEncrypt(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_ECCDECRYPT)) {
-                return invokerCredentialService.eccDecrypt(inputArg);
+                invokeResponseData = invokerCredentialService.eccDecrypt(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GET_EVIDENCE_BY_HASH)) {
-                return invokerEvidenceService.getEvidenceByHash(inputArg);
+                invokeResponseData = invokerEvidenceService.getEvidenceByHash(inputArg);
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             logger.error("Function name undefined: {}.", functionName);
-            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
         } catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
                 invokeFunctionJsonArgs,
                 e);
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
         }
     }

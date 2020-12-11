@@ -41,36 +41,58 @@ public class WalletAgentBAC004ServiceImpl extends BaseService implements WalletA
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
         String functionName = inputArg.getFunctionName();
+        Object loopBack = getLoopBack(inputArg.getTransactionArg());
+        HttpResponseData<Object> invokeResponseData;
         try {
             switch(functionName) {
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCT:
-                return bac004AssetService.construct(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData = bac004AssetService.construct(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_ISSUE:
-                return bac004AssetService.issue(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData = bac004AssetService.issue(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_CONSTRUCTANDISSUE:
-                return bac004AssetService.constructAndIssue(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData = bac004AssetService.constructAndIssue(toReqInput(inputArg, BAC004Info.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBALANCE:
-                return bac004AssetService.getBalance(toReqInput(inputArg, BaseQuery.class));
+                invokeResponseData = bac004AssetService.getBalance(toReqInput(inputArg, BaseQuery.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBATCHBALANCE:
-                return bac004AssetService.getBatchBalance(toReqInput(inputArg, AssetAddressList.class));
+                invokeResponseData = bac004AssetService.getBatchBalance(toReqInput(inputArg, AssetAddressList.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBALANCEBYWEID:
-                return bac004AssetService.getBalanceByWeId(toReqInput(inputArg, PageQuery.class));
+                invokeResponseData = bac004AssetService.getBalanceByWeId(toReqInput(inputArg, PageQuery.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_SEND:
-                return bac004AssetService.send(toReqInput(inputArg, BAC004SendInfo.class));
+                invokeResponseData = bac004AssetService.send(toReqInput(inputArg, BAC004SendInfo.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_BATCHSEND:
-                return bac004AssetService.batchSend(toReqInput(inputArg, BAC004BatchSendInfo.class));
+                invokeResponseData = bac004AssetService.batchSend(toReqInput(inputArg, BAC004BatchSendInfo.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBASEINFO:
-                return bac004AssetService.getBaseInfo(toReqInput(inputArg, AssetAddressList.class));
+                invokeResponseData = bac004AssetService.getBaseInfo(toReqInput(inputArg, AssetAddressList.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             case WalletAgentFunctionNames.FUNCNAME_WALLETAGENT_GETBASEINFOBYWEID:
-                return bac004AssetService.getBaseInfoByWeId(toReqInput(inputArg, PageQuery.class));
+                invokeResponseData = bac004AssetService.getBaseInfoByWeId(toReqInput(inputArg, PageQuery.class));
+                invokeResponseData.setLoopback(loopBack);
+                return invokeResponseData;
             }
             logger.error("Function name undefined: {}.", functionName);
-            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
         } catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
                 invokeFunctionJsonArgs,
                 e);
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
         }
     }
