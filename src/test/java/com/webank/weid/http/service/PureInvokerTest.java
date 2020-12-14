@@ -42,11 +42,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.bcos.web3j.crypto.ECKeyPair;
-import org.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.ECDSASign;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
 import org.fisco.bcos.web3j.crypto.Hash;
 import org.fisco.bcos.web3j.crypto.Keys;
+import org.fisco.bcos.web3j.crypto.Sign;
 import org.fisco.bcos.web3j.crypto.gm.GenCredential;
 import org.fisco.bcos.web3j.crypto.gm.sm2.util.encoders.Hex;
 import org.fisco.bcos.web3j.utils.Numeric;
@@ -445,7 +445,7 @@ public class PureInvokerTest extends BaseTest {
         byte[] rawDataBytes = DataToolUtils.base64Decode(DataToolUtils.base64Encode(rawDataStr.getBytes(StandardCharsets.UTF_8)));
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(weIdPrivKey));
         String signedSig2 = new String(DataToolUtils.base64Encode(DataToolUtils
-            .simpleSignatureSerialization(Sign.signMessage(DataToolUtils.sha3(rawDataBytes), ecKeyPair))), StandardCharsets.UTF_8);
+            .simpleSignatureSerialization(Sign.getSignInterface().signMessage(DataToolUtils.sha3(rawDataBytes), ecKeyPair))), StandardCharsets.UTF_8);
         System.out.println(signedSig2);
         txnArgMap = new LinkedHashMap<>();
         inputParamMap = new LinkedHashMap<>();

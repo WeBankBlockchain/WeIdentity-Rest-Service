@@ -21,8 +21,6 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.config.ContractConfig;
-import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
@@ -37,9 +35,9 @@ import com.webank.weid.http.service.InvokerEvidenceService;
 import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.service.TransactionService;
 import com.webank.weid.http.util.JsonUtil;
-import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -101,47 +99,13 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
             }
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
-            // Load WeIdentity related contract addresses
-            FiscoConfig fiscoConfig = new FiscoConfig();
-            fiscoConfig.load();
-            ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
-            if (TransactionEncoderUtil.isFiscoBcosV1()) {
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                    httpResponseData = TransactionEncoderUtil
-                        .createWeIdEncoder(functionArg, nonce, config.getWeIdAddress());
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-                if (functionName
-                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                    httpResponseData = TransactionEncoderUtil
-                        .registerAuthorityIssuerEncoder(functionArg, nonce, config.getIssuerAddress());
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                    httpResponseData = TransactionEncoderUtil
-                        .registerCptEncoder(functionArg, nonce, config.getCptAddress());
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-            } else {
-                // is FISCO-BCOS v2 blockchain
-                httpResponseData = TransactionEncoderUtilV2
-                    .createEncoder(functionArg, nonce, functionName);
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
-            }
-            logger.error("Function name undefined: {}.", functionName);
-            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            // is FISCO-BCOS v2 blockchain
+            httpResponseData = TransactionEncoderUtilV2
+                .createEncoder(fiscoConfig, functionArg, nonce, functionName);
+            return new HttpResponseData<>(
+                JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                httpResponseData.getErrorCode(),
+                httpResponseData.getErrorMessage());
         } catch (Exception e) {
             logger.error("[createEncodingFunction]: unknown error with input argment {}",
                 encodeTransactionJsonArgs,
@@ -187,12 +151,6 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, HttpReturnCode.SIGNED_MSG_ILLEGAL);
             }
-
-            // Load WeIdentity related contract addresses
-            FiscoConfig fiscoConfig = new FiscoConfig();
-            fiscoConfig.load();
-            ContractConfig config = PropertiesUtil.buildContractConfig(fiscoConfig);
-
             String functionName = inputArg.getFunctionName();
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
@@ -200,69 +158,27 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             HttpResponseData<String> httpResponseData =
                 new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             String txnHex;
-            if (TransactionEncoderUtil.isFiscoBcosV1()) {
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                    txnHex = TransactionEncoderUtil
-                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
-                    if (StringUtils.isEmpty(txnHex)) {
-                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
-                    }
-                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-                if (functionName
-                    .equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                    txnHex = TransactionEncoderUtil
-                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
-                    if (StringUtils.isEmpty(txnHex)) {
-                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
-                    }
-                    httpResponseData = invokerAuthorityIssuerService
-                        .registerAuthorityIssuerWithTransactionHex(txnHex);
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
-                    txnHex = TransactionEncoderUtil
-                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
-                    if (StringUtils.isEmpty(txnHex)) {
-                        return new HttpResponseData<>(null, HttpReturnCode.TXN_HEX_ERROR);
-                    }
-                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
-                    return new HttpResponseData<>(
-                        JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                        httpResponseData.getErrorCode(),
-                        httpResponseData.getErrorMessage());
-                }
-            } else { // is FISCO-BCOS v2
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
-                    txnHex = TransactionEncoderUtilV2
-                        .createTxnHex(signedMessage, nonce, config.getWeIdAddress(), data);
-                    httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
-                }
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
-                    txnHex = TransactionEncoderUtilV2
-                        .createTxnHex(signedMessage, nonce, config.getIssuerAddress(), data);
-                    httpResponseData = invokerAuthorityIssuerService
-                        .registerAuthorityIssuerWithTransactionHex(txnHex);
-                }
-                if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
-                    txnHex = TransactionEncoderUtilV2
-                        .createTxnHex(signedMessage, nonce, config.getCptAddress(), data);
-                    httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
-                }
-                return new HttpResponseData<>(
-                    JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
-                    httpResponseData.getErrorCode(),
-                    httpResponseData.getErrorMessage());
+             // is FISCO-BCOS v2
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
+                txnHex = TransactionEncoderUtilV2
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data);
+                httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
             }
-            logger.error("Function name undefined: {}.", functionName);
-            return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
+                txnHex = TransactionEncoderUtilV2
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data);
+                httpResponseData = invokerAuthorityIssuerService
+                    .registerAuthorityIssuerWithTransactionHex(txnHex);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+                txnHex = TransactionEncoderUtilV2
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data);
+                httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
+            }
+            return new HttpResponseData<>(
+                JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                httpResponseData.getErrorCode(),
+                httpResponseData.getErrorMessage());
         } catch (Exception e) {
             logger.error("[sendTransaction]: unknown error with input argument {}",
                 sendTransactionJsonArgs,
