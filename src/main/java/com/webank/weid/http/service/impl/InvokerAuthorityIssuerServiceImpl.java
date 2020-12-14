@@ -21,7 +21,7 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.util.WeIdUtils;
+import com.webank.weid.util.DataToolUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +41,7 @@ import com.webank.weid.http.service.InvokerAuthorityIssuerService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.AuthorityIssuer;
+import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
 import com.webank.weid.protocol.response.ResponseData;
@@ -65,6 +66,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
      * @param registerArgs the args
      * @return the Boolean response data
      */
+    @Override
     public HttpResponseData<Object> registerAuthorityIssuerInvoke(
         InputArg registerArgs) {
         try {
@@ -128,6 +130,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
      * @param transactionHex the transactionHex value
      * @return String in ResponseData
      */
+    @Override
     public HttpResponseData<String> registerAuthorityIssuerWithTransactionHex(
         String transactionHex) {
         try {
@@ -159,6 +162,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
      * @param queryArgs the query WeID
      * @return the authorityIssuer
      */
+    @Override
     public HttpResponseData<Object> queryAuthorityIssuerInfoInvoke(
         InputArg queryArgs) {
         try {
@@ -217,4 +221,127 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
         }
     }
 
+    @Override
+    public HttpResponseData<Object> addWeIdToWhitelist(InputArg args) {
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
+            JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
+            JsonNode whiteListNameNode = functionArgNode.get(WeIdentityParamKeyConstant.WHITELIST_NAME);
+            JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())
+                || whiteListNameNode == null || StringUtils.isEmpty(whiteListNameNode.textValue())
+                || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String weIdPrivKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            if (StringUtils.isEmpty(weIdPrivKey)) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+            String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(weIdPrivKey);
+            WeIdAuthentication callerAuth = new WeIdAuthentication(issuer, weIdPrivKey);
+            ResponseData<Boolean> response = authorityIssuerService.addIssuerIntoIssuerType(callerAuth, whiteListNameNode.textValue(), weIdNode.textValue());
+            return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.error(
+                "[addWeIdToIssuerTypeInvoke]: unknow error. args:{}.",
+                args,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> isWeIdInWhitelist(InputArg args) {
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
+            JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
+            JsonNode whiteListNameNode = functionArgNode.get(WeIdentityParamKeyConstant.WHITELIST_NAME);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())
+                || whiteListNameNode == null || StringUtils.isEmpty(whiteListNameNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            ResponseData<Boolean> response = authorityIssuerService.isSpecificTypeIssuer(whiteListNameNode.textValue(), weIdNode.textValue());
+            return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.error(
+                "[checkWeIdByIssuerTypeInvoke]: unknow error. args:{}.",
+                args,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> recognizeAuthorityIssuer(InputArg args) {
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
+            JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
+            JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String weIdPrivKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            if (StringUtils.isEmpty(weIdPrivKey)) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+            ResponseData<Boolean> response = authorityIssuerService.recognizeAuthorityIssuer(weIdNode.textValue(), new WeIdPrivateKey(weIdPrivKey));
+            return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.error(
+                "[RecognizeAuthorityIssuer]: unknow error. args:{}.",
+                args,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    @Override
+    public HttpResponseData<Object> deRecognizeAuthorityIssuer(InputArg args) {
+        try {
+            JsonNode functionArgNode = new ObjectMapper().readTree(args.getFunctionArg());
+            JsonNode weIdNode = functionArgNode.get(ParamKeyConstant.WEID);
+            JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+            JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String weIdPrivKey = KeyUtil
+                .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
+            if (StringUtils.isEmpty(weIdPrivKey)) {
+                return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
+            }
+            ResponseData<Boolean> response = authorityIssuerService.deRecognizeAuthorityIssuer(weIdNode.textValue(), new WeIdPrivateKey(weIdPrivKey));
+            return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.error(
+                "[DeRecognizeAuthorityIssuer]: unknow error. args:{}.",
+                args,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
 }

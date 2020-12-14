@@ -248,7 +248,7 @@ public class KeyUtil {
     }
 
     public static boolean isPubkeyBytesValid(byte[] publicKey) {
-        return publicKey.length == 64 && publicKey[0] >= 16;
+        return publicKey.length == 64 && publicKey[0] != 0;
     }
 
     public static boolean isSecretKeyValid(byte[] secretKey) {

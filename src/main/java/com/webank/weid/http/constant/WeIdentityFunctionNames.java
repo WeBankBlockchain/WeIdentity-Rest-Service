@@ -50,9 +50,16 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_GET_WEID_DOCUMENT_BY_ORG = "getWeIdDocumentByOrgId";
     public static final String FUNCNAME_VERIFY_LITE_CREDENTIAL = "verifyLiteCredential";
     public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL = "createEvidence";
+    public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE = "delegateCreateEvidence";
+    public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL_DELEGATE_BATCH = "delegateCreateEvidenceB";
     public static final String FUNCNAME_ECCENCRYPT_CREDENTIAL = "createCredentialAndEncrypt";
     public static final String FUNCNAME_ECCDECRYPT = "eccDecrypt";
     public static final String FUNCNAME_ECCENCRYPT = "eccEncrypt";
+    public static final String FUNCNAME_GET_EVIDENCE_BY_HASH = "getEvidence";
+    public static final String FUNCNAME_ADD_WEID_TO_WHITELIST = "addWeIdToWhitelist";
+    public static final String FUNCNAME_IS_WEID_IN_WHITELIST = "isWeIdInWhitelist";
+    public static final String FUNCNAME_RECOGNIZE_AUTHORITY_ISSUER = "recognizeAuthorityIssuer";
+    public static final String FUNCNAME_DERECOGNIZE_AUTHORITY_ISSUER = "deRecognizeAuthorityIssuer";
 
     /**
      * Function names to be assembled in SDK Function call. Case sensitive. FISCO-BCOS v1.

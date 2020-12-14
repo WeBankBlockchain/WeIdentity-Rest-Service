@@ -2,7 +2,9 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ProcessingMode;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
@@ -19,19 +21,39 @@ import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
+import com.webank.weid.service.impl.engine.EngineFactory;
+import com.webank.weid.service.impl.engine.EvidenceServiceEngine;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class InvokerEvidenceServiceImpl extends BaseService implements
     InvokerEvidenceService {
 
-    private Logger logger = LoggerFactory.getLogger(InvokerEvidenceServiceImpl.class);
+    private static Logger logger = LoggerFactory.getLogger(InvokerEvidenceServiceImpl.class);
+    
+    private static Integer masterGroupId;
+    static {
+        try {
+            FiscoConfig fiscoConfig = new FiscoConfig();
+            fiscoConfig.load();
+            masterGroupId = Integer.valueOf(fiscoConfig.getGroupId());
+        } catch (Exception e) {
+            logger.error("Failed to load Fisco Config.");
+        }
+    }
     // A map to store group ID and evidence service instances
     Map<Integer, EvidenceService> evidenceServiceInstances = new ConcurrentHashMap<>();
+    Map<Integer, EvidenceServiceEngine> evidenceServiceEngineInstances = new ConcurrentHashMap<>();
 
     /**
      * A lazy initialization to create evidence service impl instance.
@@ -149,7 +171,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithCustomKey(
-            hashNode.textValue(),
+            Numeric.prependHexPrefix(hashNode.textValue()),
             proofNode.textValue(),
             logNode.textValue(),
             DateUtils.getNoMillisecondTimeStamp(),
@@ -161,6 +183,50 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 createResp.getErrorMessage());
         }
         return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
+    }
+
+    @Override
+    public HttpResponseData<Object> getEvidenceByHash(InputArg args) {
+        JsonNode idNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(args.getFunctionArg());
+            idNode = functionArgNode.get(WeIdentityParamKeyConstant.HASH_VALUE);
+        } catch (Exception e) {
+            logger.error("[getEvidenceByCustomKey]: input args error: {}", args, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+        JsonNode groupIdNode;
+        EvidenceService evidenceService;
+        try {
+            JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+            groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
+            if (groupIdNode == null || StringUtils.isEmpty(groupIdNode.toString())) {
+                logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
+                evidenceService = lazyInitializeEvidenceServiceImpl();
+            } else {
+                Integer groupId;
+                groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+                evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
+            }
+            if (evidenceService == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                    HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
+            }
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.info("Cannot find groupId definition: {}", e);
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
+        }
+        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(Numeric.prependHexPrefix(idNode.textValue()));
+        if (respData.getResult() == null) {
+            return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
+        }
+        return new HttpResponseData<>(JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(respData.getResult())), HttpReturnCode.SUCCESS);
     }
 
     @Override
@@ -205,5 +271,188 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
         }
         return new HttpResponseData<>(JsonUtil.convertJsonToSortedMap(JsonUtil.objToJsonStr(respData.getResult())), HttpReturnCode.SUCCESS);
+    }
+
+    private EvidenceService getEvidenceService(InputArg args) throws Exception {
+        JsonNode groupIdNode;
+        EvidenceService evidenceService;
+        JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+        groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
+        if (groupIdNode == null || StringUtils.isEmpty(groupIdNode.toString())) {
+            logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
+            evidenceService = lazyInitializeEvidenceServiceImpl();
+        } else {
+            Integer groupId;
+            groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+            evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
+        }
+        return evidenceService;
+    }
+
+    @Override
+    public HttpResponseData<Object> delegateCreateEvidence(InputArg args) {
+        JsonNode hashNode;
+        JsonNode signNode;
+        JsonNode logNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(args.getFunctionArg());
+            hashNode = functionArgNode.get(WeIdentityParamKeyConstant.HASH);
+            signNode = functionArgNode.get(WeIdentityParamKeyConstant.SIGN);
+            logNode = functionArgNode.get(WeIdentityParamKeyConstant.LOG);
+            if ( hashNode == null || StringUtils.isEmpty(hashNode.textValue())
+                || signNode == null || StringUtils.isEmpty(signNode.textValue())) {
+                return new HttpResponseData<>(false, HttpReturnCode.INPUT_NULL);
+            }
+        } catch (Exception e) {
+            logger.error("[delegateCreateEvidence]: input args error: {}", args, e);
+            return new HttpResponseData<>(false, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+        String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
+        
+        EvidenceService evidenceService;
+        try {
+            evidenceService = getEvidenceService(args);
+            if (evidenceService == null) {
+                return new HttpResponseData<>(false, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                    HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
+            }
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(false, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(false, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.info("Cannot find groupId definition: {}", e);
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
+        }
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        if (StringUtils.isEmpty(adminPrivKey)) {
+            return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
+        }
+        String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
+        ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithSpecificSigner(
+            Numeric.prependHexPrefix(hashNode.textValue()), 
+            signNode.textValue(), 
+            log, 
+            DateUtils.getNoMillisecondTimeStamp(),
+            null, 
+            issuer, 
+            adminPrivKey
+        );
+        if (!createResp.getResult()) {
+            return new HttpResponseData<>(false, createResp.getErrorCode(),
+                createResp.getErrorMessage());
+        }
+        return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
+    }
+    
+    private EvidenceServiceEngine getEvidenceServiceEngine(InputArg args) throws Exception {
+        JsonNode groupIdNode;
+        JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
+        groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
+        Integer groupId;
+        if (groupIdNode == null || StringUtils.isEmpty(groupIdNode.toString())) {
+            logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
+            groupId = masterGroupId;
+        } else {
+            groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+            if (groupId == masterGroupId) {
+                logger.info("Requesting master group id evidence service.., {}", groupId);
+            } else {
+                logger.info("Requesting evidence subgroup id instance.. {}", groupId);
+            }
+        }
+        if (groupId == null || groupId == 0) {
+            logger.error("Group Id illegal: {}", groupId);
+            return null;
+        }
+        EvidenceServiceEngine evidenceServiceEngine = evidenceServiceEngineInstances.get(groupId);
+        if (evidenceServiceEngine == null) {
+            evidenceServiceEngine = EngineFactory.createEvidenceServiceEngine(groupId);
+            evidenceServiceEngineInstances.put(groupId, evidenceServiceEngine);
+        }
+        return evidenceServiceEngine;
+    }
+
+    @Override
+    public HttpResponseData<Object> delegateCreateEvidenceBatch(InputArg args) {
+        JsonNode listNode;
+        try {
+            JsonNode functionArgNode = new ObjectMapper()
+                .readTree(args.getFunctionArg());
+            listNode = functionArgNode.get(WeIdentityParamKeyConstant.LIST);
+            // 如果节点不是数组
+            if (!listNode.isArray()) {
+                logger.error("[delegateCreateEvidenceBatch] input does not an Array.");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+        } catch (Exception e) {
+            logger.error("[delegateCreateEvidenceBatch]: input args error: {}", args, e);
+            return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
+        }
+
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+            PropertiesUtil.getProperty("default.passphrase"));
+        if (StringUtils.isEmpty(adminPrivKey)) {
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
+        }
+        String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
+        Long timeStamp = DateUtils.getNoMillisecondTimeStamp();
+
+        List<String> hashValues = new ArrayList<>();
+        List<String> signatures = new ArrayList<>();
+        List<String> logs = new ArrayList<>();
+        List<Long> timestamps = new ArrayList<>();
+        List<String> signers = new ArrayList<>(); 
+        ArrayNode nodes = (ArrayNode)listNode;
+        for (JsonNode jsonNode : nodes) {
+            JsonNode hashNode = jsonNode.get(WeIdentityParamKeyConstant.HASH);
+            JsonNode signNode = jsonNode.get(WeIdentityParamKeyConstant.SIGN);
+            JsonNode logNode = jsonNode.get(WeIdentityParamKeyConstant.LOG);
+            if ( hashNode == null || signNode == null ) {
+                logger.error("[delegateCreateEvidenceBatch] input params has null.");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
+            hashValues.add(Numeric.prependHexPrefix(hashNode.textValue()));
+            signatures.add(signNode.textValue());
+            logs.add(log);
+            timestamps.add(timeStamp);
+            signers.add(issuer);
+        }
+
+        EvidenceServiceEngine createEvidenceServiceEngine;
+        try {
+            createEvidenceServiceEngine = getEvidenceServiceEngine(args);
+            if (createEvidenceServiceEngine == null) {
+                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                    HttpReturnCode.UNKNOWN_ERROR.getCodeDesc() + "(Failed to initialize evidence service, please check logs for details");
+            }
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.info("Cannot find groupId definition: {}", e);
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
+        }
+        ResponseData<List<Boolean>> response = createEvidenceServiceEngine.batchCreateEvidence(
+            hashValues, 
+            signatures, 
+            logs, 
+            timestamps, 
+            signers, 
+            adminPrivKey
+        );
+        if (response.getErrorCode().intValue() != ErrorCode.SUCCESS.getCode()) {
+            return new HttpResponseData<>(response.getResult(), response.getErrorCode(),
+                response.getErrorMessage());
+        }
+        return new HttpResponseData<>(response.getResult(), HttpReturnCode.SUCCESS);
     }
 }
