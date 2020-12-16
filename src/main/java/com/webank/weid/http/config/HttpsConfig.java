@@ -22,9 +22,8 @@ package com.webank.weid.http.config;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,23 +39,17 @@ public class HttpsConfig {
     @Value("${server.http.port}")
     private Integer serverPort;
 
-    /**
-     * support HTTP request processing.
-     */
+    
     @Bean
-    public EmbeddedServletContainerCustomizer containerCustomizer() {
-        return new EmbeddedServletContainerCustomizer() {
-            @Override
-            public void customize(ConfigurableEmbeddedServletContainer container) {
-                if (container instanceof TomcatEmbeddedServletContainerFactory) {
-                    TomcatEmbeddedServletContainerFactory containerFactory =
-                        (TomcatEmbeddedServletContainerFactory) container;
-                    Connector connector =
-                        new Connector(TomcatEmbeddedServletContainerFactory.DEFAULT_PROTOCOL);
-                    connector.setPort(serverPort);
-                    containerFactory.addAdditionalTomcatConnectors(connector);
-                }
-            }
-        };
+    public ServletWebServerFactory servletContainer() {
+        TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
+        tomcat.addAdditionalTomcatConnectors(createStandardConnector());
+        return tomcat;
+    }
+    
+    private Connector createStandardConnector() {
+        Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
+        connector.setPort(serverPort);
+        return connector;
     }
 }
