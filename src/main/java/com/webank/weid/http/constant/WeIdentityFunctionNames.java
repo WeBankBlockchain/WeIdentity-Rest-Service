@@ -35,6 +35,7 @@ public final class WeIdentityFunctionNames {
      * insensitive.
      */
     public static final String FUNCNAME_CREATE_WEID = "createWeId";
+    public static final String FUNCNAME_CREATE_WEID_AND_RETURN_DOC = "createWeId2";
     public static final String FUNCNAME_REGISTER_AUTHORITY_ISSUER = "registerAuthorityIssuer";
     public static final String FUNCNAME_REGISTER_CPT = "registerCpt";
     public static final String FUNCNAME_CREATE_CREDENTIAL = "createCredential";
@@ -47,6 +48,7 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_VERIFY_CREDENTIALPOJO = "verifyCredentialPojo";
 
     public static final String FUNCNAME_CREATE_WEID_WITH_PUBKEY = "createWeIdWithPubKey";
+    public static final String FUNCNAME_CREATE_WEID_WITH_PUBKEY_AND_RETURN_DOC = "createWeIdWithPubKey2";
     public static final String FUNCNAME_GET_WEID_DOCUMENT_BY_ORG = "getWeIdDocumentByOrgId";
     public static final String FUNCNAME_VERIFY_LITE_CREDENTIAL = "verifyLiteCredential";
     public static final String FUNCNAME_CREATE_EVIDENCE_FOR_LITE_CREDENTIAL = "createEvidence";

@@ -22,7 +22,6 @@ package com.webank.weid.http.protocol.response;
 import java.util.List;
 
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class EndpointInfo {

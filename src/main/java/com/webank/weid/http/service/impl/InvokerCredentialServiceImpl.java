@@ -38,7 +38,6 @@ import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerCredentialService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
-import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.WeIdAuthentication;
