@@ -68,5 +68,15 @@ public interface InvokerWeIdService {
      */
     HttpResponseData<Object> createWeIdInvoke(InputArg createWeIdJsonArgs);
 
+    /**
+     * Create WeId via the InvokeFunction API.
+     *
+     * @param createWeIdJsonArgs the input args, should be almost null
+     * @return the WeIdentity DID
+     */
+    HttpResponseData<Object> createWeIdInvoke2(InputArg createWeIdJsonArgs);
+    
     HttpResponseData<Object> createWeIdWithPubKey(InputArg arg);
+
+    HttpResponseData<Object> createWeIdWithPubKey2(InputArg arg);
 }

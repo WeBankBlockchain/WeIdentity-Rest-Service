@@ -23,6 +23,7 @@ import com.webank.payment.protocol.base.*;
 import com.webank.payment.protocol.request.SendAssetArgs;
 import com.webank.payment.protocol.response.ResponseData;
 import com.webank.payment.rpc.BAC005AssetService;
+import com.webank.payment.service.impl.BAC005AssetServiceImpl;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.protocol.request.ReqInput;
 import com.webank.weid.http.protocol.request.TransactionArg;
@@ -43,17 +44,15 @@ import java.util.Objects;
 @Component
 public class InvokerBAC005AssetServiceImpl extends BaseService implements InvokerBAC005AssetService {
 
+    @Autowired
+    private WeIdService weIdService ;
     private BAC005AssetService bac005Service;
-    private WeIdService weIdService;
-
-    @Autowired
-    public void setBac005Service(BAC005AssetService bac005Service) {
-        this.bac005Service = bac005Service;
-    }
-
-    @Autowired
-    public void setWeIdService(WeIdService weIdService) {
-        this.weIdService = weIdService;
+    
+    private BAC005AssetService getBac005AssetService() {
+        if (bac005Service == null) {
+            bac005Service = new BAC005AssetServiceImpl();
+        }
+        return bac005Service;
     }
 
     @Override
@@ -70,7 +69,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
 
     private HttpResponseData<Object> constructAsset(String invokerWeId, String shortName, String description) {
         Authentication auth = super.getAuthentication(invokerWeId);
-        ResponseData<BaseAsset> res = this.bac005Service.construct(shortName, description, auth);
+        ResponseData<BaseAsset> res = this.getBac005AssetService().construct(shortName, description, auth);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
 
@@ -105,7 +104,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         bac005AssetInfo.setAssetUri(assetUri);
         bac005AssetInfo.setData(data);
 
-        ResponseData<Boolean> res = this.bac005Service.issueAsset(assetAddress, bac005AssetInfo, auth);
+        ResponseData<Boolean> res = this.getBac005AssetService().issueAsset(assetAddress, bac005AssetInfo, auth);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
 
@@ -144,7 +143,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
 
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
-        ResponseData<Boolean> res = this.bac005Service.batchIssueAsset(
+        ResponseData<Boolean> res = this.getBac005AssetService().batchIssueAsset(
                 functionArg.getAssetAddress(),
                 assetInfoList,
                 auth
@@ -173,7 +172,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     @Override
     public HttpResponseData<Object> queryAssetOwner(ReqInput<BAC005Info> inputArg) {
         BAC005Info functionArg = inputArg.getFunctionArg();
-        ResponseData<String> assetOwner = this.bac005Service.queryAssetOwner(
+        ResponseData<String> assetOwner = this.getBac005AssetService().queryAssetOwner(
                 functionArg.getAssetAddress(),
                 BigInteger.valueOf(functionArg.getAssetId()));
 
@@ -184,14 +183,14 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     @Override
     public HttpResponseData<Object> queryAssetNum(ReqInput<BaseAsset> inputArg) {
         BaseAsset functionArg = inputArg.getFunctionArg();
-        ResponseData<BAC005AssetNum> assetNum = this.bac005Service.queryAssetNum(functionArg.getAssetAddress());
+        ResponseData<BAC005AssetNum> assetNum = this.getBac005AssetService().queryAssetNum(functionArg.getAssetAddress());
         return new HttpResponseData<>(assetNum.getResult(), assetNum.getErrorCode(), assetNum.getErrorMessage());
     }
 
     @Override
     public HttpResponseData<Object> queryAssetList(ReqInput<PageQuery> inputArg) {
         PageQuery functionArg = inputArg.getFunctionArg();
-        ResponseData<List<BAC005AssetInfo>> assetList = this.bac005Service.queryAssetList(
+        ResponseData<List<BAC005AssetInfo>> assetList = this.getBac005AssetService().queryAssetList(
                 functionArg.getAssetAddress(),
                 functionArg.getIndex(),
                 functionArg.getNum());
@@ -204,7 +203,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
 
         HttpResponseData<Object> checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, functionArg.getAssetHolder());
         if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
-        ResponseData<BAC005AssetNum> ownedAssetNum = this.bac005Service.queryOwnedAssetNum(
+        ResponseData<BAC005AssetNum> ownedAssetNum = this.getBac005AssetService().queryOwnedAssetNum(
                 functionArg.getAssetAddress(),
                 WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()));
 
@@ -217,7 +216,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     @Override
     public HttpResponseData<Object> queryOwnedAssetList(ReqInput<PageQuery> inputArg) {
         PageQuery functionArg = inputArg.getFunctionArg();
-        ResponseData<List<BAC005AssetInfo>> ownedAssetList = this.bac005Service.queryOwnedAssetList(
+        ResponseData<List<BAC005AssetInfo>> ownedAssetList = this.getBac005AssetService().queryOwnedAssetList(
                 functionArg.getAssetAddress(),
                 WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()),
                 functionArg.getIndex(),
@@ -242,7 +241,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAssetId()));
         sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
         sendAssetArgs.setData(functionArg.getData());
-        ResponseData<Boolean> res = this.bac005Service.sendAsset(
+        ResponseData<Boolean> res = this.getBac005AssetService().sendAsset(
                 functionArg.getAssetAddress(),
                 sendAssetArgs,
                 auth
@@ -270,7 +269,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
 
         if (Objects.nonNull(checkWeIdExistRsp)) return checkWeIdExistRsp;
 
-        ResponseData<Boolean> res = this.bac005Service.batchSendAsset(
+        ResponseData<Boolean> res = this.getBac005AssetService().batchSendAsset(
                 functionArg.getAssetAddress(),
                 sendAssetArgList,
                 functionArg.getData(),
@@ -282,7 +281,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     @Override
     public HttpResponseData<Object> queryBaseInfo(ReqInput<AssetAddressList> inputArg) {
         AssetAddressList functionArg = inputArg.getFunctionArg();
-        ResponseData<List<BAC005BaseInfo>> res = this.bac005Service.queryBaseInfo(
+        ResponseData<List<BAC005BaseInfo>> res = this.getBac005AssetService().queryBaseInfo(
                 functionArg.getAssetAddressList()
         );
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
@@ -291,7 +290,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     @Override
     public HttpResponseData<Object> queryBaseInfoByWeId(ReqInput<PageQuery> inputArg) {
         PageQuery functionArg = inputArg.getFunctionArg();
-        ResponseData<List<BAC005BaseInfo>> res = this.bac005Service.queryBaseInfoByWeId(
+        ResponseData<List<BAC005BaseInfo>> res = this.getBac005AssetService().queryBaseInfoByWeId(
                 WeIdUtils.convertWeIdToAddress(functionArg.getAssetHolder()),
                 functionArg.getIndex(),
                 functionArg.getNum()

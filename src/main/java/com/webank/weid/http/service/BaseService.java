@@ -19,7 +19,6 @@
 
 package com.webank.weid.http.service;
 
-import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.PropertiesUtil;
@@ -48,14 +47,10 @@ public abstract class BaseService extends com.webank.weid.service.BaseService {
      */
     protected static final ApplicationContext context;
 
-    protected static FiscoConfig fiscoConfig;
-    
     static {
         // initializing spring containers
         context = new ClassPathXmlApplicationContext(new String[]{
             "classpath:SpringApplicationContext.xml"});
-        fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
         logger.info("initializing spring containers finish...");
 
     }
