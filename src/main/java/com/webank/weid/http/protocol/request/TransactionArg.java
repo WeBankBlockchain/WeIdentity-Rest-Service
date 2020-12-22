@@ -6,4 +6,8 @@ import lombok.Data;
 public class TransactionArg {
     
     String invokerWeId;
+    String nonce;
+    String data;
+    String signedMessage;
+    String toAddress;
 }

@@ -37,7 +37,9 @@ public final class WeIdentityServiceEndpoint {
     public static final String INVOKE_FUNCTION = "invoke";
     public static final String WALLET_AGENT_BAC004_FUNCTION = "bac004/api/invoke";
     public static final String WALLET_AGENT_BAC005_FUNCTION = "bac005/api/invoke";
-
+    public static final String WALLET_AGENT_BAC004_FUNCTION_ENCODE = "bac004/api/encode";
+    public static final String WALLET_AGENT_BAC004_FUNCTION_TRANSACT = "bac004/api/transact";
+    
     /**
      * EP Service endpoint.
      */
