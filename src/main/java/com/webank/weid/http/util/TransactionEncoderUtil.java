@@ -29,28 +29,21 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.service.BaseService;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.TransactionUtils;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
-import org.bcos.web3j.abi.FunctionEncoder;
-import org.bcos.web3j.abi.datatypes.Function;
-import org.bcos.web3j.abi.datatypes.Type;
-import org.bcos.web3j.crypto.EncryptType;
-import org.bcos.web3j.crypto.Sign.SignatureData;
-import org.bcos.web3j.crypto.TransactionEncoder;
-import org.bcos.web3j.protocol.core.methods.request.RawTransaction;
-import org.bcos.web3j.rlp.RlpEncoder;
-import org.bcos.web3j.rlp.RlpList;
-import org.bcos.web3j.rlp.RlpString;
-import org.bcos.web3j.rlp.RlpType;
-import org.bcos.web3j.utils.Bytes;
-import org.bcos.web3j.utils.Numeric;
-import org.bouncycastle.util.encoders.Hex;
+import org.fisco.bcos.web3j.abi.FunctionEncoder;
+import org.fisco.bcos.web3j.abi.datatypes.Function;
+import org.fisco.bcos.web3j.abi.datatypes.Type;
+import org.fisco.bcos.web3j.crypto.RawTransaction;
+import org.fisco.bcos.web3j.crypto.TransactionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,11 +63,6 @@ public class TransactionEncoderUtil {
             return true;
         }
         return false;
-    }
-
-    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
-        RawTransaction rawTransaction = TransactionEncoderUtil.buildRawTransaction(nonce, data, to);
-        return TransactionEncoderUtil.getTransactionHex(rawTransaction, encodedSig);
     }
 
     /**
@@ -195,24 +183,6 @@ public class TransactionEncoderUtil {
         return TransactionUtils.getNonce();
     }
 
-    /**
-     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires the previous rawTransaction and the signed
-     * Message from client side.
-     *
-     * @param rawTransaction the input rawTransaction
-     * @param signedMessage the base64 signed message from client
-     * @return Hex transaction String
-     */
-    public static String getTransactionHex(RawTransaction rawTransaction, String signedMessage) {
-        if (rawTransaction == null || StringUtils.isEmpty(signedMessage)) {
-            return StringUtils.EMPTY;
-        }
-        byte[] encodedSignedMessage = encodeTransactionWithSignature(
-            rawTransaction,
-            DataToolUtils.simpleSignatureDeserialization(
-                DataToolUtils.base64Decode(signedMessage.getBytes(StandardCharsets.UTF_8))));
-        return Hex.toHexString(encodedSignedMessage);
-    }
 
     /**
      * Get a rawTransaction instance, based on pre-defined parameters.
@@ -228,10 +198,8 @@ public class TransactionEncoderUtil {
             new BigInteger("99999999999"),
             getBlockLimit(),
             to,
-            BigInteger.ZERO,
-            data,
-            BigInteger.ZERO,
-            false);
+            data
+        );
     }
 
 
@@ -292,23 +260,12 @@ public class TransactionEncoderUtil {
      * @return blocklimit in BigInt.
      */
     private static BigInteger getBlockLimit() {
-        return TransactionUtils.getBlockLimit();
-    }
-
-    /**
-     * Obtain the hexed transaction string such that it can be directly send to blockchain. Requires the previous rawTransaction and the signed
-     * Message from client side.
-     *
-     * @param rawTransaction the input rawTransaction
-     * @param signatureData the signatureData
-     * @return transaction byte array
-     */
-    private static byte[] encodeTransactionWithSignature(
-        RawTransaction rawTransaction,
-        SignatureData signatureData) {
-        List<RlpType> values = asRlpValues(rawTransaction, signatureData);
-        RlpList rlpList = new RlpList(values);
-        return RlpEncoder.encode(rlpList);
+        try {
+            return BigInteger.valueOf(BaseService.getBlockNumber());
+        } catch (IOException e) {
+            logger.error("get BlockNumber error.", e);
+        }
+        return BigInteger.ZERO;
     }
 
     /**
@@ -329,10 +286,8 @@ public class TransactionEncoderUtil {
             new BigInteger("99999999999"),
             getBlockLimit(),
             to,
-            new BigInteger("0"),
-            data,
-            BigInteger.ZERO,
-            false);
+            data
+        );
     }
 
     /**
@@ -358,52 +313,6 @@ public class TransactionEncoderUtil {
         encodedTransactionWrapper.setEncodedTransaction(base64EncodedTransaction);
         encodedTransactionWrapper.setData(data);
         return JsonUtil.objToJsonStr(encodedTransactionWrapper);
-    }
-
-    /**
-     * Create the RLP list.
-     *
-     * @param rawTransaction the raw transaction
-     * @param signatureData the signature data
-     * @return List
-     */
-    private static List<RlpType> asRlpValues(
-        RawTransaction rawTransaction,
-        SignatureData signatureData) {
-        List<RlpType> result = new ArrayList();
-        result.add(RlpString.create(rawTransaction.getRandomid()));
-        result.add(RlpString.create(rawTransaction.getGasPrice()));
-        result.add(RlpString.create(rawTransaction.getGasLimit()));
-        result.add(RlpString.create(rawTransaction.getBlockLimit()));
-        String to = rawTransaction.getTo();
-        if (to != null && to.length() > 0) {
-            result.add(RlpString.create(Numeric.hexStringToByteArray(to)));
-        } else {
-            result.add(RlpString.create(""));
-        }
-
-        result.add(RlpString.create(rawTransaction.getValue()));
-        byte[] data = Numeric.hexStringToByteArray(rawTransaction.getData());
-        result.add(RlpString.create(data));
-        String contractName = rawTransaction.getContractName();
-        if (contractName != null && contractName.length() > 0) {
-            result.add(RlpString.create(rawTransaction.getContractName()));
-            result.add(RlpString.create(rawTransaction.getVersion()));
-            result.add(RlpString.create(rawTransaction.getType()));
-        }
-
-        if (signatureData != null) {
-            if (EncryptType.encryptType == 1) {
-                result.add(RlpString.create(Bytes.trimLeadingZeroes(signatureData.getPub())));
-                result.add(RlpString.create(Bytes.trimLeadingZeroes(signatureData.getR())));
-                result.add(RlpString.create(Bytes.trimLeadingZeroes(signatureData.getS())));
-            } else {
-                result.add(RlpString.create(signatureData.getV()));
-                result.add(RlpString.create(Bytes.trimLeadingZeroes(signatureData.getR())));
-                result.add(RlpString.create(Bytes.trimLeadingZeroes(signatureData.getS())));
-            }
-        }
-        return result;
     }
 
     /**

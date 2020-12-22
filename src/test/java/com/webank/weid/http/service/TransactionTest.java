@@ -36,12 +36,13 @@ import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.bcos.web3j.crypto.Credentials;
-import org.bcos.web3j.crypto.ECKeyPair;
-import org.bcos.web3j.crypto.GenCredential;
-import org.bcos.web3j.crypto.Keys;
-import org.bcos.web3j.crypto.Sign;
-import org.bcos.web3j.crypto.Sign.SignatureData;
+
+import org.fisco.bcos.web3j.crypto.Credentials;
+import org.fisco.bcos.web3j.crypto.ECKeyPair;
+import org.fisco.bcos.web3j.crypto.Keys;
+import org.fisco.bcos.web3j.crypto.Sign;
+import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
+import org.fisco.bcos.web3j.crypto.gm.GenCredential;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -81,7 +82,7 @@ public class TransactionTest extends BaseTest {
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
             DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
 
@@ -159,7 +160,7 @@ public class TransactionTest extends BaseTest {
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
             DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + signedMsg);
@@ -241,7 +242,7 @@ public class TransactionTest extends BaseTest {
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.signMessage(encodedTransaction, ecKeyPair);
+        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
         String signedMsg = new String(
             DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + signedMsg);

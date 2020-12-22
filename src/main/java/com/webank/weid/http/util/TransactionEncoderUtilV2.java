@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
-import org.bcos.web3j.utils.Numeric;
 import org.fisco.bcos.web3j.abi.FunctionEncoder;
 import org.fisco.bcos.web3j.abi.TypeReference;
 import org.fisco.bcos.web3j.abi.datatypes.Address;
@@ -57,6 +56,7 @@ import org.fisco.bcos.web3j.protocol.Web3j;
 import org.fisco.bcos.web3j.protocol.core.methods.response.NodeVersion;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.fisco.bcos.web3j.rlp.RlpType;
+import org.fisco.bcos.web3j.utils.Numeric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,11 +65,10 @@ public class TransactionEncoderUtilV2 {
     private static Logger logger = LoggerFactory.getLogger(TransactionEncoderUtilV2.class);
 
     public static HttpResponseData<String> createEncoder(
+        FiscoConfig fiscoConfig,
         String inputParam,
         String nonce,
         String functionName) {
-        FiscoConfig fiscoConfig = new FiscoConfig();
-        fiscoConfig.load();
         Function function;
         String to;
         if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
