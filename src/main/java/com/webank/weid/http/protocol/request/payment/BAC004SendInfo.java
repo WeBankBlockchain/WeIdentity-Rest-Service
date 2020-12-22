@@ -11,6 +11,6 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 public class BAC004SendInfo extends BaseAsset {
     private String recipient;
-    private String data;
+    private String remark;
     private Integer amount;
 }
