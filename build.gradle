@@ -39,12 +39,7 @@ List lombok = [
         'org.projectlombok:lombok:1.18.12'
 ]
 
-List logger = [
-        "org.slf4j:jcl-over-slf4j:1.7.30",
-        "com.lmax:disruptor:3.3.7"
-]
-
-def spring_version = "4.3.27.RELEASE"
+def spring_version = "5.3.2"
 List spring = [
         "org.springframework:spring-core:$spring_version",
         "org.springframework:spring-beans:$spring_version",
@@ -57,7 +52,7 @@ List spring = [
         "org.springframework:spring-webmvc:$spring_version"
 ]
 
-def spring_boot_version = "1.5.12.RELEASE"
+def spring_boot_version = "2.4.1"
 List spring_boot = [
         "org.springframework.boot:spring-boot-starter-web:$spring_boot_version",
         "org.springframework.boot:spring-boot-autoconfigure:$spring_boot_version",
@@ -76,43 +71,20 @@ List junit = [
         "org.springframework:spring-test:$spring_version"
 ]
 
-List apache_commons = [
-        "org.apache.commons:commons-collections4:4.1",
-        "org.apache.commons:commons-lang3:3.5",
-        "commons-cli:commons-cli:1.3.1"
-]
-
 // In this section you declare the dependencies for your production and test code
-List jackson = [
-        "com.fasterxml.jackson.core:jackson-databind:2.11.0",
-        'io.netty:netty-all:4.1.15.Final',
-        'io.netty:netty-tcnative:2.0.0.Final',
-        'com.github.fge:json-schema-validator:2.2.6',
-        'org.apache.httpcomponents:httpclient:4.5.2',
-        "com.github.reinert:jjschema:1.16",
-        "com.google.zxing:core:3.3.0",
-        "net.sf.oval:oval:1.90",
-        "com.github.ben-manes.caffeine:caffeine:2.8.0",
-        "com.google.protobuf:protobuf-java:3.9.1"
+List json = [
+        "javax.validation:validation-api:1.1.0.Final",
+        "com.google.code.gson:gson:2.6"
 ]
 
 List weid_java_sdk = [
         'com.webank:weid-java-sdk:1.7.0'
 ]
 
-List pdfbox = [
-        'org.apache.pdfbox:pdfbox:2.0.16'
-]
-
-List rpc = [
-        'org.smartboot.socket:aio-core:1.4.2',
-        'org.smartboot.socket:aio-pro:1.4.2'
-]
-
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile logger, spring, apache_commons, jackson, spring_boot, rpc, pdfbox
-    testCompile logger, spring, junit, spring_boot, spring_boot_test, rpc, pdfbox
+    compile spring, json, spring_boot
+    testCompile spring, json, junit, spring_boot, spring_boot_test
     // Check SDK pipeline dependency
     if (file("./dependencies/weid-java-sdk-pipeline.jar").exists()) {
         println "Pipeline jar for WeIdentity Java SDK found."
