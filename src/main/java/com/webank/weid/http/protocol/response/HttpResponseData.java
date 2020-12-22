@@ -34,7 +34,7 @@ public class HttpResponseData<T> {
 
     private T respBody;
     private Integer errorCode;
-    private String errorMessage;
+    private String errorMessage;    
 
     /**
      * Instantiates a new response data.

@@ -19,10 +19,25 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.util.PropertiesUtil;
+import com.webank.weid.rpc.WeIdService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+
+import com.webank.payment.protocol.base.Authentication;
+import com.webank.payment.protocol.base.PrivateKey;
+import com.webank.weid.exception.WeIdBaseException;
+import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
 
 public abstract class BaseService extends com.webank.weid.service.BaseService {
 
@@ -33,11 +48,55 @@ public abstract class BaseService extends com.webank.weid.service.BaseService {
      */
     protected static final ApplicationContext context;
 
+    protected static FiscoConfig fiscoConfig;
+    
     static {
         // initializing spring containers
         context = new ClassPathXmlApplicationContext(new String[]{
             "classpath:SpringApplicationContext.xml"});
+        fiscoConfig = new FiscoConfig();
+        fiscoConfig.load();
         logger.info("initializing spring containers finish...");
 
+    }
+    
+    private PrivateKey buildPrivateKey(String value) {
+        PrivateKey pri = new PrivateKey();
+        pri.setValue(value);
+        return pri;
+    }
+    
+    protected Authentication getAuthentication(String weId) {
+        Authentication authentication = getAuthenticationByWeId(weId);
+        String passphrase = PropertiesUtil.getProperty("default.passphrase");
+        if (StringUtils.isNotBlank(weId) && weId.equalsIgnoreCase(passphrase)) {
+            //将私钥转换成公钥，将公钥转换成weId地址
+            weId = DataToolUtils.convertPrivateKeyToDefaultWeId(authentication.getPrivateKey().getValue());
+        }
+        authentication.setUserAddress(WeIdUtils.convertWeIdToAddress(weId));
+        return authentication;
+    }
+    
+    private Authentication getAuthenticationByWeId(String weId) {
+        String weIdPrivKey = KeyUtil
+            .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, weId);
+        if (StringUtils.isEmpty(weIdPrivKey)) {
+            throw new WeIdBaseException(HttpReturnCode.INVOKER_ILLEGAL.getCodeDesc());
+        }
+        Authentication authentication = new Authentication();
+        authentication.setPrivateKey(buildPrivateKey(weIdPrivKey));
+        return authentication;
+    }
+
+    protected HttpResponseData<Object> checkWeIdExist(WeIdService weIdService, String weId) {
+        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = weIdService.isWeIdExist(weId);
+        if (!weIdExist.getResult()) {
+            return new HttpResponseData<>(
+                    weIdExist.getResult(),
+                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(),
+                    "the weId:[" + weId + "] does not exist on blockchain."
+            );
+        }
+        return null;
     }
 }
