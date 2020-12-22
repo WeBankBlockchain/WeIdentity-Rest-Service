@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+
 import com.webank.payment.protocol.base.Authentication;
 import com.webank.payment.protocol.base.PrivateKey;
 import com.webank.weid.exception.WeIdBaseException;
@@ -38,7 +39,7 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 
-public abstract class BaseService {
+public abstract class BaseService extends com.webank.weid.service.BaseService {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseService.class);
 
