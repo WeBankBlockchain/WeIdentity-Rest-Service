@@ -1,6 +1,5 @@
 package com.webank.weid.http.protocol.request.payment;
 
-import com.webank.payment.protocol.base.BaseAsset;
 import com.webank.payment.protocol.base.BaseBACInfo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

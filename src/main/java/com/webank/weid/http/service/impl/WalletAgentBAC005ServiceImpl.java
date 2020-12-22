@@ -25,7 +25,7 @@ public class WalletAgentBAC005ServiceImpl extends BaseService implements WalletA
     private Logger logger = LoggerFactory.getLogger(WalletAgentBAC005ServiceImpl.class);
     
     @Autowired
-    private InvokerBAC005AssetService bac005AssetService;
+    private InvokerBAC005AssetService bac005AssetService; 
     
     @Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {

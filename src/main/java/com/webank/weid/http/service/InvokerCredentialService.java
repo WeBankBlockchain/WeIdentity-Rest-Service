@@ -19,7 +19,6 @@
 
 package com.webank.weid.http.service;
 
-import com.webank.weid.protocol.base.CredentialPojo;
 import org.springframework.stereotype.Service;
 
 import com.webank.weid.http.protocol.request.InputArg;

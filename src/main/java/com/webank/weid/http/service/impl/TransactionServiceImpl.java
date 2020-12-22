@@ -234,6 +234,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 return invokerWeIdService.createWeIdInvoke(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_AND_RETURN_DOC)) {
+                return invokerWeIdService.createWeIdInvoke2(inputArg);
+            }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
                 return invokerCptService.registerCptInvoke(inputArg);
             }
@@ -275,6 +278,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY)) {
                 return invokerWeIdService.createWeIdWithPubKey(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY_AND_RETURN_DOC)) {
+                return invokerWeIdService.createWeIdWithPubKey2(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
                 return invokerEvidenceService.getEvidenceByCustomKey(inputArg);
