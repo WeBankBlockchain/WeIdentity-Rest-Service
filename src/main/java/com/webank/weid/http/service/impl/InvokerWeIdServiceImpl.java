@@ -31,7 +31,6 @@ import com.webank.weid.protocol.request.PublicKeyArgs;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,8 +54,6 @@ import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
-import com.webank.weid.protocol.request.SetAuthenticationArgs;
-import com.webank.weid.protocol.request.SetPublicKeyArgs;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.RawTransactionService;
@@ -164,7 +161,26 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weIdNode.textValue());
+            return getWeIdDocumentJsonInvoke(weIdNode.textValue());
+        } catch (Exception e) {
+            logger.error(
+                "[getWeIdDocument]: unknow error. weId:{}.",
+                getWeIdDocumentJsonArgs,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a WeIdentity DID Document Json via the InvokeFunction API.
+     *
+     * @param getWeIdDocumentJsonArgs the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    private HttpResponseData<Object> getWeIdDocumentJsonInvoke(String weId) {
+        try {
+            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weId);
             if (response.getResult() == null) {
                 return new HttpResponseData<>(null, response.getErrorCode(), response.getErrorMessage());
             }
@@ -204,7 +220,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
         } catch (Exception e) {
             logger.error(
                 "[getWeIdDocument]: unknow error. weId:{}.",
-                getWeIdDocumentJsonArgs,
+                weId,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
@@ -249,6 +265,20 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             return new HttpResponseData<>(new HashMap<>(), HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
+    }
+
+    /**
+     * Create WeId and get the Document via the InvokeFunction API.
+     *
+     * @param createWeIdJsonArgs the input args, should be almost null
+     * @return tthe WeIdentity DID Document
+     */
+    public HttpResponseData<Object> createWeIdInvoke2(InputArg createWeIdJsonArgs) {
+        HttpResponseData<Object> createWeIdInvoke = createWeIdInvoke(createWeIdJsonArgs);
+        if (createWeIdInvoke.getRespBody() == null || StringUtils.isBlank(createWeIdInvoke.getRespBody().toString())) {
+            return createWeIdInvoke;
+        }
+        return getWeIdDocumentJsonInvoke(createWeIdInvoke.getRespBody().toString());
     }
 
     @Override
@@ -337,5 +367,19 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
+    }
+    
+    /**
+     * Create WeId and get the Document via the InvokeFunction API.
+     *
+     * @param  arg the input args, should be almost null
+     * @return the WeIdentity DID Document
+     */
+    public HttpResponseData<Object> createWeIdWithPubKey2(InputArg arg) {
+        HttpResponseData<Object> createWeIdInvoke = createWeIdWithPubKey(arg);
+        if (createWeIdInvoke.getRespBody() == null || StringUtils.isBlank(createWeIdInvoke.getRespBody().toString())) {
+            return createWeIdInvoke;
+        }
+        return getWeIdDocumentJsonInvoke(createWeIdInvoke.getRespBody().toString());
     }
 }

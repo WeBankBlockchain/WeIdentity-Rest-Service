@@ -26,6 +26,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.webank.payment.protocol.base.Authentication;
@@ -49,7 +50,6 @@ import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerBAC004AssetService;
 import com.webank.weid.rpc.WeIdService;
-import com.webank.weid.service.impl.WeIdServiceImpl;
 import com.webank.weid.util.WeIdUtils;
 
 @Component
@@ -57,9 +57,11 @@ public class InvokerBAC004AssetServiceImpl
     extends BaseService 
     implements InvokerBAC004AssetService  {
 
+    @Autowired
+    private WeIdService weIdService;
+    
     private BAC004AssetService bac004Service;
-    private WeIdService weIdService = new WeIdServiceImpl();
-
+    
     private BAC004AssetService getBac004Service() {
         if (bac004Service == null) {
             bac004Service = new BAC004AssetServiceImpl();

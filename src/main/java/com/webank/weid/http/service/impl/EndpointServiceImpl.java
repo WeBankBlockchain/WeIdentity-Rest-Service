@@ -38,8 +38,6 @@ import com.webank.weid.http.util.EndpointDataUtil;
 @Component
 public class EndpointServiceImpl extends BaseService implements EndpointService {
 
-    private Logger logger = LoggerFactory.getLogger(EndpointServiceImpl.class);
-
     static {
         RpcConnectionHandler.init();
     }
