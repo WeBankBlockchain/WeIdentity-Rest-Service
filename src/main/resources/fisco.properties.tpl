@@ -71,21 +71,12 @@ v2.node-key-path=node.key
 #######################################################################################################
 
 # transaction center address
-transaction.contractaddress=
-
-# bac registry address
-registry.contractaddress=
-
-# bac004 and bac005 assetToSend agent address
-bac004SenderAgent.contractaddress=
-bac005SenderAgent.contractaddress=
-
-# clearcenter contract address
 clearCenter.contractaddress=
+transaction.contractaddress=
+registry.contractaddress=
 bacDataAddress.contractaddress=
 bacCenterAddress.contractaddress=
-
-# transaction fee address
 bac004.fee.address=
-
+bac004SenderAgent.contractaddress=
+bac005SenderAgent.contractaddress=
 payment.contractaddress=

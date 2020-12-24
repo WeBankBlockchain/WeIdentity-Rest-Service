@@ -28,6 +28,7 @@ import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
 import org.junit.After;
 import org.junit.Before;
 
+import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.HttpClient;
@@ -61,9 +62,10 @@ public abstract class BaseTest {
         return arg;
     }
     
-    protected static Map<String, Object> encode(Map<String, Object> param) throws Exception {
+    protected static Map<String, Object> encode(String apiName, Map<String, Object> param) throws Exception {
         String functionName = param.get("functionName").toString();
-        String doPost = HttpClient.doPost("http://127.0.0.1:6001/weid/api/encode", param, false);
+        System.out.println(functionName + " - param: " + param);
+        String doPost = HttpClient.doPost("http://127.0.0.1:6001/" + apiName + "/api/encode", param, false);
         System.out.println(functionName + " - encode: " + doPost);
         return (Map)DataToolUtils.deserialize(doPost, HashMap.class).get("respBody");
     }
@@ -89,12 +91,12 @@ public abstract class BaseTest {
         return arg;
     }
 
-    protected static Integer send(Map<String, Object> param) throws Exception {
+    protected static HttpResponseData<?> send(String apiName, Map<String, Object> param) throws Exception {
         String functionName = param.get("functionName").toString();
-        String doPost = HttpClient.doPost("http://127.0.0.1:6001/weid/api/transact", param, false);
+        System.out.println(functionName + " - param: " + param);
+        String doPost = HttpClient.doPost("http://127.0.0.1:6001/" + apiName + "/api/transact", param, false);
         System.out.println(functionName + " - transact: " + doPost);
-        return Integer.parseInt(
-            DataToolUtils.deserialize(doPost, HashMap.class).get("errorCode").toString());
+        return DataToolUtils.deserialize(doPost, HttpResponseData.class);
     }
     
     protected static String sign(
