@@ -22,12 +22,12 @@ public class EnCodeAndTranscatTest extends BaseTest {
         Map<String, Object> funcMap = new HashMap<String, Object>();
         funcMap.put("publicKey", createEcKeyPair.getPublicKey().toString());
         buildEncode.put("functionArg", funcMap);
-        Map<String, Object> respBodyMap = encode(buildEncode);
+        Map<String, Object> respBodyMap = encode("weid", buildEncode);
         String base64SignedMsg = sign(createEcKeyPair, respBodyMap);
         System.out.println(functionName + " - sign: " + base64SignedMsg);
         Map<String, Object> buildSend = buildSend(
             functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce);
-        Integer code = send(buildSend);
+        Integer code = send("weid", buildSend).getErrorCode();
         Assert.assertEquals(0, code.intValue());
     }
 }
