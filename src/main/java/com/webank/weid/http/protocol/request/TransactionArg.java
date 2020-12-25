@@ -10,4 +10,5 @@ public class TransactionArg {
     String data;
     String signedMessage;
     String toAddress;
+    Object loopback;
 }

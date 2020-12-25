@@ -27,11 +27,12 @@ public class WalletAgentBAC005ServiceImpl
     private Logger logger = LoggerFactory.getLogger(WalletAgentBAC005ServiceImpl.class);
     
     @Autowired
-    private InvokerBAC005AssetService bac005AssetService; 
-    
+    private InvokerBAC005AssetService bac005AssetService;
+
     @Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {
-        logger.info("invokeFunctionJsonArgs:{}", invokeFunctionJsonArgs);
+        logger.info("inputArg:{}", invokeFunctionJsonArgs);
+
         HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
                 .buildInputArg(invokeFunctionJsonArgs);
         InputArg inputArg = resp.getRespBody();
@@ -39,6 +40,12 @@ public class WalletAgentBAC005ServiceImpl
             logger.error("Failed to build input argument: {}", invokeFunctionJsonArgs);
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
+        HttpResponseData<Object> responseData = this.invoke(inputArg);
+        responseData.setLoopback(getLoopBack(inputArg.getTransactionArg()));
+        return responseData;
+    }
+
+    private HttpResponseData<Object> invoke(InputArg inputArg) {
         String functionName = inputArg.getFunctionName();
         try {
             switch(functionName) {
@@ -76,12 +83,12 @@ public class WalletAgentBAC005ServiceImpl
         } catch (WeIdBaseException e) {
             logger.error("[invokeFunction]: invoke {} failed, input argument {}",
                     functionName,
-                    invokeFunctionJsonArgs,
+                    inputArg,
                     e);
             return new HttpResponseData<>(null, e.getErrorCode().getCode(), e.getMessage());
         } catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
-                invokeFunctionJsonArgs,
+                inputArg,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
