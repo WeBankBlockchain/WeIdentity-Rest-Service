@@ -33,6 +33,9 @@ import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerBAC005AssetService;
 import com.webank.weid.rpc.WeIdService;
 import com.webank.weid.util.WeIdUtils;
+
+import org.apache.commons.lang3.StringUtils;
+import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -295,6 +298,139 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
                 functionArg.getIndex(),
                 functionArg.getNum()
         );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> constructEncoder(ReqInput<BAC005Info> inputArg) {
+        BAC005Info functionArg = inputArg.getFunctionArg();
+        ResponseData<String> res = getBac005AssetService().constructEncoder(
+            functionArg.getShortName(), 
+            functionArg.getDescription()
+        );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> constructDeCoder(TransactionReceipt receipt) {
+        ResponseData<String> res = getBac005AssetService().constructDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> issueEncoder(ReqInput<BAC005Info> inputArg) {
+        BAC005Info functionArg = inputArg.getFunctionArg();
+        HttpResponseData<Object> checkWeIdExistRsp = super.checkWeIdExist(
+            this.weIdService, functionArg.getRecipient());
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                checkWeIdExistRsp.getErrorCode(), 
+                checkWeIdExistRsp.getErrorMessage()
+            );
+        }
+        BAC005AssetInfo bac005AssetInfo = new BAC005AssetInfo();
+        bac005AssetInfo.setUserAddress(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
+        bac005AssetInfo.setAssetId(BigInteger.valueOf(functionArg.getAssetId()));
+        bac005AssetInfo.setAssetUri(functionArg.getAssetUri());
+        bac005AssetInfo.setData(functionArg.getData());
+        ResponseData<String> res = getBac005AssetService().issueAssetEncoder(bac005AssetInfo);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> issueDeCoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac005AssetService().issueAssetDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> batchIssueEncoder(ReqInput<BAC005BatchInfo> inputArg) {
+        BAC005BatchInfo functionArg = inputArg.getFunctionArg();
+        List<BAC005AssetInfo> assetInfoList = new ArrayList<>();
+        List<BAC005Info> bac005InfoList = functionArg.getObjectList();
+        HttpResponseData<Object> checkWeIdExistRsp = null;
+        for (BAC005Info sendInfo : bac005InfoList) {
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, sendInfo.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) break;
+            BAC005AssetInfo assetInfo = new BAC005AssetInfo();
+            assetInfo.setAssetId(BigInteger.valueOf(sendInfo.getAssetId()));
+            assetInfo.setAssetUri(sendInfo.getAssetUri());
+            assetInfo.setUserAddress(WeIdUtils.convertWeIdToAddress(sendInfo.getRecipient()));
+            assetInfo.setData(sendInfo.getData());
+            assetInfoList.add(assetInfo);
+        }
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                checkWeIdExistRsp.getErrorCode(), 
+                checkWeIdExistRsp.getErrorMessage()
+            );
+        }
+        
+        ResponseData<String> res = getBac005AssetService().batchIssueAssetEncoder(assetInfoList);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> batchIssueDeCoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac005AssetService().batchIssueAssetDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> sendEncoder(ReqInput<BAC005Info> inputArg) {
+        BAC005Info functionArg = inputArg.getFunctionArg();
+        SendAssetArgs sendAssetArgs = new SendAssetArgs();
+        sendAssetArgs.setAmount(BigInteger.valueOf(functionArg.getAssetId()));
+        sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(functionArg.getRecipient()));
+        sendAssetArgs.setData(functionArg.getData());
+        String from = WeIdUtils.convertWeIdToAddress(inputArg.getTransactionArg().getInvokerWeId());
+        ResponseData<String> res = getBac005AssetService().sendAssetEncoder(sendAssetArgs, from);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> sendDecoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac005AssetService().sendAssetDecoder(receipt);
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<String> batchSendEncoder(ReqInput<BAC005BatchInfo> inputArg) {
+        BAC005BatchInfo functionArg = inputArg.getFunctionArg();
+        List<SendAssetArgs> sendAssetArgList = new ArrayList<>();
+        List<BAC005Info> objectList = functionArg.getObjectList();
+        HttpResponseData<Object> checkWeIdExistRsp = null;
+        for (BAC005Info bac005Info : objectList) {
+            SendAssetArgs sendAssetArgs = new SendAssetArgs();
+            sendAssetArgs.setAmount(BigInteger.valueOf(bac005Info.getAssetId()));
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, bac005Info.getRecipient());
+            if (Objects.nonNull(checkWeIdExistRsp)) break;
+            sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(bac005Info.getRecipient()));
+            sendAssetArgs.setData(bac005Info.getData());
+            sendAssetArgList.add(sendAssetArgs);
+        }
+
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                checkWeIdExistRsp.getErrorCode(), 
+                checkWeIdExistRsp.getErrorMessage()
+            );
+        }
+        String from = WeIdUtils.convertWeIdToAddress(inputArg.getTransactionArg().getInvokerWeId());
+        ResponseData<String> res = getBac005AssetService().batchSendAssetEncoder(
+            sendAssetArgList, 
+            functionArg.getData(), 
+            from
+        );
+        return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
+    }
+
+    @Override
+    public HttpResponseData<Object> batchSendDecoder(TransactionReceipt receipt) {
+        ResponseData<Boolean> res = getBac005AssetService().batchSendAssetDecoder(receipt);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
 }

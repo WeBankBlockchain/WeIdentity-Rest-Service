@@ -159,6 +159,10 @@ jar {
             into 'dist/lib'
         }
         copy {
+            from file('keys/priv')
+            into 'dist/keys/priv'
+        }
+        copy {
             from file('.').listFiles().findAll { File f -> (f.name.endsWith('.bat') || f.name.endsWith('.sh') || f.name.endsWith('.env')) }
             into 'dist'
         }
