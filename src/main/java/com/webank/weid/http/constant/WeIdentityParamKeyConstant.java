@@ -38,6 +38,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String TRANSACTION_ARG = "transactionArg";
     public static final String CLAIM_HASH = "claimHash";
     public static final String KEY_INDEX = "invokerWeId";
+    public static final String LOOP_BACK = "loopback";
     public static final String BODY = "body";
     public static final String LIST = "list";
 

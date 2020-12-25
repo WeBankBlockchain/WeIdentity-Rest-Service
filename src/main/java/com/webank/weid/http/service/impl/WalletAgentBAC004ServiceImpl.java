@@ -1,5 +1,7 @@
 package com.webank.weid.http.service.impl;
 
+import com.webank.weid.exception.WeIdBaseException;
+import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,6 @@ import com.webank.weid.http.protocol.request.payment.PageQuery;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.service.InvokerBAC004AssetService;
 import com.webank.weid.http.service.WalletAgentBAC004Service;
-import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.util.DataToolUtils;
 
 @Component
@@ -32,9 +33,11 @@ public class WalletAgentBAC004ServiceImpl
     
     @Autowired
     private InvokerBAC004AssetService bac004AssetService;
-    
+
     @Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {
+        logger.info("inputArg:{}", invokeFunctionJsonArgs);
+
         HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
                 .buildInputArg(invokeFunctionJsonArgs);
         InputArg inputArg = resp.getRespBody();
@@ -42,6 +45,12 @@ public class WalletAgentBAC004ServiceImpl
             logger.error("Failed to build input argument: {}", invokeFunctionJsonArgs);
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
+        HttpResponseData<Object> responseData = this.invoke(inputArg);
+        responseData.setLoopback(getLoopBack(inputArg.getTransactionArg()));
+        return responseData;
+    }
+
+    private HttpResponseData<Object> invoke(InputArg inputArg) {
         String functionName = inputArg.getFunctionName();
         try {
             switch(functionName) {
@@ -68,9 +77,15 @@ public class WalletAgentBAC004ServiceImpl
             }
             logger.error("Function name undefined: {}.", functionName);
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
-        } catch (Exception e) {
+        } catch (WeIdBaseException e) {
+			logger.error("[invokeFunction]: invoke {} failed, input argument {}",
+				functionName,
+				inputArg,
+				e);
+			return new HttpResponseData<>(null, e.getErrorCode().getCode(), e.getMessage());
+		} catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
-                invokeFunctionJsonArgs,
+                inputArg,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());
