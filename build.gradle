@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.5.6"
+version = "1.5.5"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
