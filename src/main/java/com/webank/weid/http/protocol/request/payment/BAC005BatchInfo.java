@@ -14,5 +14,5 @@ public class BAC005BatchInfo extends BaseBACInfo {
     
     private List<BAC005Info> objectList;
 
-    private String data;
+    private String remark;
 }
