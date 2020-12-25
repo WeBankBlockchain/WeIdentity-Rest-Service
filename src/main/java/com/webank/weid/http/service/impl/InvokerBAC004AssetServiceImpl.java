@@ -194,22 +194,25 @@ public class InvokerBAC004AssetServiceImpl
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         List<SendAssetArgs> sendAssetArgList = new ArrayList<SendAssetArgs>();
         List<BAC004SendInfo> objectList = functionArg.getList();
+        HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC004SendInfo input : objectList) {
             SendAssetArgs sendAssetArgs = new  SendAssetArgs();
             sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
             sendAssetArgs.setData(input.getRemark());
             sendAssetArgList.add(sendAssetArgs);
-            HttpResponseData<Object> checkWeIdExistRsp = 
-                super.checkWeIdExist(this.weIdService, input.getRecipient());
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, input.getRecipient());
             if (Objects.nonNull(checkWeIdExistRsp)) {
-                return new HttpResponseData<>(
-                    StringUtils.EMPTY, 
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-                );
+                break;
             };
         }
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+            );
+        };
         ResponseData<Boolean> res = getBac004Service().batchSend(
             functionArg.getAssetAddress(), 
             sendAssetArgList, 
@@ -314,22 +317,25 @@ public class InvokerBAC004AssetServiceImpl
         // 获取用户身份信息
         List<SendAssetArgs> sendAssetArgList = new ArrayList<SendAssetArgs>();
         List<BAC004SendInfo> objectList = functionArg.getList();
+        HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC004SendInfo input : objectList) {
             SendAssetArgs sendAssetArgs = new  SendAssetArgs();
             sendAssetArgs.setAmount(BigInteger.valueOf(input.getAmount()));
             sendAssetArgs.setRecipient(WeIdUtils.convertWeIdToAddress(input.getRecipient()));
             sendAssetArgs.setData(input.getRemark());
             sendAssetArgList.add(sendAssetArgs);
-            HttpResponseData<Object> checkWeIdExistRsp = 
-                super.checkWeIdExist(this.weIdService, input.getRecipient());
+            checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, input.getRecipient());
             if (Objects.nonNull(checkWeIdExistRsp)) {
-                return new HttpResponseData<>(
-                    StringUtils.EMPTY, 
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                    ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-                );
+                break;
             };
         }
+        if (Objects.nonNull(checkWeIdExistRsp)) {
+            return new HttpResponseData<>(
+                StringUtils.EMPTY, 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
+                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
+            );
+        };
         ResponseData<String> res = getBac004Service().batchSendEncoder(sendAssetArgList);
         return new HttpResponseData<>(res.getResult(), res.getErrorCode(), res.getErrorMessage());
     }
