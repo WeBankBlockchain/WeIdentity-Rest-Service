@@ -55,7 +55,7 @@ public class Bac005EncodeTest extends BaseTest {
         Map<String, Object> funcMap = new HashMap<String, Object>();
         funcMap.put("assetAddress", bac005Address);
         funcMap.put("recipient", recipient);
-        funcMap.put("data", "this is issue asset");
+        funcMap.put("remark", "this is issue asset");
         funcMap.put("assetId", 10001);
         funcMap.put("assetUri", "/BAC005/issueAsset/10001");
         Map<String, Object> transMap = new HashMap<String, Object>();
@@ -72,14 +72,14 @@ public class Bac005EncodeTest extends BaseTest {
         List<Map<String, Object>> objectList = new ArrayList<>();
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("recipient", recipient);
-        map.put("data", "this is issue asset");
+        map.put("remark", "this is issue asset");
         map.put("assetId", 10002);
         map.put("assetUri", "/BAC005/issueAsset/10002");
         objectList.add(map);
         
         Map<String, Object> map1 = new HashMap<String, Object>();
         map1.put("recipient", recipient);
-        map1.put("data", "this is issue asset");
+        map1.put("remark", "this is issue asset");
         map1.put("assetId", 10003);
         map1.put("assetUri", "/BAC005/issueAsset/10003");
         objectList.add(map1);
@@ -98,7 +98,7 @@ public class Bac005EncodeTest extends BaseTest {
         Map<String, Object> funcMap = new HashMap<String, Object>();
         funcMap.put("assetAddress", bac005Address);
         funcMap.put("recipient", recipient);
-        funcMap.put("data", "this is issue asset");
+        funcMap.put("remark", "this is issue asset");
         funcMap.put("assetId", 10001);
         Map<String, Object> transMap = new HashMap<String, Object>();
         transMap.put("toAddress", bac005Address);
@@ -116,7 +116,7 @@ public class Bac005EncodeTest extends BaseTest {
         List<Map<String, Object>> objectList = new ArrayList<>();
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("recipient", recipient);
-        map.put("data", "this is issue asset");
+        map.put("remark", "this is issue asset");
         map.put("assetId", 10002);
         objectList.add(map);
         funcMap.put("objectList", objectList);
