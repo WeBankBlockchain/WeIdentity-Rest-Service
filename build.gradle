@@ -78,7 +78,7 @@ List json = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.7.0'
+        'com.webank:weid-java-sdk:1.7.1'
 ]
 
 // In this section you declare the dependencies for your production and test code
