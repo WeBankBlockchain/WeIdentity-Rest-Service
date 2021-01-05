@@ -12,7 +12,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class BAC005BatchInfo extends BaseBACInfo {
     
-    private List<BAC005Info> objectList;
+    private List<BAC005Info> list;
 
     private String remark;
 }
