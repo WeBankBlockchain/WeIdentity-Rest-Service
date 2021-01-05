@@ -92,11 +92,7 @@ public class InvokerBAC004AssetServiceImpl
         HttpResponseData<Object> checkWeIdExistRsp = 
             super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
         if (Objects.nonNull(checkWeIdExistRsp)) {
-            return new HttpResponseData<>(
-                StringUtils.EMPTY, 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
+            return checkWeIdExistRsp;
         };
         
         // 获取用户身份信息
@@ -165,11 +161,7 @@ public class InvokerBAC004AssetServiceImpl
         HttpResponseData<Object> checkWeIdExistRsp = 
             super.checkWeIdExist(this.weIdService, functionArg.getRecipient());
         if (Objects.nonNull(checkWeIdExistRsp)) {
-            return new HttpResponseData<>(
-                StringUtils.EMPTY, 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
+            return checkWeIdExistRsp;
         };
             
         // 获取用户身份信息
@@ -207,11 +199,7 @@ public class InvokerBAC004AssetServiceImpl
             };
         }
         if (Objects.nonNull(checkWeIdExistRsp)) {
-            return new HttpResponseData<>(
-                StringUtils.EMPTY, 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCode(), 
-                ErrorCode.WEID_DOES_NOT_EXIST.getCodeDesc()
-            );
+            return checkWeIdExistRsp;
         };
         ResponseData<Boolean> res = getBac004Service().batchSend(
             functionArg.getAssetAddress(), 
