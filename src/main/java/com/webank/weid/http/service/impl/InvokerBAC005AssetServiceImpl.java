@@ -130,7 +130,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         TransactionArg transactionArg = inputArg.getTransactionArg();
 
         List<BAC005AssetInfo> assetInfoList = new ArrayList<>();
-        List<BAC005Info> bac005InfoList = functionArg.getObjectList();
+        List<BAC005Info> bac005InfoList = functionArg.getList();
         HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC005Info sendInfo : bac005InfoList) {
             checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, sendInfo.getRecipient());
@@ -258,7 +258,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
         TransactionArg transactionArg = inputArg.getTransactionArg();
         Authentication auth = super.getAuthentication(transactionArg.getInvokerWeId());
         List<SendAssetArgs> sendAssetArgList = new ArrayList<>();
-        List<BAC005Info> objectList = functionArg.getObjectList();
+        List<BAC005Info> objectList = functionArg.getList();
         HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC005Info bac005Info : objectList) {
             SendAssetArgs sendAssetArgs = new SendAssetArgs();
@@ -348,7 +348,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<String> batchIssueEncoder(ReqInput<BAC005BatchInfo> inputArg) {
         BAC005BatchInfo functionArg = inputArg.getFunctionArg();
         List<BAC005AssetInfo> assetInfoList = new ArrayList<>();
-        List<BAC005Info> bac005InfoList = functionArg.getObjectList();
+        List<BAC005Info> bac005InfoList = functionArg.getList();
         HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC005Info sendInfo : bac005InfoList) {
             checkWeIdExistRsp = super.checkWeIdExist(this.weIdService, sendInfo.getRecipient());
@@ -400,7 +400,7 @@ public class InvokerBAC005AssetServiceImpl extends BaseService implements Invoke
     public HttpResponseData<String> batchSendEncoder(ReqInput<BAC005BatchInfo> inputArg) {
         BAC005BatchInfo functionArg = inputArg.getFunctionArg();
         List<SendAssetArgs> sendAssetArgList = new ArrayList<>();
-        List<BAC005Info> objectList = functionArg.getObjectList();
+        List<BAC005Info> objectList = functionArg.getList();
         HttpResponseData<Object> checkWeIdExistRsp = null;
         for (BAC005Info bac005Info : objectList) {
             SendAssetArgs sendAssetArgs = new SendAssetArgs();
