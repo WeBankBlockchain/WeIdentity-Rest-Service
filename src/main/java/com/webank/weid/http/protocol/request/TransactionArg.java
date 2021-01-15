@@ -11,4 +11,5 @@ public class TransactionArg {
     String signedMessage;
     String toAddress;
     Object loopback;
+    String blockLimit;
 }

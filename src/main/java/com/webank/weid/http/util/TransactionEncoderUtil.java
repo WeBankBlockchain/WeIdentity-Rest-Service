@@ -64,116 +64,7 @@ public class TransactionEncoderUtil {
         }
         return false;
     }
-
-    /**
-     * Create an Encoded Transaction for registerCpt.
-     *
-     * @param inputParam the CPT input param which should contain: weId, cptJsonSchema (json String), and cptSignature (in Base64).
-     * @param nonce the nonce value to create rawTransaction
-     * @param to contract address
-     * @return encoded byte array in Base64 format and the rawTransaction.
-     */
-    public static HttpResponseData<String> registerCptEncoder(
-        String inputParam,
-        String nonce,
-        String to) {
-        try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildRegisterCptInputParameters(inputParam);
-            if (responseData.getResult() == null) {
-                logger.error("[RegisterCpt] Error occurred when building input param with: {}",
-                    inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
-            }
-            Function function = new Function(
-                WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT,
-                responseData.getResult(),
-                Collections.emptyList());
-            String data = FunctionEncoder.encode(function);
-            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
-            byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
-            return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
-                HttpReturnCode.SUCCESS);
-        } catch (Exception e) {
-            logger.error("[RegisterCpt] Failed to get encoder for unknown reason: ", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
-        }
-    }
-
-    /**
-     * Create an Encoded Transaction for createWeIdWithAttributes.
-     *
-     * @param inputParam the createWeId param should contain publicKey only.
-     * @param nonce the nonce value to create rawTransaction
-     * @param to contract address
-     * @return encoded byte array in Base64 format and the rawTransaction.
-     */
-    public static HttpResponseData<String> createWeIdEncoder(
-        String inputParam,
-        String nonce,
-        String to) {
-        try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildCreateWeIdInputParameters(inputParam);
-            if (responseData.getResult() == null) {
-                logger.error("[CreateWeId] Error occurred when building input param with: {}",
-                    inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
-            }
-            Function function = new Function(
-                WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
-                responseData.getResult(),
-                Collections.emptyList());
-            String data = FunctionEncoder.encode(function);
-            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
-            byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
-            return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
-                HttpReturnCode.SUCCESS);
-        } catch (Exception e) {
-            logger.error("[createWeId] Failed to get encoder for unknown reason:", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
-        }
-    }
-
-    /**
-     * Create an Encoded Transaction for registerAuthorityIssuer
-     *
-     * @param inputParam the registerAuthorityIssuer param should contain weId and name.
-     * @param nonce the nonce value to create rawTransaction
-     * @param to contract address
-     * @return encoded byte array in Base64 format and the rawTransaction.
-     */
-    public static HttpResponseData<String> registerAuthorityIssuerEncoder(
-        String inputParam,
-        String nonce,
-        String to) {
-        try {
-            ResponseData<List<Type>> responseData = TransactionUtils
-                .buildAuthorityIssuerInputParameters(inputParam);
-            if (responseData.getResult() == null) {
-                logger.error(
-                    "[RegisterAuthorityIssuer] Error occurred when building input param with: {}",
-                    inputParam);
-                return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL);
-            }
-            Function function = new Function(
-                WeIdentityFunctionNames.FUNCCALL_ADD_AUTHORITY_ISSUER,
-                responseData.getResult(),
-                Collections.emptyList());
-            String data = FunctionEncoder.encode(function);
-            RawTransaction rawTransaction = createRawTransactionFromFunction(data, nonce, to);
-            byte[] encodedTransaction = encodeRawTransaction(rawTransaction);
-            return new HttpResponseData<>(
-                getEncodeOutput(encodedTransaction, rawTransaction.getData()),
-                HttpReturnCode.SUCCESS);
-        } catch (Exception e) {
-            logger.error("[registerAuthorityIssuer] Failed to get encoder for unknown reason:", e);
-            return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.TXN_ENCODER_ERROR);
-        }
-    }
-
+    
     /**
      * Get a random Nonce for a transaction.
      *
@@ -305,13 +196,15 @@ public class TransactionEncoderUtil {
      *
      * @param encodedTransaction the encoded transaction byte array (will be converted to Base64)
      * @param data the input rawTransaction's data
+     * @param blockLimit the blockLimit
      * @return Json String, a wrapper including both Base64 encodes, and the rawTransaction
      */
-    public static String getEncodeOutput(byte[] encodedTransaction, String data) {
+    public static String getEncodeOutput(byte[] encodedTransaction, String data, BigInteger blockLimit) {
         String base64EncodedTransaction = base64Encode(encodedTransaction);
         EncodedTransactionWrapper encodedTransactionWrapper = new EncodedTransactionWrapper();
         encodedTransactionWrapper.setEncodedTransaction(base64EncodedTransaction);
         encodedTransactionWrapper.setData(data);
+        encodedTransactionWrapper.setBlockLimit(blockLimit.toString());
         return JsonUtil.objToJsonStr(encodedTransactionWrapper);
     }
 

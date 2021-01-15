@@ -111,7 +111,12 @@ public enum HttpReturnCode {
      * contract error.
      */
     CONTRACT_ERROR(201016, "Failed to load contract (maybe from un-deployed site, DB not storing CNS, or CNS hash illegal)"),
-
+    
+    /**
+     * BlockLimit value illegal.
+     */
+    BLOCK_LIMIT_ILLEGAL(201017, "BlockLimit value illegal. "),
+    
     /**
      * RPC related error codes.
      */

@@ -84,7 +84,7 @@ public class Bac005EncodeTest extends BaseTest {
         map1.put("assetUri", "/BAC005/issueAsset/10003");
         objectList.add(map1);
         
-        funcMap.put("objectList", objectList);
+        funcMap.put("list", objectList);
         Map<String, Object> transMap = new HashMap<String, Object>();
         transMap.put("toAddress", bac005Address);
         exectue(functionName, funcMap, transMap, createEcKeyPair);
@@ -119,7 +119,7 @@ public class Bac005EncodeTest extends BaseTest {
         map.put("remark", "this is issue asset");
         map.put("assetId", 10002);
         objectList.add(map);
-        funcMap.put("objectList", objectList);
+        funcMap.put("list", objectList);
         Map<String, Object> transMap = new HashMap<String, Object>();
         transMap.put("toAddress", bac005Address);
         transMap.put("invokerWeId", invokerWeId);
@@ -141,7 +141,7 @@ public class Bac005EncodeTest extends BaseTest {
         String base64SignedMsg = sign(createEcKeyPair, respBodyMap);
         System.out.println(functionName + " - sign: " + base64SignedMsg);
         Map<String, Object> buildSend = buildSend(
-            functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce);
+            functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce, respBodyMap.get("blockLimit").toString());
         Map<String, Object> transactionArg = (HashMap<String, Object>)buildSend.get("transactionArg");
         transactionArg.putAll(transMap);
         HttpResponseData<?> response = send("payment/bac005",buildSend);

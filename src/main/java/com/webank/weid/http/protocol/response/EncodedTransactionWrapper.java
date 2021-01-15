@@ -39,4 +39,6 @@ public class EncodedTransactionWrapper {
      * The data segment instance in RawTransaction. Client needs this for future sendTransaction.
      */
     private String data;
+    
+    private String blockLimit;
 }
