@@ -62,7 +62,7 @@ public final class WeIdentityFunctionNames {
     public static final String FUNCNAME_IS_WEID_IN_WHITELIST = "isWeIdInWhitelist";
     public static final String FUNCNAME_RECOGNIZE_AUTHORITY_ISSUER = "recognizeAuthorityIssuer";
     public static final String FUNCNAME_DERECOGNIZE_AUTHORITY_ISSUER = "deRecognizeAuthorityIssuer";
-
+    public static final String FUNCNAME_GETWEIDLIST_BYPUBKEYLIST = "getWeIdListByPubKeyList";
     /**
      * Function names to be assembled in SDK Function call. Case sensitive. FISCO-BCOS v1.
      */

@@ -37,6 +37,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.utils.Numeric;
@@ -382,4 +383,46 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
         }
         return getWeIdDocumentJsonInvoke(createWeIdInvoke.getRespBody().toString());
     }
+
+    /**
+     * GET WeIdList by PublicKeyList.
+     *
+     * @param  arg the input args, should be almost null
+     * @return the WeIdentity DID List
+     * @throws Exception 
+     */
+    public HttpResponseData<Object> getWeIdListByPubKeyList(InputArg arg) throws Exception {
+        JsonNode functionArgNode = new ObjectMapper().readTree(arg.getFunctionArg());
+        JsonNode pubKeyNode = functionArgNode.get(WeIdentityParamKeyConstant.PUBKEY_LIST);
+        if (!pubKeyNode.isArray()) {
+            logger.error("input format illegal: not Array.");
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Array");
+        }
+        List<WeIdPublicKey> pubKeyList = new ArrayList<WeIdPublicKey>();
+        for (JsonNode jsonNode : pubKeyNode) {
+            if (!DataToolUtils.isValidBase64String(jsonNode.asText())) {
+                logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
+            }
+            String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(jsonNode.asText())).toString(10);
+            WeIdPublicKey publicKey = new WeIdPublicKey();
+            publicKey.setPublicKey(publicKeySecp);
+            pubKeyList.add(publicKey);
+        }
+        if (pubKeyList == null || pubKeyList.size() == 0) {
+            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+        }
+        List<String> weIdList = new ArrayList<String>();
+        for (WeIdPublicKey weIdPublicKey : pubKeyList) {
+            if (weIdPublicKey != null && StringUtils.isNotBlank(weIdPublicKey.getPublicKey())) {
+                weIdList.add(WeIdUtils.convertPublicKeyToWeId(weIdPublicKey.getPublicKey()));
+            } else {
+                weIdList.add(StringUtils.EMPTY);
+            }
+        }
+        return new HttpResponseData<>(weIdList, HttpReturnCode.SUCCESS);
+    }
+
 }

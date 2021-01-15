@@ -79,4 +79,6 @@ public interface InvokerWeIdService {
     HttpResponseData<Object> createWeIdWithPubKey(InputArg arg);
 
     HttpResponseData<Object> createWeIdWithPubKey2(InputArg arg);
+    
+    HttpResponseData<Object> getWeIdListByPubKeyList(InputArg arg) throws Exception ;
 }
