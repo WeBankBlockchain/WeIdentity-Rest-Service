@@ -322,11 +322,12 @@ public class TransactionTestV2 {
         String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Web3j web3j = (Web3j) BaseService.getWeb3j();
+        BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, blocklimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
-        String encodedOutputToClient = TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
+        String encodedOutputToClient = TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data, blocklimit);
         // 4. client signs and sends back to send raw txn
         JsonNode encodeResult = new ObjectMapper().readTree(encodedOutputToClient);
         byte[] encodedTransactionClient = DataToolUtils
@@ -381,8 +382,9 @@ public class TransactionTestV2 {
         String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Web3j web3j = (Web3j) BaseService.getWeb3j();
+        BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, blocklimit);
         // 3. server sends everything back to client in encoded base64 manner
         // 这一步先忽略
         // 4. client signs and sends back to send raw txn

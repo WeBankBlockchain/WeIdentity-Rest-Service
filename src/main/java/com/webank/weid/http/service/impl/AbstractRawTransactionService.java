@@ -121,12 +121,17 @@ public abstract class AbstractRawTransactionService extends BaseService implemen
             req.setFunctionArg(inputArg.getFunctionArg());
             TransactionArg transactionArg = req.getTransactionArg();
             String nonce = transactionArg.getNonce();
+            String blockLimit = transactionArg.getBlockLimit();
             String data = transactionArg.getData();
             String signedMessage = transactionArg.getSignedMessage();
             String to = transactionArg.getToAddress();
             if (nonce == null || StringUtils.isEmpty(nonce)) {
                 logger.error("Null input within: {}", transactionArg);
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
+            }
+            if (blockLimit == null || StringUtils.isEmpty(blockLimit)) {
+                logger.error("Null input within: {}", transactionArg);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.BLOCK_LIMIT_ILLEGAL);
             }
             if (data == null || StringUtils.isEmpty(data)) {
                 logger.error("Null input within: {}", transactionArg);
@@ -144,7 +149,8 @@ public abstract class AbstractRawTransactionService extends BaseService implemen
                 signedMessage, 
                 nonce, 
                 to, 
-                data
+                data,
+                blockLimit
             );
             ResponseData<TransactionReceipt> sendTransaction = 
                 getRawTransactionService().sendTransaction(txnHex);

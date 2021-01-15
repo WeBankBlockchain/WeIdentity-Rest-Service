@@ -26,7 +26,12 @@ public class EnCodeAndTranscatTest extends BaseTest {
         String base64SignedMsg = sign(createEcKeyPair, respBodyMap);
         System.out.println(functionName + " - sign: " + base64SignedMsg);
         Map<String, Object> buildSend = buildSend(
-            functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce);
+            functionName, 
+            base64SignedMsg, 
+            respBodyMap.get("data").toString(), 
+            nonce, 
+            respBodyMap.get("blockLimit").toString()
+        );
         Integer code = send("weid", buildSend).getErrorCode();
         Assert.assertEquals(0, code.intValue());
     }
