@@ -144,12 +144,17 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode txnArgNode = objectMapper.readTree(inputArg.getTransactionArg());
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
+            JsonNode blockLimitNode = txnArgNode.get(WeIdentityParamKeyConstant.BLOCK_LIMIT);
             JsonNode dataNode = txnArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
             JsonNode signedMessageNode = txnArgNode
                 .get(WeIdentityParamKeyConstant.SIGNED_MESSAGE);
             if (nonceNode == null || StringUtils.isEmpty(nonceNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
+            }
+            if (blockLimitNode == null || StringUtils.isEmpty(blockLimitNode.textValue())) {
+                logger.error("Null input within: {}", txnArgNode.toString());
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.BLOCK_LIMIT_ILLEGAL);
             }
             if (dataNode == null || StringUtils.isEmpty(dataNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
@@ -161,6 +166,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             }
             String functionName = inputArg.getFunctionName();
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
+            String blockLimit = JsonUtil.removeDoubleQuotes(blockLimitNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
             HttpResponseData<String> httpResponseData =
@@ -169,18 +175,18 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
              // is FISCO-BCOS v2
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data, blockLimit);
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data, blockLimit);
                 httpResponseData = invokerAuthorityIssuerService
                     .registerAuthorityIssuerWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data, blockLimit);
                 httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
             }
             return new HttpResponseData<>(
@@ -249,6 +255,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 return invokerWeIdService.createWeIdInvoke(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GETWEIDLIST_BYPUBKEYLIST)) {
+                return invokerWeIdService.getWeIdListByPubKeyList(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_AND_RETURN_DOC)) {
                 return invokerWeIdService.createWeIdInvoke2(inputArg);

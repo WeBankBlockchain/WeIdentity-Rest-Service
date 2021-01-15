@@ -1,6 +1,5 @@
 package com.webank.weid.http.service;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,7 +76,7 @@ public class Bac004EncodeTest extends BaseTest {
         String base64SignedMsg = sign(createEcKeyPair, respBodyMap);
         System.out.println(functionName + " - sign: " + base64SignedMsg);
         Map<String, Object> buildSend = buildSend(
-            functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce);
+            functionName, base64SignedMsg, respBodyMap.get("data").toString(), nonce, respBodyMap.get("blockLimit").toString());
         Map<String, Object> transactionArg = (HashMap<String, Object>)buildSend.get("transactionArg");
         transactionArg.putAll(transMap);
         HttpResponseData<?> response = send("payment/bac004",buildSend);
