@@ -74,7 +74,8 @@ public abstract class BaseTest {
         String functionName, 
         String base64SignedMsg, 
         String data,
-        String nonce
+        String nonce,
+        String blockLimit
     ) {
         Map<String, Object> arg = new HashMap<String, Object>();
         arg.put("functionName", functionName);
@@ -83,6 +84,7 @@ public abstract class BaseTest {
         Map<String, Object> tranMap = new HashMap<String, Object>();
         tranMap.put("nonce", nonce);
         tranMap.put("data", data);
+        tranMap.put("blockLimit", blockLimit);
         tranMap.put("signedMessage", base64SignedMsg);
         arg.put("transactionArg", tranMap);
         

@@ -261,13 +261,13 @@ public class TransactionEncoderUtilV2 {
             Collections.<TypeReference<?>>emptyList());
     }
 
-    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
+    public static String createTxnHex(String encodedSig, String nonce, String to, String data, String blockLimit) {
         SignatureData sigData = TransactionEncoderUtilV2
             .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()));
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, new BigInteger(blockLimit));
         byte[] encodedSignedTxn = TransactionEncoderUtilV2.encode(rawTransaction, sigData);
         return Numeric.toHexString(encodedSignedTxn);
     }
@@ -279,12 +279,13 @@ public class TransactionEncoderUtilV2 {
     }
     
     public static String createClientEncodeResult(String functionEncode, String nonce, String to, String groupId) {
+        BigInteger blockLimit = getBlocklimitV2();
         // 2. server generate encodedTransaction
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            groupId, functionEncode, to);
+            groupId, functionEncode, to, blockLimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
-        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, functionEncode);
+        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, functionEncode, blockLimit);
     }
 
     public static BigInteger getNonce() {
@@ -354,13 +355,13 @@ public class TransactionEncoderUtilV2 {
         return result;
     }
 
-    public static ExtendedRawTransaction buildRawTransaction(String nonce, String groupId, String data, String to) {
+    public static ExtendedRawTransaction buildRawTransaction(String nonce, String groupId, String data, String to, BigInteger blockLimit) {
         ExtendedRawTransaction rawTransaction =
             ExtendedRawTransaction.createTransaction(
                 new BigInteger(nonce),
                 new BigInteger("99999999999"),
                 new BigInteger("99999999999"),
-                getBlocklimitV2(),
+                blockLimit,
                 to, // to address
                 BigInteger.ZERO, // value to transfer
                 data,
