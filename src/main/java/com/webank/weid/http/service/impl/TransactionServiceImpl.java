@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -101,10 +102,20 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
             }
+            SignType signType = null;
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+                JsonNode signTypeNode = txnArgNode.get(WeIdentityParamKeyConstant.SIGN_TYPE);
+                if (signTypeNode == null || StringUtils.isEmpty(signTypeNode.textValue())) {
+                    logger.error("Null input within: {}", txnArgNode.toString());
+                    return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGN_TYPE_ILLEGAL);
+                }
+                signType = SignType.getSignTypeByCode(Integer.parseInt(signTypeNode.textValue()));
+            }
+            
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             // is FISCO-BCOS v2 blockchain
             httpResponseData = TransactionEncoderUtilV2
-                .createEncoder(fiscoConfig, functionArg, nonce, functionName);
+                .createEncoder(fiscoConfig, functionArg, nonce, functionName, signType);
             return new HttpResponseData<>(
                 JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                 loopBack,
@@ -145,6 +156,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             JsonNode txnArgNode = objectMapper.readTree(inputArg.getTransactionArg());
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
             JsonNode blockLimitNode = txnArgNode.get(WeIdentityParamKeyConstant.BLOCK_LIMIT);
+            JsonNode signTypeNode = txnArgNode.get(WeIdentityParamKeyConstant.SIGN_TYPE);
             JsonNode dataNode = txnArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
             JsonNode signedMessageNode = txnArgNode
                 .get(WeIdentityParamKeyConstant.SIGNED_MESSAGE);
@@ -164,29 +176,34 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGNED_MSG_ILLEGAL);
             }
+            if (signTypeNode == null || StringUtils.isEmpty(signTypeNode.textValue())) {
+                logger.error("Null input within: {}", txnArgNode.toString());
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGN_TYPE_ILLEGAL);
+            }
             String functionName = inputArg.getFunctionName();
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             String blockLimit = JsonUtil.removeDoubleQuotes(blockLimitNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
+            SignType signType = SignType.getSignTypeByCode(Integer.parseInt(signTypeNode.textValue()));
             HttpResponseData<String> httpResponseData =
                 new HttpResponseData<>(null, loopBack, HttpReturnCode.INPUT_NULL);
             String txnHex;
              // is FISCO-BCOS v2
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data, blockLimit);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data, blockLimit, signType);
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data, blockLimit);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data, blockLimit, signType);
                 httpResponseData = invokerAuthorityIssuerService
                     .registerAuthorityIssuerWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data, blockLimit);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data, blockLimit, signType);
                 httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
             }
             return new HttpResponseData<>(
