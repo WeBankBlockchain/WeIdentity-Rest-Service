@@ -11,6 +11,7 @@ import com.webank.payment.protocol.response.ResponseData;
 import com.webank.payment.rpc.RawTransactionService;
 import com.webank.payment.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.request.ReqInput;
 import com.webank.weid.http.protocol.request.TransactionArg;
@@ -141,6 +142,10 @@ public abstract class AbstractRawTransactionService extends BaseService implemen
                 logger.error("Null input within: {}", transactionArg);
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGNED_MSG_ILLEGAL);
             }
+            if (transactionArg.getSignType() == 0) {
+                logger.error("Null input within: {}", transactionArg);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGN_TYPE_ILLEGAL);
+            }
             //如果为空则说明向系统获取
             if (StringUtils.isEmpty(to)) {
                 to = doGetTo(req);
@@ -150,7 +155,8 @@ public abstract class AbstractRawTransactionService extends BaseService implemen
                 nonce, 
                 to, 
                 data,
-                blockLimit
+                blockLimit,
+                SignType.getSignTypeByCode(transactionArg.getSignType())
             );
             ResponseData<TransactionReceipt> sendTransaction = 
                 getRawTransactionService().sendTransaction(txnHex);
