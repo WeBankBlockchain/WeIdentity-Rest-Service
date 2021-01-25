@@ -85,6 +85,7 @@ public abstract class BaseTest {
         tranMap.put("nonce", nonce);
         tranMap.put("data", data);
         tranMap.put("blockLimit", blockLimit);
+        tranMap.put("signType", 1);
         tranMap.put("signedMessage", base64SignedMsg);
         arg.put("transactionArg", tranMap);
         

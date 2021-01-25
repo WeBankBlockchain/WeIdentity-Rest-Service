@@ -8,6 +8,7 @@ import com.webank.weid.contract.v2.AuthorityIssuerController;
 import com.webank.weid.contract.v2.AuthorityIssuerController.AuthorityIssuerRetLogEventResponse;
 import com.webank.weid.contract.v2.WeIdContract;
 import com.webank.weid.contract.v2.WeIdContract.WeIdAttributeChangedEventResponse;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
@@ -338,7 +339,7 @@ public class TransactionTestV2 {
             DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
         // 5. server receives the signed data
         org.fisco.bcos.web3j.crypto.Sign.SignatureData clientSignedData2 = TransactionEncoderUtilV2
-            .simpleSignatureDeserialization(DataToolUtils.base64Decode(base64SignedMsg.getBytes()));
+            .simpleSignatureDeserialization(DataToolUtils.base64Decode(base64SignedMsg.getBytes()), SignType.RSV);
         byte[] encodedSignedMsg = TransactionEncoderUtilV2.encode(rawTransaction, clientSignedData2);
         String txnHex = Numeric.toHexString(encodedSignedMsg);
         SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
