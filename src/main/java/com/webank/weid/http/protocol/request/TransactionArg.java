@@ -1,5 +1,7 @@
 package com.webank.weid.http.protocol.request;
 
+import com.webank.weid.http.constant.SignType;
+
 import lombok.Data;
 
 @Data
@@ -12,4 +14,5 @@ public class TransactionArg {
     String toAddress;
     Object loopback;
     String blockLimit;
+    int signType;
 }

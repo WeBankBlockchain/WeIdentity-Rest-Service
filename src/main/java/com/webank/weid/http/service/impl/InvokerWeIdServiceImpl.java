@@ -23,6 +23,7 @@ import com.webank.weid.constant.WeIdConstant.PublicKeyType;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.response.WeIdListRsp;
 import com.webank.weid.protocol.base.PublicKeyProperty;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdDocument;
@@ -176,7 +177,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
     /**
      * Get a WeIdentity DID Document Json via the InvokeFunction API.
      *
-     * @param getWeIdDocumentJsonArgs the WeIdentity DID
+     * @param weId the WeIdentity DID
      * @return the WeIdentity DID document json
      */
     private HttpResponseData<Object> getWeIdDocumentJsonInvoke(String weId) {
@@ -389,21 +390,30 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
      *
      * @param  arg the input args, should be almost null
      * @return the WeIdentity DID List
-     * @throws Exception 
+     * @throws Exception exception
      */
     public HttpResponseData<Object> getWeIdListByPubKeyList(InputArg arg) throws Exception {
+        WeIdListRsp weIdListRsp = new WeIdListRsp();
+        weIdListRsp.setWeIdList(new ArrayList<>());
+        weIdListRsp.setErrorCodeList(new ArrayList<>());
+
         JsonNode functionArgNode = new ObjectMapper().readTree(arg.getFunctionArg());
         JsonNode pubKeyNode = functionArgNode.get(WeIdentityParamKeyConstant.PUBKEY_LIST);
         if (!pubKeyNode.isArray()) {
             logger.error("input format illegal: not Array.");
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+            return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Array");
         }
-        List<WeIdPublicKey> pubKeyList = new ArrayList<WeIdPublicKey>();
+        List<WeIdPublicKey> pubKeyList = new ArrayList<>();
         for (JsonNode jsonNode : pubKeyNode) {
+            if (StringUtils.isBlank(jsonNode.asText())) {
+                logger.error("public key is null.");
+                return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                        HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key is null");
+            }
             if (!DataToolUtils.isValidBase64String(jsonNode.asText())) {
                 logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
-                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
             }
             String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(jsonNode.asText())).toString(10);
@@ -411,18 +421,37 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             publicKey.setPublicKey(publicKeySecp);
             pubKeyList.add(publicKey);
         }
-        if (pubKeyList == null || pubKeyList.size() == 0) {
-            return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL);
+        if (pubKeyList.isEmpty()) {
+            return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL);
         }
-        List<String> weIdList = new ArrayList<String>();
-        for (WeIdPublicKey weIdPublicKey : pubKeyList) {
-            if (weIdPublicKey != null && StringUtils.isNotBlank(weIdPublicKey.getPublicKey())) {
-                weIdList.add(WeIdUtils.convertPublicKeyToWeId(weIdPublicKey.getPublicKey()));
-            } else {
-                weIdList.add(StringUtils.EMPTY);
-            }
-        }
-        return new HttpResponseData<>(weIdList, HttpReturnCode.SUCCESS);
+        return this.getWeIdListAndErrorCodeList(pubKeyList, weIdListRsp);
     }
+
+    private HttpResponseData<Object> getWeIdListAndErrorCodeList(List<WeIdPublicKey> pubKeyList, WeIdListRsp weIdListRsp) {
+        HttpResponseData<Object> responseData = new HttpResponseData<>();
+        pubKeyList.forEach(weIdPublicKey -> {
+            String weId = WeIdUtils.convertPublicKeyToWeId(weIdPublicKey.getPublicKey());
+            if (StringUtils.isBlank(weId)) {
+                weIdListRsp.getWeIdList().add(null);
+                weIdListRsp.getErrorCodeList().add(HttpReturnCode.CONVERT_PUBKEY_TO_WEID_ERROR.getCode());
+            } else {
+                if (weIdService.isWeIdExist(weId).getResult()) {
+                    weIdListRsp.getWeIdList().add(weId);
+                    weIdListRsp.getErrorCodeList().add(ErrorCode.SUCCESS.getCode());
+                } else {
+                    weIdListRsp.getWeIdList().add(null);
+                    weIdListRsp.getErrorCodeList().add(ErrorCode.WEID_PUBLIC_KEY_NOT_EXIST.getCode());
+                }
+            }
+        });
+
+        responseData.setRespBody(weIdListRsp);
+
+        if (weIdListRsp.getWeIdList().contains(null)) {
+            responseData.setErrorCode(HttpReturnCode.GET_WEID_LIST_BY_PUBKEY_LIST_ERROR);
+        }
+        return responseData;
+    }
+
 
 }
