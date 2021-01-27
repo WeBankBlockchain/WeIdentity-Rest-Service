@@ -116,6 +116,21 @@ public enum HttpReturnCode {
      * BlockLimit value illegal.
      */
     BLOCK_LIMIT_ILLEGAL(201017, "BlockLimit value illegal. "),
+
+    /**
+     * Convert a public key to a WeIdentity DID error
+     */
+    CONVERT_PUBKEY_TO_WEID_ERROR(201018, "Convert public key to weId error. "),
+    
+    /**
+     * SignType value illegal.
+     */
+    SIGN_TYPE_ILLEGAL(201019, "SignType value illegal. "),
+
+    /**
+     * getWeIdListByPubKeyList interface error
+     */
+    GET_WEID_LIST_BY_PUBKEY_LIST_ERROR(500100, "Get weId list by pubKeyList error. "),
     
     /**
      * RPC related error codes.

@@ -11,6 +11,7 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -68,7 +69,9 @@ public class TransactionEncoderUtilV2 {
         FiscoConfig fiscoConfig,
         String inputParam,
         String nonce,
-        String functionName) {
+        String functionName,
+        SignType signType
+    ) {
         Function function;
         String to;
         if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
@@ -79,7 +82,7 @@ public class TransactionEncoderUtilV2 {
             function = buildRegisterAuthorityIssuerFunction(inputParam, functionName);
         } else if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
             to = fiscoConfig.getCptAddress();
-            function = buildRegisterCptFunction(inputParam, functionName);
+            function = buildRegisterCptFunction(inputParam, functionName, signType);
         } else {
             logger.error("Unknown function name: {}", functionName);
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
@@ -186,7 +189,11 @@ public class TransactionEncoderUtilV2 {
             Collections.<TypeReference<?>>emptyList());
     }
 
-    public static Function buildRegisterCptFunction(String inputParam, String functionName) {
+    public static Function buildRegisterCptFunction(
+        String inputParam, 
+        String functionName, 
+        SignType signType
+    ) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode inputParamNode;
         try {
@@ -226,7 +233,10 @@ public class TransactionEncoderUtilV2 {
             return null;
         }
         SignatureData signatureData =
-            simpleSignatureDeserialization(DataToolUtils.base64Decode(cptSignature.getBytes()));
+            simpleSignatureDeserialization(
+                DataToolUtils.base64Decode(cptSignature.getBytes()), 
+                signType
+            );
         if (signatureData == null) {
             return null;
         }
@@ -261,9 +271,16 @@ public class TransactionEncoderUtilV2 {
             Collections.<TypeReference<?>>emptyList());
     }
 
-    public static String createTxnHex(String encodedSig, String nonce, String to, String data, String blockLimit) {
+    public static String createTxnHex(
+        String encodedSig, 
+        String nonce, 
+        String to, 
+        String data, 
+        String blockLimit,
+        SignType signType
+    ) {
         SignatureData sigData = TransactionEncoderUtilV2
-            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()));
+            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()), signType);
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
@@ -389,7 +406,7 @@ public class TransactionEncoderUtilV2 {
 
     public static String convertIfGoSigToWeIdJavaSdkSig(String goSig) {
         byte[] serializedSig = DataToolUtils.base64Decode(goSig.getBytes(StandardCharsets.UTF_8));
-        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig);
+        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig, SignType.VSR);
         if (sigData == null) {
             return StringUtils.EMPTY;
         }
@@ -398,7 +415,9 @@ public class TransactionEncoderUtilV2 {
     }
 
     public static Sign.SignatureData simpleSignatureDeserialization(
-        byte[] serializedSignatureData) {
+        byte[] serializedSignatureData,
+        SignType signType
+    ) {
         if (65 != serializedSignatureData.length) {
             return null;
         }
@@ -408,15 +427,13 @@ public class TransactionEncoderUtilV2 {
         byte[] r = new byte[32];
         byte[] s = new byte[32];
         Sign.SignatureData signatureData = null;
-        if ((javav.intValue() == 27 || javav.intValue() == 28)
-            && (lwcv.intValue() != 0 && lwcv.intValue() != 1)) {
+        if (signType == SignType.RSV) {
             // this is the signature from java client
             logger.info("Java Client signature checked.");
             System.arraycopy(serializedSignatureData, 1, r, 0, 32);
             System.arraycopy(serializedSignatureData, 33, s, 0, 32);
             signatureData = new Sign.SignatureData(javav, r, s);
-        }
-        if (lwcv.intValue() == 0 || lwcv.intValue() == 1) {
+        } else if (signType == SignType.VSR) {
             // this is the standard raw ecdsa sig method (go version client uses this)
             logger.info("Standard Client signature checked.");
             lwcv = (byte) (lwcv.intValue() + 27);

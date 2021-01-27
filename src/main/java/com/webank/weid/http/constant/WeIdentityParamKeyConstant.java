@@ -32,6 +32,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String FUNCTION_NAME = "functionName";
     public static final String TRANSACTION_DATA = "data";
     public static final String BLOCK_LIMIT = "blockLimit";
+    public static final String SIGN_TYPE = "signType";
     public static final String SIGNED_MESSAGE = "signedMessage";
     public static final String API_VERSION = "v";
     public static final String NONCE = "nonce";
