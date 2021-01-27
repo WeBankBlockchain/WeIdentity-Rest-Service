@@ -8,6 +8,7 @@ import com.webank.weid.contract.v2.AuthorityIssuerController;
 import com.webank.weid.contract.v2.AuthorityIssuerController.AuthorityIssuerRetLogEventResponse;
 import com.webank.weid.contract.v2.WeIdContract;
 import com.webank.weid.contract.v2.WeIdContract.WeIdAttributeChangedEventResponse;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.response.HttpResponseData;
@@ -322,11 +323,12 @@ public class TransactionTestV2 {
         String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Web3j web3j = (Web3j) BaseService.getWeb3j();
+        BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, blocklimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
-        String encodedOutputToClient = TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
+        String encodedOutputToClient = TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data, blocklimit);
         // 4. client signs and sends back to send raw txn
         JsonNode encodeResult = new ObjectMapper().readTree(encodedOutputToClient);
         byte[] encodedTransactionClient = DataToolUtils
@@ -337,7 +339,7 @@ public class TransactionTestV2 {
             DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
         // 5. server receives the signed data
         org.fisco.bcos.web3j.crypto.Sign.SignatureData clientSignedData2 = TransactionEncoderUtilV2
-            .simpleSignatureDeserialization(DataToolUtils.base64Decode(base64SignedMsg.getBytes()));
+            .simpleSignatureDeserialization(DataToolUtils.base64Decode(base64SignedMsg.getBytes()), SignType.RSV);
         byte[] encodedSignedMsg = TransactionEncoderUtilV2.encode(rawTransaction, clientSignedData2);
         String txnHex = Numeric.toHexString(encodedSignedMsg);
         SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
@@ -381,8 +383,9 @@ public class TransactionTestV2 {
         String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Web3j web3j = (Web3j) BaseService.getWeb3j();
+        BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, blocklimit);
         // 3. server sends everything back to client in encoded base64 manner
         // 这一步先忽略
         // 4. client signs and sends back to send raw txn

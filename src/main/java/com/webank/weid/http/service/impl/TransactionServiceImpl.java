@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
@@ -73,6 +74,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     @Override
     public HttpResponseData<Object> encodeTransaction(
         String encodeTransactionJsonArgs) {
+		Object loopBack = null;
         try {
             HttpResponseData<InputArg> resp = TransactionEncoderUtil
                 .buildInputArg(encodeTransactionJsonArgs);
@@ -82,12 +84,14 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
             }
 
+            loopBack = getLoopBack(inputArg.getTransactionArg());
+
             String functionName = inputArg.getFunctionName();
             String functionArg = inputArg.getFunctionArg();
             HttpResponseData<String> httpResponseData;
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIALPOJO)) {
                 HttpResponseData<Object> credResp = TransactionEncoderUtilV2.encodeCredential(inputArg);
-                return new HttpResponseData<>(credResp.getRespBody(), credResp.getErrorCode(),
+                return new HttpResponseData<>(credResp.getRespBody(), loopBack, credResp.getErrorCode(),
                     credResp.getErrorMessage());
             }
 
@@ -96,21 +100,32 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
             if (nonceNode == null || StringUtils.isEmpty(nonceNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
-                return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
             }
+            SignType signType = null;
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
+                JsonNode signTypeNode = txnArgNode.get(WeIdentityParamKeyConstant.SIGN_TYPE);
+                if (signTypeNode == null || StringUtils.isEmpty(signTypeNode.textValue())) {
+                    logger.error("Null input within: {}", txnArgNode.toString());
+                    return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGN_TYPE_ILLEGAL);
+                }
+                signType = SignType.getSignTypeByCode(Integer.parseInt(signTypeNode.textValue()));
+            }
+            
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             // is FISCO-BCOS v2 blockchain
             httpResponseData = TransactionEncoderUtilV2
-                .createEncoder(fiscoConfig, functionArg, nonce, functionName);
+                .createEncoder(fiscoConfig, functionArg, nonce, functionName, signType);
             return new HttpResponseData<>(
                 JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                loopBack,
                 httpResponseData.getErrorCode(),
                 httpResponseData.getErrorMessage());
         } catch (Exception e) {
             logger.error("[createEncodingFunction]: unknown error with input argment {}",
                 encodeTransactionJsonArgs,
                 e);
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
@@ -124,6 +139,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
      */
     @Override
     public HttpResponseData<Object> sendTransaction(String sendTransactionJsonArgs) {
+        Object loopBack = null;
         try {
             HttpResponseData<InputArg> resp = TransactionEncoderUtil
                 .buildInputArg(sendTransactionJsonArgs);
@@ -133,77 +149,100 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 return new HttpResponseData<>(StringUtils.EMPTY, resp.getErrorCode(),
                     resp.getErrorMessage());
             }
+
+            loopBack = getLoopBack(inputArg.getTransactionArg());
+
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode txnArgNode = objectMapper.readTree(inputArg.getTransactionArg());
             JsonNode nonceNode = txnArgNode.get(WeIdentityParamKeyConstant.NONCE);
+            JsonNode blockLimitNode = txnArgNode.get(WeIdentityParamKeyConstant.BLOCK_LIMIT);
+            JsonNode signTypeNode = txnArgNode.get(WeIdentityParamKeyConstant.SIGN_TYPE);
             JsonNode dataNode = txnArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
             JsonNode signedMessageNode = txnArgNode
                 .get(WeIdentityParamKeyConstant.SIGNED_MESSAGE);
             if (nonceNode == null || StringUtils.isEmpty(nonceNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
-                return new HttpResponseData<>(null, HttpReturnCode.NONCE_ILLEGAL);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
+            }
+            if (blockLimitNode == null || StringUtils.isEmpty(blockLimitNode.textValue())) {
+                logger.error("Null input within: {}", txnArgNode.toString());
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.BLOCK_LIMIT_ILLEGAL);
             }
             if (dataNode == null || StringUtils.isEmpty(dataNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
-                return new HttpResponseData<>(null, HttpReturnCode.DATA_ILLEGAL);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.DATA_ILLEGAL);
             }
             if (signedMessageNode == null || StringUtils.isEmpty(signedMessageNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
-                return new HttpResponseData<>(null, HttpReturnCode.SIGNED_MSG_ILLEGAL);
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGNED_MSG_ILLEGAL);
+            }
+            if (signTypeNode == null || StringUtils.isEmpty(signTypeNode.textValue())) {
+                logger.error("Null input within: {}", txnArgNode.toString());
+                return new HttpResponseData<>(null, loopBack, HttpReturnCode.SIGN_TYPE_ILLEGAL);
             }
             String functionName = inputArg.getFunctionName();
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
+            String blockLimit = JsonUtil.removeDoubleQuotes(blockLimitNode.toString());
             String data = JsonUtil.removeDoubleQuotes(dataNode.toString());
             String signedMessage = signedMessageNode.textValue();
+            SignType signType = SignType.getSignTypeByCode(Integer.parseInt(signTypeNode.textValue()));
             HttpResponseData<String> httpResponseData =
-                new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+                new HttpResponseData<>(null, loopBack, HttpReturnCode.INPUT_NULL);
             String txnHex;
              // is FISCO-BCOS v2
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data, blockLimit, signType);
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data, blockLimit, signType);
                 httpResponseData = invokerAuthorityIssuerService
                     .registerAuthorityIssuerWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data);
+                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data, blockLimit, signType);
                 httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
             }
             return new HttpResponseData<>(
                 JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
+                loopBack,
                 httpResponseData.getErrorCode(),
                 httpResponseData.getErrorMessage());
         } catch (Exception e) {
             logger.error("[sendTransaction]: unknown error with input argument {}",
                 sendTransactionJsonArgs,
                 e);
-            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+            return new HttpResponseData<>(null, loopBack, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
 
-    /**
-     * Directly invoke an SDK function. No client-side sign needed.
-     *
-     * @param invokeFunctionJsonArgs the json format args. It should contain 4 keys: functionArgs, (including all business related params), EMPTY
-     * transactionArgs, functionName and apiVersion.
-     * @return the json string from SDK response.
-     */
-    @Override
+	/**
+	 * Directly invoke an SDK function. No client-side sign needed.
+	 *
+	 * @param invokeFunctionJsonArgs the json format args. It should contain 4 keys: functionArgs, (including all business related params), EMPTY
+	 * transactionArgs, functionName and apiVersion.
+	 * @return the json string from SDK response.
+	 */
+	@Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {
         HttpResponseData<InputArg> resp = TransactionEncoderUtil
-            .buildInputArg(invokeFunctionJsonArgs);
+                .buildInputArg(invokeFunctionJsonArgs);
         InputArg inputArg = resp.getRespBody();
         if (inputArg == null) {
             logger.error("Failed to build input argument: {}", invokeFunctionJsonArgs);
             return new HttpResponseData<>(null, resp.getErrorCode(), resp.getErrorMessage());
         }
+        HttpResponseData<Object> responseData = this.invoke(inputArg);
+        responseData.setLoopback(getLoopBack(inputArg.getTransactionArg()));
+        return responseData;
+    }
+
+
+    private HttpResponseData<Object> invoke(InputArg inputArg) {
         String functionName = inputArg.getFunctionName();
         try {
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_CREDENTIAL)) {
@@ -233,6 +272,12 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 return invokerWeIdService.createWeIdInvoke(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_GETWEIDLIST_BYPUBKEYLIST)) {
+                return invokerWeIdService.getWeIdListByPubKeyList(inputArg);
+            }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_AND_RETURN_DOC)) {
+                return invokerWeIdService.createWeIdInvoke2(inputArg);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_CPT)) {
                 return invokerCptService.registerCptInvoke(inputArg);
@@ -276,6 +321,9 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY)) {
                 return invokerWeIdService.createWeIdWithPubKey(inputArg);
             }
+            if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID_WITH_PUBKEY_AND_RETURN_DOC)) {
+                return invokerWeIdService.createWeIdWithPubKey2(inputArg);
+            }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_VERIFY_LITE_CREDENTIAL)) {
                 return invokerEvidenceService.getEvidenceByCustomKey(inputArg);
             }
@@ -295,7 +343,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
         } catch (Exception e) {
             logger.error("[invokeFunction]: unknown error with input argument {}",
-                invokeFunctionJsonArgs,
+                inputArg,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 HttpReturnCode.UNKNOWN_ERROR.getCodeDesc());

@@ -31,6 +31,8 @@ public final class WeIdentityParamKeyConstant {
      */
     public static final String FUNCTION_NAME = "functionName";
     public static final String TRANSACTION_DATA = "data";
+    public static final String BLOCK_LIMIT = "blockLimit";
+    public static final String SIGN_TYPE = "signType";
     public static final String SIGNED_MESSAGE = "signedMessage";
     public static final String API_VERSION = "v";
     public static final String NONCE = "nonce";
@@ -38,6 +40,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String TRANSACTION_ARG = "transactionArg";
     public static final String CLAIM_HASH = "claimHash";
     public static final String KEY_INDEX = "invokerWeId";
+    public static final String LOOP_BACK = "loopback";
     public static final String BODY = "body";
     public static final String LIST = "list";
 
@@ -54,6 +57,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String SIGN = "sign";
     public static final String LOG = "log";
     public static final String PUBKEY_SECP = "publicKeySecp256k1";
+    public static final String PUBKEY_LIST = "publicKeyList";
     public static final String PUBKEY_RSA = "publicKeyRSA";
     
     public static final String WHITELIST_NAME = "whitelistName";

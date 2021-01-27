@@ -23,6 +23,7 @@ import com.webank.weid.constant.WeIdConstant.PublicKeyType;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.response.WeIdListRsp;
 import com.webank.weid.protocol.base.PublicKeyProperty;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdDocument;
@@ -31,13 +32,13 @@ import com.webank.weid.protocol.request.PublicKeyArgs;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.web3j.utils.Numeric;
@@ -55,8 +56,6 @@ import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
-import com.webank.weid.protocol.request.SetAuthenticationArgs;
-import com.webank.weid.protocol.request.SetPublicKeyArgs;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.RawTransactionService;
@@ -164,7 +163,26 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weIdNode.textValue());
+            return getWeIdDocumentJsonInvoke(weIdNode.textValue());
+        } catch (Exception e) {
+            logger.error(
+                "[getWeIdDocument]: unknow error. weId:{}.",
+                getWeIdDocumentJsonArgs,
+                e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a WeIdentity DID Document Json via the InvokeFunction API.
+     *
+     * @param weId the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    private HttpResponseData<Object> getWeIdDocumentJsonInvoke(String weId) {
+        try {
+            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weId);
             if (response.getResult() == null) {
                 return new HttpResponseData<>(null, response.getErrorCode(), response.getErrorMessage());
             }
@@ -204,7 +222,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
         } catch (Exception e) {
             logger.error(
                 "[getWeIdDocument]: unknow error. weId:{}.",
-                getWeIdDocumentJsonArgs,
+                weId,
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
@@ -249,6 +267,20 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             return new HttpResponseData<>(new HashMap<>(), HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
+    }
+
+    /**
+     * Create WeId and get the Document via the InvokeFunction API.
+     *
+     * @param createWeIdJsonArgs the input args, should be almost null
+     * @return tthe WeIdentity DID Document
+     */
+    public HttpResponseData<Object> createWeIdInvoke2(InputArg createWeIdJsonArgs) {
+        HttpResponseData<Object> createWeIdInvoke = createWeIdInvoke(createWeIdJsonArgs);
+        if (createWeIdInvoke.getRespBody() == null || StringUtils.isBlank(createWeIdInvoke.getRespBody().toString())) {
+            return createWeIdInvoke;
+        }
+        return getWeIdDocumentJsonInvoke(createWeIdInvoke.getRespBody().toString());
     }
 
     @Override
@@ -338,4 +370,88 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
+    
+    /**
+     * Create WeId and get the Document via the InvokeFunction API.
+     *
+     * @param  arg the input args, should be almost null
+     * @return the WeIdentity DID Document
+     */
+    public HttpResponseData<Object> createWeIdWithPubKey2(InputArg arg) {
+        HttpResponseData<Object> createWeIdInvoke = createWeIdWithPubKey(arg);
+        if (createWeIdInvoke.getRespBody() == null || StringUtils.isBlank(createWeIdInvoke.getRespBody().toString())) {
+            return createWeIdInvoke;
+        }
+        return getWeIdDocumentJsonInvoke(createWeIdInvoke.getRespBody().toString());
+    }
+
+    /**
+     * GET WeIdList by PublicKeyList.
+     *
+     * @param  arg the input args, should be almost null
+     * @return the WeIdentity DID List
+     * @throws Exception exception
+     */
+    public HttpResponseData<Object> getWeIdListByPubKeyList(InputArg arg) throws Exception {
+        WeIdListRsp weIdListRsp = new WeIdListRsp();
+        weIdListRsp.setWeIdList(new ArrayList<>());
+        weIdListRsp.setErrorCodeList(new ArrayList<>());
+
+        JsonNode functionArgNode = new ObjectMapper().readTree(arg.getFunctionArg());
+        JsonNode pubKeyNode = functionArgNode.get(WeIdentityParamKeyConstant.PUBKEY_LIST);
+        if (!pubKeyNode.isArray()) {
+            logger.error("input format illegal: not Array.");
+            return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Array");
+        }
+        List<WeIdPublicKey> pubKeyList = new ArrayList<>();
+        for (JsonNode jsonNode : pubKeyNode) {
+            if (StringUtils.isBlank(jsonNode.asText())) {
+                logger.error("public key is null.");
+                return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                        HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key is null");
+            }
+            if (!DataToolUtils.isValidBase64String(jsonNode.asText())) {
+                logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
+                return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
+                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
+            }
+            String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(jsonNode.asText())).toString(10);
+            WeIdPublicKey publicKey = new WeIdPublicKey();
+            publicKey.setPublicKey(publicKeySecp);
+            pubKeyList.add(publicKey);
+        }
+        if (pubKeyList.isEmpty()) {
+            return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL);
+        }
+        return this.getWeIdListAndErrorCodeList(pubKeyList, weIdListRsp);
+    }
+
+    private HttpResponseData<Object> getWeIdListAndErrorCodeList(List<WeIdPublicKey> pubKeyList, WeIdListRsp weIdListRsp) {
+        HttpResponseData<Object> responseData = new HttpResponseData<>();
+        pubKeyList.forEach(weIdPublicKey -> {
+            String weId = WeIdUtils.convertPublicKeyToWeId(weIdPublicKey.getPublicKey());
+            if (StringUtils.isBlank(weId)) {
+                weIdListRsp.getWeIdList().add(null);
+                weIdListRsp.getErrorCodeList().add(HttpReturnCode.CONVERT_PUBKEY_TO_WEID_ERROR.getCode());
+            } else {
+                if (weIdService.isWeIdExist(weId).getResult()) {
+                    weIdListRsp.getWeIdList().add(weId);
+                    weIdListRsp.getErrorCodeList().add(ErrorCode.SUCCESS.getCode());
+                } else {
+                    weIdListRsp.getWeIdList().add(null);
+                    weIdListRsp.getErrorCodeList().add(ErrorCode.WEID_PUBLIC_KEY_NOT_EXIST.getCode());
+                }
+            }
+        });
+
+        responseData.setRespBody(weIdListRsp);
+
+        if (weIdListRsp.getWeIdList().contains(null)) {
+            responseData.setErrorCode(HttpReturnCode.GET_WEID_LIST_BY_PUBKEY_LIST_ERROR);
+        }
+        return responseData;
+    }
+
+
 }

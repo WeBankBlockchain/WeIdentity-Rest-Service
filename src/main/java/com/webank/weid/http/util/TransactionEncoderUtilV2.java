@@ -11,7 +11,9 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.base.CredentialPojo;
@@ -67,7 +69,9 @@ public class TransactionEncoderUtilV2 {
         FiscoConfig fiscoConfig,
         String inputParam,
         String nonce,
-        String functionName) {
+        String functionName,
+        SignType signType
+    ) {
         Function function;
         String to;
         if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
@@ -78,7 +82,7 @@ public class TransactionEncoderUtilV2 {
             function = buildRegisterAuthorityIssuerFunction(inputParam, functionName);
         } else if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
             to = fiscoConfig.getCptAddress();
-            function = buildRegisterCptFunction(inputParam, functionName);
+            function = buildRegisterCptFunction(inputParam, functionName, signType);
         } else {
             logger.error("Unknown function name: {}", functionName);
             return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
@@ -185,7 +189,11 @@ public class TransactionEncoderUtilV2 {
             Collections.<TypeReference<?>>emptyList());
     }
 
-    public static Function buildRegisterCptFunction(String inputParam, String functionName) {
+    public static Function buildRegisterCptFunction(
+        String inputParam, 
+        String functionName, 
+        SignType signType
+    ) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode inputParamNode;
         try {
@@ -225,7 +233,10 @@ public class TransactionEncoderUtilV2 {
             return null;
         }
         SignatureData signatureData =
-            simpleSignatureDeserialization(DataToolUtils.base64Decode(cptSignature.getBytes()));
+            simpleSignatureDeserialization(
+                DataToolUtils.base64Decode(cptSignature.getBytes()), 
+                signType
+            );
         if (signatureData == null) {
             return null;
         }
@@ -260,13 +271,20 @@ public class TransactionEncoderUtilV2 {
             Collections.<TypeReference<?>>emptyList());
     }
 
-    public static String createTxnHex(String encodedSig, String nonce, String to, String data) {
+    public static String createTxnHex(
+        String encodedSig, 
+        String nonce, 
+        String to, 
+        String data, 
+        String blockLimit,
+        SignType signType
+    ) {
         SignatureData sigData = TransactionEncoderUtilV2
-            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()));
+            .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()), signType);
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            fiscoConfig.getGroupId(), data, to);
+            fiscoConfig.getGroupId(), data, to, new BigInteger(blockLimit));
         byte[] encodedSignedTxn = TransactionEncoderUtilV2.encode(rawTransaction, sigData);
         return Numeric.toHexString(encodedSignedTxn);
     }
@@ -274,12 +292,17 @@ public class TransactionEncoderUtilV2 {
     public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
         // 1. encode the Function
         String data = FunctionEncoder.encode(function);
+        return createClientEncodeResult(data, nonce, to, groupId);
+    }
+    
+    public static String createClientEncodeResult(String functionEncode, String nonce, String to, String groupId) {
+        BigInteger blockLimit = getBlocklimitV2();
         // 2. server generate encodedTransaction
         ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
-            groupId, data, to);
+            groupId, functionEncode, to, blockLimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
-        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, data);
+        return TransactionEncoderUtil.getEncodeOutput(encodedTransaction, functionEncode, blockLimit);
     }
 
     public static BigInteger getNonce() {
@@ -349,13 +372,13 @@ public class TransactionEncoderUtilV2 {
         return result;
     }
 
-    public static ExtendedRawTransaction buildRawTransaction(String nonce, String groupId, String data, String to) {
+    public static ExtendedRawTransaction buildRawTransaction(String nonce, String groupId, String data, String to, BigInteger blockLimit) {
         ExtendedRawTransaction rawTransaction =
             ExtendedRawTransaction.createTransaction(
                 new BigInteger(nonce),
                 new BigInteger("99999999999"),
                 new BigInteger("99999999999"),
-                getBlocklimitV2(),
+                blockLimit,
                 to, // to address
                 BigInteger.ZERO, // value to transfer
                 data,
@@ -383,7 +406,7 @@ public class TransactionEncoderUtilV2 {
 
     public static String convertIfGoSigToWeIdJavaSdkSig(String goSig) {
         byte[] serializedSig = DataToolUtils.base64Decode(goSig.getBytes(StandardCharsets.UTF_8));
-        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig);
+        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig, SignType.VSR);
         if (sigData == null) {
             return StringUtils.EMPTY;
         }
@@ -392,7 +415,9 @@ public class TransactionEncoderUtilV2 {
     }
 
     public static Sign.SignatureData simpleSignatureDeserialization(
-        byte[] serializedSignatureData) {
+        byte[] serializedSignatureData,
+        SignType signType
+    ) {
         if (65 != serializedSignatureData.length) {
             return null;
         }
@@ -402,15 +427,13 @@ public class TransactionEncoderUtilV2 {
         byte[] r = new byte[32];
         byte[] s = new byte[32];
         Sign.SignatureData signatureData = null;
-        if ((javav.intValue() == 27 || javav.intValue() == 28)
-            && (lwcv.intValue() != 0 && lwcv.intValue() != 1)) {
+        if (signType == SignType.RSV) {
             // this is the signature from java client
             logger.info("Java Client signature checked.");
             System.arraycopy(serializedSignatureData, 1, r, 0, 32);
             System.arraycopy(serializedSignatureData, 33, s, 0, 32);
             signatureData = new Sign.SignatureData(javav, r, s);
-        }
-        if (lwcv.intValue() == 0 || lwcv.intValue() == 1) {
+        } else if (signType == SignType.VSR) {
             // this is the standard raw ecdsa sig method (go version client uses this)
             logger.info("Standard Client signature checked.");
             lwcv = (byte) (lwcv.intValue() + 27);
@@ -584,6 +607,57 @@ public class TransactionEncoderUtilV2 {
             logger.error("Generate Credential failed due to system error. ", e);
             return new HttpResponseData<>(null, ErrorCode.CREDENTIAL_ERROR.getCode(),
                 ErrorCode.CREDENTIAL_ERROR.getCodeDesc());
+        }
+    }
+    
+    /**
+     * Extract and build Input arg for all Service APIs.
+     *
+     * @param inputJson the inputJson String
+     * @return An InputArg instance
+     */
+    public static HttpResponseData<InputArg> buildInputArg(String inputJson) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(inputJson);
+            if (jsonNode == null) {
+                logger.error("Null input within: {}", inputJson);
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            JsonNode functionNameNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_NAME);
+            JsonNode versionNode = jsonNode.get(WeIdentityParamKeyConstant.API_VERSION);
+            if (functionNameNode == null || StringUtils.isEmpty(functionNameNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCTION_NAME_ILLEGAL);
+            }
+            if (versionNode == null || StringUtils.isEmpty(versionNode.textValue())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.VER_ILLEGAL);
+            }
+            // Need to use toString() for pure Objects and textValue() for pure String
+            JsonNode functionArgNode = jsonNode.get(WeIdentityParamKeyConstant.FUNCTION_ARG);
+            if (functionArgNode == null || StringUtils.isEmpty(functionArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.FUNCARG_ILLEGAL);
+            }
+            JsonNode txnArgNode = jsonNode.get(WeIdentityParamKeyConstant.TRANSACTION_ARG);
+            if (txnArgNode == null || StringUtils.isEmpty(txnArgNode.toString())) {
+                logger.error("Null input within: {}", jsonNode.toString());
+                return new HttpResponseData<>(null, HttpReturnCode.TXNARG_ILLEGAL);
+            }
+
+            String functionArg = functionArgNode.toString();
+            String txnArg = txnArgNode.toString();
+            InputArg inputArg = new InputArg();
+            inputArg.setFunctionArg(functionArg);
+            inputArg.setTransactionArg(txnArg);
+            inputArg.setFunctionName(functionNameNode.textValue());
+            inputArg.setV(versionNode.textValue());
+            return new HttpResponseData<>(inputArg, HttpReturnCode.SUCCESS);
+        } catch (Exception e) {
+            logger.error("Json Extraction error within: {}", inputJson);
+            return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
+                HttpReturnCode.UNKNOWN_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
 }

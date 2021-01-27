@@ -1,5 +1,5 @@
 /*
- *       Copyright© (2019) WeBank Co., Ltd.
+ *       Copyright© (2019-2020) WeBank Co., Ltd.
  *
  *       This file is part of weid-http-service.
  *
@@ -21,12 +21,7 @@ package com.webank.weid.http.service;
 
 import org.springframework.stereotype.Service;
 
-/**
- * Handling Transaction related services.
- *
- * @author chaoxinhu and darwindu
- **/
 @Service
-public interface TransactionService extends InvokeService, RawTransaction {
+public interface WalletAgentBAC005Service extends InvokeService, RawTransaction  {
 
 }

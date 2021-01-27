@@ -33,8 +33,9 @@ import com.webank.weid.http.constant.HttpReturnCode;
 public class HttpResponseData<T> {
 
     private T respBody;
+    private Object loopback;
     private Integer errorCode;
-    private String errorMessage;
+    private String errorMessage;    
 
     /**
      * Instantiates a new response data.
@@ -56,6 +57,20 @@ public class HttpResponseData<T> {
     }
 
     /**
+     * Instantiates a new response data.
+     *
+     * @param result the result
+     * @param loopback the loopback
+     * @param errorCode the return code
+     */
+    public HttpResponseData(T result, Object loopback, HttpReturnCode errorCode) {
+        this.respBody = result;
+        this.loopback = loopback;
+        this.errorCode = errorCode.getCode();
+        this.errorMessage = errorCode.getCodeDesc();
+    }
+
+    /**
      * Instantiates a new response data by inputing all params.
      *
      * @param result the result
@@ -64,6 +79,21 @@ public class HttpResponseData<T> {
      */
     public HttpResponseData(T result, Integer errorCode, String errorMessage) {
         this.respBody = result;
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+    }
+
+    /**
+     * Instantiates a new response data by inputing all params.
+     *
+     * @param result the result
+     * @param loopback the loopback
+     * @param errorCode the error code
+     * @param errorMessage the error msg
+     */
+    public HttpResponseData(T result, Object loopback, Integer errorCode, String errorMessage) {
+        this.respBody = result;
+        this.loopback = loopback;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
