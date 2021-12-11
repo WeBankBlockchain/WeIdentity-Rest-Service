@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.5.7"
+version = "1.5.8"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -61,6 +61,16 @@ List spring_boot = [
         "org.springframework.boot:spring-boot-starter-aop:$spring_boot_version"
 ]
 
+def log4j_version = "2.15.0"
+List log4j = [
+        "org.apache.logging.log4j:log4j-api:$log4j_version",
+        "org.apache.logging.log4j:log4j-web:$log4j_version",
+        "org.apache.logging.log4j:log4j-core:$log4j_version",
+        "org.apache.logging.log4j:log4j-jcl:$log4j_version",
+        "org.apache.logging.log4j:log4j-jul:$log4j_version",
+        "org.apache.logging.log4j:log4j-slf4j-impl:$log4j_version"
+]
+
 List spring_boot_test = [
         "org.springframework.boot:spring-boot-starter-test:$spring_boot_version"
 ]
@@ -78,13 +88,13 @@ List json = [
 ]
 
 List weid_java_sdk = [
-        'com.webank:weid-java-sdk:1.8.2'
+        'com.webank:weid-java-sdk:1.8.3'
 ]
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile spring, json, spring_boot
-    testCompile spring, json, junit, spring_boot, spring_boot_test
+    compile spring, json, spring_boot, log4j
+    testCompile spring, json, junit, spring_boot, log4j, spring_boot_test
     // Check SDK pipeline dependency
     if (file("./dependencies/weid-java-sdk-pipeline.jar").exists()) {
         println "Pipeline jar for WeIdentity Java SDK found."
