@@ -32,6 +32,7 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.DataToolUtils;
 import java.math.BigInteger;
@@ -40,18 +41,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.crypto.ECDSASign;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.Hash;
-import org.fisco.bcos.web3j.crypto.Keys;
-import org.fisco.bcos.web3j.crypto.Sign;
-import org.fisco.bcos.web3j.crypto.gm.GenCredential;
-import org.fisco.bcos.web3j.crypto.gm.sm2.util.encoders.Hex;
-import org.fisco.bcos.web3j.utils.Numeric;
+import org.fisco.bcos.sdk.abi.datatypes.generated.Bytes32;
+import org.fisco.bcos.sdk.abi.datatypes.generated.Uint8;
+import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
+import org.fisco.bcos.sdk.utils.Hex;
+import org.fisco.bcos.sdk.utils.Numeric;
 import org.junit.Assert;
 import org.junit.Test;
+
+import javax.xml.crypto.Data;
 
 public class PureInvokerTest extends BaseTest {
 
@@ -443,9 +442,9 @@ public class PureInvokerTest extends BaseTest {
         String rawDataStr = CredentialPojoUtils
             .getCredentialThumbprintWithoutSig(tempCred, tempCred.getSalt(), null);
         byte[] rawDataBytes = DataToolUtils.base64Decode(DataToolUtils.base64Encode(rawDataStr.getBytes(StandardCharsets.UTF_8)));
-        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(weIdPrivKey));
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(weIdPrivKey);
         String signedSig2 = new String(DataToolUtils.base64Encode(DataToolUtils
-            .simpleSignatureSerialization(Sign.getSignInterface().signMessage(DataToolUtils.sha3(rawDataBytes), ecKeyPair))), StandardCharsets.UTF_8);
+            .SigBase64Serialization(DataToolUtils.signToRsvSignature(DataToolUtils.hash(rawDataBytes).toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()))).getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
         System.out.println(signedSig2);
         txnArgMap = new LinkedHashMap<>();
         inputParamMap = new LinkedHashMap<>();
@@ -480,12 +479,10 @@ public class PureInvokerTest extends BaseTest {
         // step 1: client do base64 decode
         byte[] rawData = DataToolUtils.base64Decode(sig.getBytes(StandardCharsets.UTF_8));
         // step 2: client do sign
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair2 =
-            org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(weIdPrivKey));
-        ECDSASign ecdsaSign = new ECDSASign();
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign
-            .secp256SignMessage(rawData, ecKeyPair2);
-        String signedSig = DataToolUtils.secp256k1SigBase64Serialization(sigData);
+        CryptoKeyPair ecKeyPair2 = DataToolUtils.cryptoSuite.createKeyPair(weIdPrivKey);
+        RsvSignature sigData = DataToolUtils
+            .signToRsvSignature(rawData.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair2.getHexPrivateKey()));
+        String signedSig = DataToolUtils.SigBase64Serialization(sigData);
         System.out.println(signedSig);
         proofMap.put("signatureValue", signedSig);
         credJsonMap.put("proof", proofMap);
@@ -505,14 +502,14 @@ public class PureInvokerTest extends BaseTest {
 
     @Test
     public void testPubKeyValidity() {
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair;
+        CryptoKeyPair ecKeyPair;
         int failed = 0;
         int totalRuns = 10000;
         for (int i = 0; i < totalRuns; i++) {
-            ecKeyPair = GenCredential.createKeyPair();
+            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
             int times = 0;
-            while (!KeyUtil.isKeyPairValid(ecKeyPair)) {
-                ecKeyPair = GenCredential.createKeyPair();
+            while (!KeyUtil.isKeyPairValid(ecKeyPair.getHexPrivateKey(), ecKeyPair.getHexPublicKey())) {
+                ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
                 times++;
             }
             System.out.println("Regenerate a valid one after times: " + times);
@@ -525,9 +522,9 @@ public class PureInvokerTest extends BaseTest {
 
     @Test
     public void testKeyValidity() {
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = GenCredential.createKeyPair();
-        while (!KeyUtil.isKeyPairValid(ecKeyPair)) {
-            ecKeyPair = GenCredential.createKeyPair();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        while (!KeyUtil.isKeyPairValid(ecKeyPair.getHexPrivateKey(), ecKeyPair.getHexPublicKey())) {
+            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
             System.out.println("Re-generating key pair..");
         }
     }
@@ -535,11 +532,11 @@ public class PureInvokerTest extends BaseTest {
     @Test
     public void testSpecialInvokeIntegration() throws Exception {
         TransactionService transactionService = new TransactionServiceImpl();
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair;
+        CryptoKeyPair ecKeyPair;
         byte[] pubkeybytes = new byte[64];
         while (!KeyUtil.isPubkeyBytesValid(pubkeybytes)) {
-            ecKeyPair = GenCredential.createKeyPair();
-            pubkeybytes = ecKeyPair.getPublicKey().toByteArray();
+            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+            pubkeybytes = ecKeyPair.getHexPublicKey().getBytes(StandardCharsets.UTF_8);
             System.out.println("Re-generating public key..");
         }
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
@@ -549,11 +546,11 @@ public class PureInvokerTest extends BaseTest {
             PropertiesUtil.getProperty("default.passphrase"));
         KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH, "0xffffffff", adminPrivKey);
         txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "0xffffffff");
-        String pubkeyBase64Str = Base64.encodeBase64String(pubkeybytes);
+        String pubkeyBase64Str = DataToolUtils.base64Decode(pubkeybytes).toString();
         System.out.println("Original pubkey base64: " + pubkeyBase64Str);
         funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_SECP, pubkeyBase64Str);
-        String pubkeyRsaStr = Base64.encodeBase64String(Numeric.hexStringToByteArray(
-            "da99f21026f0b214e03ec2ed61473621fd634507c62d9ddea6f0a2e474adf22914f4564eaaecfffb54e866cf9ab1bfba11e58a7cd8b09ddc22cf8da503211695"));
+        String pubkeyRsaStr = DataToolUtils.base64Decode(Numeric.hexStringToByteArray(
+            "da99f21026f0b214e03ec2ed61473621fd634507c62d9ddea6f0a2e474adf22914f4564eaaecfffb54e866cf9ab1bfba11e58a7cd8b09ddc22cf8da503211695")).toString();
         funcArgMap.put(WeIdentityParamKeyConstant.PUBKEY_RSA, pubkeyRsaStr);
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -626,8 +623,8 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap = new LinkedHashMap<>();
         txnArgMap = new LinkedHashMap<>();
         String credId = UUID.randomUUID().toString();
-        String hash = DataToolUtils.sha3(credId);
-        String sig = DataToolUtils.secp256k1Sign(hash, new BigInteger(adminPrivKey));
+        String hash = DataToolUtils.hash(credId);
+        String sig = DataToolUtils.SigBase64Serialization(DataToolUtils.signToRsvSignature(hash, adminPrivKey));
         String log = "temp";
         funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
         funcArgMap.put(WeIdentityParamKeyConstant.HASH, hash);
@@ -665,8 +662,8 @@ public class PureInvokerTest extends BaseTest {
         funcArgMap = new LinkedHashMap<>();
         txnArgMap = new LinkedHashMap<>();
         credId = UUID.randomUUID().toString();
-        hash = DataToolUtils.sha3(credId);
-        sig = DataToolUtils.secp256k1Sign(hash, new BigInteger(adminPrivKey));
+        hash = DataToolUtils.hash(credId);
+        sig = DataToolUtils.SigBase64Serialization(DataToolUtils.signToRsvSignature(hash, adminPrivKey));
         log = "temp";
         funcArgMap.put(WeIdentityParamKeyConstant.CREDENTIAL_ID, credId);
         funcArgMap.put(WeIdentityParamKeyConstant.HASH, hash);
@@ -717,62 +714,60 @@ public class PureInvokerTest extends BaseTest {
         String txSig = "284b99fde19ca4a2135a6c32e1b05cd8b12cbb732948bf8f6c1a6ffc729a3d1f38d32733f07e5b87eff194c53295a7679713ba3e10bf47c445fe5f26e7156d5a00";
 
         // check hash and key
-        byte[] hashBytes = Hash.sha3(msg.getBytes());
+        byte[] hashBytes = DataToolUtils.hash(msg.getBytes());
         String hash = Numeric.toHexString(hashBytes);
         System.out.println("Converted hash: " + hash);
         Assert.assertTrue(hash.equals(WeIdConstant.HEX_PREFIX + txHash));
 
-        // check sign
-        ECDSASign ecdsaSign = new ECDSASign();
-
         // recover txsign
         byte[] txSigByte = Hex.decode(txSig);
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData txSigData;
+        RsvSignature txSigData = null;
         Assert.assertEquals(txSigByte.length, 65);
         byte[] r = new byte[32];
         byte[] s = new byte[32];
         System.arraycopy(txSigByte, 0, r, 0, 32);
         System.arraycopy(txSigByte, 32, s, 0, 32);
-        txSigData = new org.fisco.bcos.web3j.crypto.Sign.SignatureData(txSigByte[64], r, s);
+        txSigData.setR(new Bytes32(r));
+        txSigData.setS(new Bytes32(s));
+        txSigData.setV(new Uint8(txSigByte[64]));
         //String trunctedTxPubkey = txHexPubKey.substring(2);
-        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
+        CryptoKeyPair keyPair = DataToolUtils.cryptoSuite.createKeyPair(txHexPrivKey);
         //BigInteger txPubKeyBi = new BigInteger(trunctedTxPubkey, 16);
-        BigInteger txPubKeyBi = keyPair.getPublicKey();
-        boolean result = ecdsaSign.secp256Verify(hashBytes, txPubKeyBi, txSigData);
+        BigInteger txPubKeyBi = new BigInteger(keyPair.getHexPublicKey());
+        boolean result = DataToolUtils.verifySignature(msg, DataToolUtils.SigBase64Serialization(txSigData), txPubKeyBi);
         Assert.assertTrue(result);
 
         // send to txsign to verify
-        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair2 = org.fisco.bcos.web3j.crypto.ECKeyPair.create(Hex.decode(txHexPrivKey));
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign.secp256SignMessage(msg.getBytes(), keyPair2);
+        CryptoKeyPair keyPair2 = DataToolUtils.cryptoSuite.createKeyPair(txHexPrivKey);
+        RsvSignature sigData = DataToolUtils.signToRsvSignature(msg, DataToolUtils.hexStr2DecStr(keyPair2.getHexPrivateKey()));
         byte[] serializedSignatureData = new byte[65];
-        serializedSignatureData[64] = sigData.getV();
+        serializedSignatureData[64] = sigData.getV().getValue().byteValue();
         System.arraycopy(sigData.getR(), 0, serializedSignatureData, 0, 32);
         System.arraycopy(sigData.getS(), 0, serializedSignatureData, 32, 32);
         String toHexStr = Hex.toHexString(serializedSignatureData);
         Assert.assertEquals(toHexStr, txSig);
 
         // integration test
-        String privKey = keyPair2.getPrivateKey().toString(16);
-        String pubKey = keyPair2.getPublicKey().toString(16);
+        String privKey = keyPair2.getHexPrivateKey();
+        String pubKey = keyPair2.getHexPublicKey();
         System.out.println("privKey: " + privKey + ", pubkey: " + pubKey);
 
         String priv = "109133513592087805746587031475659996081883766162039886922465775418059633608266";
-        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair3 = org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(priv));
-        System.out.println(keyPair3.getPublicKey().toString(10));
-        System.out.println(keyPair3.getPrivateKey().toString(10));
+        CryptoKeyPair keyPair3 = DataToolUtils.cryptoSuite.createKeyPair(Hex.decode(priv.getBytes(StandardCharsets.UTF_8)).toString());
+        System.out.println(DataToolUtils.hexStr2DecStr(keyPair3.getHexPublicKey()));
+        System.out.println(DataToolUtils.hexStr2DecStr(keyPair3.getHexPrivateKey()));
     }
 
     @Test
     public void testHexBase64BigInt() throws Exception {
-        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair2 = Keys.createEcKeyPair();
-        String correctEncodedBase64Str = org.apache.commons.codec.binary.Base64
-            .encodeBase64String(keyPair2.getPublicKey().toByteArray());
-        System.out.println("biginteger直接转换toString hex " + keyPair2.getPublicKey().toString(16));
+        CryptoKeyPair keyPair2 = DataToolUtils.cryptoSuite.createKeyPair();
+        byte[] correctEncodedBase64Str = DataToolUtils.base64Encode(keyPair2.getHexPublicKey().getBytes(StandardCharsets.UTF_8));
+        System.out.println("biginteger直接转换toString hex " + keyPair2.getHexPublicKey());
         System.out.println("biginteger的base64 " + correctEncodedBase64Str);
-        byte[] pubkey = org.apache.commons.codec.binary.Base64.decodeBase64(correctEncodedBase64Str);
+        byte[] pubkey = DataToolUtils.base64Decode(correctEncodedBase64Str);
         BigInteger bi2 = Numeric.toBigInt(pubkey);
         System.out.println("base64往返转换 " + bi2.toString(16));
-        Assert.assertEquals(bi2.toString(16), keyPair2.getPublicKey().toString(16));
+        Assert.assertEquals(bi2.toString(16), keyPair2.getHexPublicKey());
         String dex = bi2.toString(10);
         System.out.println("十进制 " + dex);
         BigInteger db = new BigInteger(dex, 10);
@@ -782,19 +777,18 @@ public class PureInvokerTest extends BaseTest {
         String txHexPubKey = "dfa0a3c55931f26ced064a8f6f79770b44e8a04d183d26b1ff71bbf68fa26cfc6601f17fc9fe25a7179206294d9201ea46b435814bc96c9c80b71b17534d55a9";
         //String txBase64 = "APoqbCpDbA9zQANLVHR7IUn2CplkltRCydFdBkGzpoj8WCy+oo0fNF6FH950CygRQ/1anhkOYdC0RLIk4qhpruI=";
         String txBase64 = "9CkBtkl29d9vmWenOConzsUAJr4Q6pc21cDdlTLU2aZsqbgG8eSVfXs9rFV+tCe4mbEu1INjwGCHtiSayHzmhQ==";
-        pubkey = org.apache.commons.codec.binary.Base64.decodeBase64(txBase64);
+        pubkey = DataToolUtils.base64Decode(txBase64.getBytes(StandardCharsets.UTF_8));
         bi2 = Numeric.toBigInt(pubkey);
         System.out.println("new hex值 " + bi2.toString(16));
         //Assert.assertEquals(bi2.toString(16), txHexPubKey);
         System.out.println("十进制 " + bi2.toString(10));
-        System.out.println(org.apache.commons.codec.binary.Base64
-            .encodeBase64String(Numeric.hexStringToByteArray(bi2.toString(16))));
+        System.out.println(DataToolUtils.base64Decode(Numeric.hexStringToByteArray(bi2.toString(16))).toString());
 
         System.out.println();
         // Base64 <> hex conversion
-        String hexFrom = Numeric.toHexStringNoPrefix(Base64.decodeBase64(txBase64));
+        String hexFrom = Numeric.toHexStringNoPrefix(DataToolUtils.base64Decode(txBase64.getBytes(StandardCharsets.UTF_8)));
         System.out.println(hexFrom);
-        String base64To = Base64.encodeBase64String(Numeric.hexStringToByteArray(hexFrom));
+        String base64To = DataToolUtils.base64Decode(Numeric.hexStringToByteArray(hexFrom)).toString();
         System.out.println(base64To);
 
     }
