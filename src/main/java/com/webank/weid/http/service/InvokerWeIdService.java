@@ -53,12 +53,20 @@ public interface InvokerWeIdService {
     HttpResponseData<String> createWeIdWithTransactionHex(String transactionHex);
 
     /**
-     * Get a WeIdentity DID Document Json via the InvokeFunction API.
+     * Get a WeIdentity DID DocumentStream in Json-ld via the InvokeFunction API.
      *
      * @param getWeIdDocumentJsonArgs the WeIdentity DID
      * @return the WeIdentity DID document json
      */
     HttpResponseData<Object> getWeIdDocumentJsonInvoke(InputArg getWeIdDocumentJsonArgs);
+
+    /**
+     * Get a WeIdentity DID Document via the InvokeFunction API.
+     *
+     * @param getWeIdDocumentArgs the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    HttpResponseData<Object> getWeIdDocumentInvoke(InputArg getWeIdDocumentArgs);
 
     /**
      * Create WeId via the InvokeFunction API.

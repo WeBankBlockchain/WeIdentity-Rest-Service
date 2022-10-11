@@ -67,7 +67,7 @@ public abstract class BaseService extends com.webank.weid.service.BaseService {
         String passphrase = PropertiesUtil.getProperty("default.passphrase");
         if (StringUtils.isNotBlank(weId) && weId.equalsIgnoreCase(passphrase)) {
             //将私钥转换成公钥，将公钥转换成weId地址
-            weId = DataToolUtils.convertPrivateKeyToDefaultWeId(authentication.getPrivateKey().getValue());
+            weId = WeIdUtils.getWeIdFromPrivateKey(authentication.getPrivateKey().getValue());
         }
         authentication.setUserAddress(WeIdUtils.convertWeIdToAddress(weId));
         return authentication;

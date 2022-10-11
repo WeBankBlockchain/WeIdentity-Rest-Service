@@ -39,11 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.abi.FunctionEncoder;
-import org.fisco.bcos.web3j.abi.datatypes.Function;
-import org.fisco.bcos.web3j.abi.datatypes.Type;
-import org.fisco.bcos.web3j.crypto.RawTransaction;
-import org.fisco.bcos.web3j.crypto.TransactionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +77,7 @@ public class TransactionEncoderUtil {
      * @param data the data segment
      * @param to contract address
      */
-    public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
+    /*public static RawTransaction buildRawTransaction(String nonce, String data, String to) {
         return RawTransaction.createTransaction(
             new BigInteger(nonce),
             new BigInteger("99999999999"),
@@ -91,7 +86,7 @@ public class TransactionEncoderUtil {
             to,
             data
         );
-    }
+    }*/
 
 
     /**
@@ -167,7 +162,7 @@ public class TransactionEncoderUtil {
      * @param to contract address
      * @return rawTransaction
      */
-    private static RawTransaction createRawTransactionFromFunction(
+    /*private static RawTransaction createRawTransactionFromFunction(
         String data,
         String nonce,
         String to) {
@@ -179,7 +174,7 @@ public class TransactionEncoderUtil {
             to,
             data
         );
-    }
+    }*/
 
     /**
      * Get the encoded function byte array from a rawTransaction.
@@ -187,9 +182,9 @@ public class TransactionEncoderUtil {
      * @param rawTransaction the input rawTransaction
      * @return rawTransaction
      */
-    private static byte[] encodeRawTransaction(RawTransaction rawTransaction) {
+    /*private static byte[] encodeRawTransaction(RawTransaction rawTransaction) {
         return TransactionEncoder.encode(rawTransaction);
-    }
+    }*/
 
     /**
      * Get the encoded transaction byte array and rawTransaction into a json String as output.

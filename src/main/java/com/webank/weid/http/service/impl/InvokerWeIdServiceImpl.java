@@ -19,49 +19,45 @@
 
 package com.webank.weid.http.service.impl;
 
-import com.webank.weid.constant.WeIdConstant.PublicKeyType;
-import com.webank.weid.exception.InitWeb3jException;
-import com.webank.weid.exception.LoadContractException;
-import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
-import com.webank.weid.http.protocol.response.WeIdListRsp;
-import com.webank.weid.protocol.base.PublicKeyProperty;
-import com.webank.weid.protocol.base.WeIdAuthentication;
-import com.webank.weid.protocol.base.WeIdDocument;
-import com.webank.weid.protocol.base.WeIdPublicKey;
-import com.webank.weid.protocol.request.PublicKeyArgs;
-import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.WeIdUtils;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.utils.Numeric;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ParamKeyConstant;
+import com.webank.weid.exception.InitWeb3jException;
+import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.HttpReturnCode;
+import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
+import com.webank.weid.http.protocol.base.ResolutionMetadata;
+import com.webank.weid.http.protocol.base.ResolveData;
+import com.webank.weid.http.protocol.base.ResolveDataJsonLD;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.http.protocol.response.WeIdListRsp;
 import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.InvokerWeIdService;
-import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
+import com.webank.weid.protocol.base.WeIdDocument;
+import com.webank.weid.protocol.base.WeIdDocumentMetadata;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
+import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.rpc.RawTransactionService;
 import com.webank.weid.rpc.WeIdService;
 import com.webank.weid.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.service.impl.WeIdServiceImpl;
+import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 @Component
 public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdService {
@@ -175,46 +171,30 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
     }
 
     /**
-     * Get a WeIdentity DID Document Json via the InvokeFunction API.
+     * Get a WeIdentity DID DocumentStream in Json-ld via the InvokeFunction API.
      *
      * @param weId the WeIdentity DID
      * @return the WeIdentity DID document json
      */
     private HttpResponseData<Object> getWeIdDocumentJsonInvoke(String weId) {
         try {
-            ResponseData<WeIdDocument> response = weIdService.getWeIdDocument(weId);
-            if (response.getResult() == null) {
-                return new HttpResponseData<>(null, response.getErrorCode(), response.getErrorMessage());
+            ResponseData<String> responseDocument = weIdService.getWeIdDocumentJson(weId);
+            ResponseData<WeIdDocumentMetadata> responseMetadata = weIdService.getWeIdDocumentMetadata(weId);
+            if (responseDocument.getResult() == null || responseMetadata.getResult() == null) {
+                return new HttpResponseData<>(null, responseDocument.getErrorCode(), responseDocument.getErrorMessage());
             }
-            WeIdDocument weIdDocument = response.getResult();
-            List<PublicKeyProperty> publicKeyProperties = new ArrayList<>();
-            for (PublicKeyProperty publicKeyProperty : weIdDocument.getPublicKey()) {
-                if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.SECP256K1.getTypeName())) {
-                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(Numeric.
-                        hexStringToByteArray(new BigInteger(publicKeyProperty
-                        .getPublicKey(), 10).toString(16))));
-                    publicKeyProperties.add(publicKeyProperty);
-                }
-                if (publicKeyProperty.getType().equalsIgnoreCase(PublicKeyType.RSA.getTypeName())) {
-                    publicKeyProperty.setPublicKey(Base64.encodeBase64String(Numeric
-                        .hexStringToByteArray(publicKeyProperty.getPublicKey())));
-                    publicKeyProperties.add(publicKeyProperty);
-                }
-            }
-            weIdDocument.setPublicKey(publicKeyProperties);
-            String weIdDocumentStr;
-            try {
-                weIdDocumentStr = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(weIdDocument);
-            } catch (Exception var7) {
-                logger.error("write object to String fail.", var7);
-                return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR);
-            }
-            weIdDocumentStr = (new StringBuffer()).append(weIdDocumentStr)
-                .insert(1, "\"@context\" : \"https://github.com/WeBankFinTech/WeIdentity/blob/master/context/v1\",").toString();
+            String weIdDocumentJson = responseDocument.getResult();
+            WeIdDocumentMetadata weIdDocumentMetadata = responseMetadata.getResult();
+            ResolutionMetadata resolutionMetadata = new ResolutionMetadata();
+            resolutionMetadata.setContentType("JSON-LD");
+            ResolveDataJsonLD resolveDataJsonLD = new ResolveDataJsonLD();
+            resolveDataJsonLD.setResolutionMetadata(resolutionMetadata);
+            resolveDataJsonLD.setWeIdDocumentJson(weIdDocumentJson);
+            resolveDataJsonLD.setWeIdDocumentMetadata(weIdDocumentMetadata);
             return new HttpResponseData<>(
-                JsonUtil.convertJsonToSortedMap(weIdDocumentStr),
-                response.getErrorCode(),
-                response.getErrorMessage());
+                resolveDataJsonLD,
+                    responseDocument.getErrorCode(),
+                    responseDocument.getErrorMessage());
         } catch (LoadContractException e) {
             return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
         } catch (InitWeb3jException e) {
@@ -226,6 +206,68 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 e);
             return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
                 HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a WeIdentity DID Document via the InvokeFunction API.
+     *
+     * @param getWeIdDocumentArgs the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    public HttpResponseData<Object> getWeIdDocumentInvoke(
+            InputArg getWeIdDocumentArgs) {
+        try {
+            JsonNode weIdNode = new ObjectMapper()
+                    .readTree(getWeIdDocumentArgs.getFunctionArg())
+                    .get(ParamKeyConstant.WEID);
+            if (weIdNode == null || StringUtils.isEmpty(weIdNode.textValue())) {
+                return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
+            }
+            return getWeIdDocumentInvoke(weIdNode.textValue());
+        } catch (Exception e) {
+            logger.error(
+                    "[getWeIdDocument]: unknow error. weId:{}.",
+                    getWeIdDocumentArgs,
+                    e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                    HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a WeIdentity DID Document via the InvokeFunction API.
+     *
+     * @param weId the WeIdentity DID
+     * @return the WeIdentity DID document json
+     */
+    private HttpResponseData<Object> getWeIdDocumentInvoke(String weId) {
+        try {
+            ResponseData<WeIdDocument> responseDocument = weIdService.getWeIdDocument(weId);
+            ResponseData<WeIdDocumentMetadata> responseMetadata = weIdService.getWeIdDocumentMetadata(weId);
+            if (responseDocument.getResult() == null || responseMetadata.getResult() == null) {
+                return new HttpResponseData<>(null, responseDocument.getErrorCode(), responseDocument.getErrorMessage());
+            }
+            WeIdDocument weIdDocument = responseDocument.getResult();
+            WeIdDocumentMetadata weIdDocumentMetadata = responseMetadata.getResult();
+            ResolveData resolveData = new ResolveData();
+            resolveData.setWeIdDocument(weIdDocument);
+            resolveData.setWeIdDocumentMetadata(weIdDocumentMetadata);
+            return new HttpResponseData<>(
+                    resolveData,
+                    responseDocument.getErrorCode(),
+                    responseDocument.getErrorMessage());
+        } catch (LoadContractException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.CONTRACT_ERROR.getCode(), HttpReturnCode.CONTRACT_ERROR.getCodeDesc());
+        } catch (InitWeb3jException e) {
+            return new HttpResponseData<>(null, HttpReturnCode.WEB3J_ERROR.getCode(), HttpReturnCode.WEB3J_ERROR.getCodeDesc());
+        } catch (Exception e) {
+            logger.error(
+                    "[getWeIdDocument]: unknow error. weId:{}.",
+                    weId,
+                    e);
+            return new HttpResponseData<>(null, HttpReturnCode.WEID_SDK_ERROR.getCode(),
+                    HttpReturnCode.WEID_SDK_ERROR.getCodeDesc().concat(e.getMessage()));
         }
     }
 
@@ -273,7 +315,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
      * Create WeId and get the Document via the InvokeFunction API.
      *
      * @param createWeIdJsonArgs the input args, should be almost null
-     * @return tthe WeIdentity DID Document
+     * @return the WeIdentity DID Document
      */
     public HttpResponseData<Object> createWeIdInvoke2(InputArg createWeIdJsonArgs) {
         HttpResponseData<Object> createWeIdInvoke = createWeIdInvoke(createWeIdJsonArgs);
@@ -305,13 +347,11 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
 //                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
 //                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key security risk");
 //            }
-            String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(publicKeySecpNode
-                .textValue())).toString(10);
+            String publicKeySecp = new BigInteger(1, Base64.decodeBase64(publicKeySecpNode
+                    .textValue())).toString(10);
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeySecp);
             WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
             weIdPublicKey.setPublicKey(publicKeySecp);
-            WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
-            weIdAuthentication.setWeId(weId);
             String privateKey = KeyUtil
                 .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
             if (!KeyUtil.isPrivateKeyLengthValid(privateKey)) {
@@ -319,8 +359,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
             WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
             weIdPrivateKey.setPrivateKey(privateKey);
-            weIdAuthentication.setWeIdPrivateKey(weIdPrivateKey);
-            ResponseData<String> response = weIdService.delegateCreateWeId(weIdPublicKey, weIdAuthentication);
+            ResponseData<String> response = weIdService.createWeIdByPublicKey(weIdPublicKey, weIdPrivateKey);
             // after success:
             if (!StringUtils.isEmpty(response.getResult())) {
                 KeyUtil.savePrivateKey(KeyUtil.SDK_PRIVKEY_PATH,
@@ -346,15 +385,6 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             } catch (Exception e) {
                 logger.info("Cannot find RSA public key, skipping..");
                 return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
-            }
-            PublicKeyArgs publicKeyArgs = new PublicKeyArgs();
-            publicKeyArgs.setOwner(weId);
-            publicKeyArgs.setPublicKey(Numeric.toHexStringNoPrefix(Base64.decodeBase64(publicKeyRsa)));
-            publicKeyArgs.setType(PublicKeyType.RSA);
-            ResponseData<Integer> resp = weIdService
-                .delegateAddPublicKey(weId, publicKeyArgs, weIdAuthentication.getWeIdPrivateKey());
-            if (resp.getResult() < 0) {
-                return new HttpResponseData<>(StringUtils.EMPTY, resp.getErrorCode(), resp.getErrorMessage());
             }
             return new HttpResponseData<>(weId, HttpReturnCode.SUCCESS);
         } catch (LoadContractException e) {
@@ -416,7 +446,8 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
                 return new HttpResponseData<>(weIdListRsp, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
             }
-            String publicKeySecp = Numeric.toBigInt(Base64.decodeBase64(jsonNode.asText())).toString(10);
+            BigInteger publicKeyBigInt = new BigInteger(1, Base64.decodeBase64(jsonNode.asText()));
+            String publicKeySecp = publicKeyBigInt.toString(10);
             WeIdPublicKey publicKey = new WeIdPublicKey();
             publicKey.setPublicKey(publicKeySecp);
             pubKeyList.add(publicKey);

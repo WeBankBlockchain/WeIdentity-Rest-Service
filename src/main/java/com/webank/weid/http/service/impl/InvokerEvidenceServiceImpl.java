@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.webank.weid.config.FiscoConfig;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ProcessingMode;
+import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
 import com.webank.weid.http.constant.HttpReturnCode;
@@ -23,18 +24,16 @@ import com.webank.weid.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
 import com.webank.weid.service.impl.engine.EngineFactory;
 import com.webank.weid.service.impl.engine.EvidenceServiceEngine;
-import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import com.webank.weid.util.WeIdUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.utils.Numeric;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class InvokerEvidenceServiceImpl extends BaseService implements
     InvokerEvidenceService {
@@ -88,7 +87,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.info("Requesting evidence subgroup id instance.. {}", groupId);
             EvidenceService evidenceService = evidenceServiceInstances.get(groupId);
             if (evidenceService == null) {
-                evidenceService = new EvidenceServiceImpl(ProcessingMode.IMMEDIATE, groupId);
+                evidenceService = new EvidenceServiceImpl(ProcessingMode.IMMEDIATE, String.valueOf(groupId));
                 evidenceServiceInstances.put(groupId, evidenceService);
             }
             return evidenceService;
@@ -170,8 +169,12 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
+        String hashString = hashNode.textValue();
+        if (!containsHexPrefix(hashString)) {
+            hashString = WeIdConstant.HEX_PREFIX + hashString;
+        }
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithCustomKey(
-            Numeric.prependHexPrefix(hashNode.textValue()),
+                hashString,
             proofNode.textValue(),
             logNode.textValue(),
             DateUtils.getNoMillisecondTimeStamp(),
@@ -183,6 +186,13 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 createResp.getErrorMessage());
         }
         return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
+    }
+
+    public static boolean containsHexPrefix(String input) {
+        return !org.fisco.bcos.sdk.utils.StringUtils.isEmpty(input)
+                && input.length() > 1
+                && input.charAt(0) == '0'
+                && input.charAt(1) == 'x';
     }
 
     @Override
@@ -222,7 +232,11 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
-        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(Numeric.prependHexPrefix(idNode.textValue()));
+        String hashString = idNode.textValue();
+        if (!containsHexPrefix(hashString)) {
+            hashString = WeIdConstant.HEX_PREFIX + hashString;
+        }
+        ResponseData<EvidenceInfo> respData = evidenceService.getEvidence(hashString);
         if (respData.getResult() == null) {
             return new HttpResponseData<>(null, respData.getErrorCode(), respData.getErrorMessage());
         }
@@ -332,9 +346,13 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
-        String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
+        String issuer = WeIdUtils.getWeIdFromPrivateKey(adminPrivKey);
+        String hashString = hashNode.textValue();
+        if (!containsHexPrefix(hashString)) {
+            hashString = WeIdConstant.HEX_PREFIX + hashString;
+        }
         ResponseData<Boolean> createResp = evidenceService.createRawEvidenceWithSpecificSigner(
-            Numeric.prependHexPrefix(hashNode.textValue()), 
+            hashString,
             signNode.textValue(), 
             log, 
             DateUtils.getNoMillisecondTimeStamp(),
@@ -371,7 +389,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
         }
         EvidenceServiceEngine evidenceServiceEngine = evidenceServiceEngineInstances.get(groupId);
         if (evidenceServiceEngine == null) {
-            evidenceServiceEngine = EngineFactory.createEvidenceServiceEngine(groupId);
+            evidenceServiceEngine = EngineFactory.createEvidenceServiceEngine(String.valueOf(groupId));
             evidenceServiceEngineInstances.put(groupId, evidenceServiceEngine);
         }
         return evidenceServiceEngine;
@@ -400,7 +418,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Private key empty or failed to unload)");
         }
-        String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(adminPrivKey);
+        String issuer = WeIdUtils.getWeIdFromPrivateKey(adminPrivKey);
         Long timeStamp = DateUtils.getNoMillisecondTimeStamp();
 
         List<String> hashValues = new ArrayList<>();
@@ -418,7 +436,11 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
             String log = (logNode == null || StringUtils.isEmpty(logNode.textValue())) ? "" : logNode.textValue();
-            hashValues.add(Numeric.prependHexPrefix(hashNode.textValue()));
+            String hashString = hashNode.textValue();
+            if (!containsHexPrefix(hashString)) {
+                hashString = WeIdConstant.HEX_PREFIX + hashString;
+            }
+            hashValues.add(hashString);
             signatures.add(signNode.textValue());
             logs.add(log);
             timestamps.add(timeStamp);

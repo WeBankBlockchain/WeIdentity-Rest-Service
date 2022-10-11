@@ -7,7 +7,6 @@ import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.contract.v2.AuthorityIssuerController;
 import com.webank.weid.contract.v2.AuthorityIssuerController.AuthorityIssuerRetLogEventResponse;
 import com.webank.weid.contract.v2.WeIdContract;
-import com.webank.weid.contract.v2.WeIdContract.WeIdAttributeChangedEventResponse;
 import com.webank.weid.http.constant.SignType;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -19,34 +18,29 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.service.BaseService;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.bouncycastle.util.encoders.Base64;
-import org.fisco.bcos.web3j.abi.TypeReference;
-import org.fisco.bcos.web3j.abi.datatypes.Type;
-import org.fisco.bcos.web3j.crypto.Credentials;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.ExtendedRawTransaction;
-import org.fisco.bcos.web3j.crypto.ExtendedTransactionEncoder;
-import org.fisco.bcos.web3j.crypto.Sign;
-import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
-import org.fisco.bcos.web3j.crypto.gm.GenCredential;
-import org.fisco.bcos.web3j.protocol.Web3j;
-import org.fisco.bcos.web3j.protocol.core.methods.response.SendTransaction;
-import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.fisco.bcos.web3j.tx.gas.StaticGasProvider;
-import org.fisco.bcos.web3j.utils.Numeric;
+import org.fisco.bcos.sdk.abi.FunctionEncoder;
+import org.fisco.bcos.sdk.abi.TypeReference;
+import org.fisco.bcos.sdk.abi.Utils;
+import org.fisco.bcos.sdk.abi.datatypes.*;
+import org.fisco.bcos.sdk.abi.datatypes.generated.Bytes32;
+import org.fisco.bcos.sdk.abi.datatypes.generated.Int256;
+import org.fisco.bcos.sdk.client.Client;
+import org.fisco.bcos.sdk.client.protocol.response.SendTransaction;
+import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
+import org.fisco.bcos.sdk.model.TransactionReceipt;
+import org.fisco.bcos.sdk.transaction.codec.encode.TransactionEncoderService;
+import org.fisco.bcos.sdk.transaction.model.po.RawTransaction;
+import org.fisco.bcos.sdk.utils.Numeric;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -62,8 +56,8 @@ public class TransactionTestV2 {
         }
 
         // simulate client key-pair creation
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = org.fisco.bcos.web3j.crypto.Keys.createEcKeyPair();
-        String newPublicKey = ecKeyPair.getPublicKey().toString();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        String newPublicKey = DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey());
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
         String nonce = TransactionEncoderUtilV2.getNonce().toString();
 
@@ -88,9 +82,9 @@ public class TransactionTestV2 {
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransactionClient = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData clientSignedData = Sign.getSignInterface().signMessage(encodedTransactionClient, ecKeyPair);
+        RsvSignature clientSignedData = DataToolUtils.signToRsvSignature(encodedTransactionClient.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String base64SignedMsg = new String(
-            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.goSignatureSerialization(clientSignedData)));
 
         // simulate transact call
         funcArgMap = new LinkedHashMap<>();
@@ -98,6 +92,7 @@ public class TransactionTestV2 {
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonce);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
         txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, base64SignedMsg);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGN_TYPE, SignType.VSR);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -115,14 +110,12 @@ public class TransactionTestV2 {
 
     //@Test
     public void testClientSign() {
-        BigInteger priv = new BigInteger("1113",
-            10);
-        ECKeyPair ecKeyPair = ECKeyPair.create(priv);
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair("1113");
         String rawData = "+QGYiAoqvdSrq50MhRdIduf/hRdIduf/ggQglFl9kvCEDRPm7TPTzjYkiy3r5p5JgLkBZGvzCg0AAAAAAAAAAAAAAAASqNtWmYMdG8x4pGCkn3Z0a0trLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXkT+MQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB5MTA4MTkzNTI4NjAyODUxMzgxMzc3NjA4NDQ0MjE3NDI4ODEwMjAzOTIxODc4OTEyMjk2ODE1MDI0MDQ5MjA3NDUwMjYwNzA1NTA0OTM4LzB4MTJhOGRiNTY5OTgzMWQxYmNjNzhhNDYwYTQ5Zjc2NzQ2YjRiNmIyYwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACjE1ODE1Nzk4MjUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQGA";
         byte[] encodedTransactionClient = Base64.decode(rawData.getBytes());
-        SignatureData clientSignedData = Sign.getSignInterface().signMessage(encodedTransactionClient, ecKeyPair);
+        RsvSignature clientSignedData = DataToolUtils.signToRsvSignature(encodedTransactionClient.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String base64SignedMsg = new String(
-            Base64.encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
+            Base64.encode(TransactionEncoderUtilV2.goSignatureSerialization(clientSignedData)));
         System.out.println(base64SignedMsg);
     }
 
@@ -157,17 +150,15 @@ public class TransactionTestV2 {
         // note that the authorityIssuer creation can only be done by deployer
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        BigInteger decValue = new BigInteger(adminPrivKey, 10);
-        Credentials credentials = GenCredential.create(decValue.toString(16));
-        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        RsvSignature bodySigned = DataToolUtils.signToRsvSignature(encodedTransaction.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String base64SignedMsg = new String(
-            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.goSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + base64SignedMsg);
 
         // step 4: send
@@ -176,6 +167,7 @@ public class TransactionTestV2 {
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
         txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, base64SignedMsg);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGN_TYPE, SignType.VSR);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -225,6 +217,7 @@ public class TransactionTestV2 {
         funcArgMap.put("cptJsonSchema", cptJsonSchemaMap);
         Map<String, Object> txnArgMap = new LinkedHashMap<>();
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGN_TYPE, SignType.VSR);
         Map<String, Object> inputParamMap;
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
@@ -241,17 +234,15 @@ public class TransactionTestV2 {
         // let us use god account for low-bit cptId for good
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        BigInteger decValue = new BigInteger(adminPrivKey, 10);
-        Credentials credentials = GenCredential.create(decValue.toString(16));
-        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        RsvSignature bodySigned = DataToolUtils.signToRsvSignature(encodedTransaction.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String base64SignedMsg = new String(
-            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.goSignatureSerialization(bodySigned)));
         System.out.println("step 2 done, sig: " + base64SignedMsg);
 
         // step 3: send
@@ -260,6 +251,7 @@ public class TransactionTestV2 {
         txnArgMap.put(WeIdentityParamKeyConstant.NONCE, nonceVal);
         txnArgMap.put(WeIdentityParamKeyConstant.TRANSACTION_DATA, data);
         txnArgMap.put(WeIdentityParamKeyConstant.SIGNED_MESSAGE, base64SignedMsg);
+        txnArgMap.put(WeIdentityParamKeyConstant.SIGN_TYPE, SignType.VSR);
         inputParamMap = new LinkedHashMap<>();
         inputParamMap.put(WeIdentityParamKeyConstant.FUNCTION_ARG, funcArgMap);
         inputParamMap.put(WeIdentityParamKeyConstant.TRANSACTION_ARG, txnArgMap);
@@ -291,7 +283,7 @@ public class TransactionTestV2 {
     }
 
     //@Test
-    public void testSetAttribute() throws Exception {
+    public void testUpdateWeId() throws Exception {
         if (TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
@@ -299,9 +291,8 @@ public class TransactionTestV2 {
         fiscoConfig.load();
         String to = fiscoConfig.getWeIdAddress();
         // all steps:
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = org.fisco.bcos.web3j.crypto.Keys.createEcKeyPair();
-        String newPublicKey = ecKeyPair.getPublicKey().toString();
-        String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        String weId = WeIdUtils.convertPublicKeyToWeId(DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey()));
         String addr = WeIdUtils.convertWeIdToAddress(weId);
         // 0. client generate nonce and send to server
         String nonce = TransactionEncoderUtilV2.getNonce().toString();
@@ -310,21 +301,30 @@ public class TransactionTestV2 {
         byte[] byteValue = new byte[32];
         byte[] sourceByte = WeIdConstant.WEID_DOC_CREATED.getBytes(StandardCharsets.UTF_8);
         System.arraycopy(sourceByte, 0, byteValue, 0, sourceByte.length);
-        org.fisco.bcos.web3j.abi.datatypes.generated.Bytes32 bytes32val =
-            new org.fisco.bcos.web3j.abi.datatypes.generated.Bytes32(byteValue);
-        org.fisco.bcos.web3j.abi.datatypes.Function function = new org.fisco.bcos.web3j.abi.datatypes.Function(
-            WeIdentityFunctionNames.FUNCCALL_SET_ATTRIBUTE,
-            Arrays.<Type>asList(new org.fisco.bcos.web3j.abi.datatypes.Address(addr),
-                bytes32val,
-                new org.fisco.bcos.web3j.abi.datatypes.DynamicBytes(
-                    "sampleType".getBytes(StandardCharsets.UTF_8)),
-                new org.fisco.bcos.web3j.abi.datatypes.generated.Int256(new BigInteger("111111111"))),
-            Collections.<TypeReference<?>>emptyList());
-        String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
+        Bytes32 bytes32val =
+            new Bytes32(byteValue);
+        String updated = String.valueOf(System.currentTimeMillis());
+        //Note that: the authentication and service must conform to the format specified by the weid document
+        //only for test here, Please refer to the weid-java-sdk
+        List<String> authentication = new ArrayList<>();
+        authentication.add("ddddddd");
+        List<String> service = new ArrayList<>();
+        service.add("ggggg");
+        Function function = new Function(
+            WeIdentityFunctionNames.FUNCCALL_UPDATE_WEID,
+                Arrays.<Type>asList(new Address(addr),
+                        new Utf8String(updated),
+                        new DynamicArray<Utf8String>(
+                                Utils.typeMap(authentication, Utf8String.class)),
+                        new DynamicArray<Utf8String>(
+                                Utils.typeMap(service, org.fisco.bcos.sdk.abi.datatypes.Utf8String.class))),
+                Collections.<TypeReference<?>>emptyList());
+        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
-        Web3j web3j = (Web3j) BaseService.getWeb3j();
+        Client web3j = (Client) BaseService.getClient();
         BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+        RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             fiscoConfig.getGroupId(), data, to, blocklimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
@@ -333,26 +333,25 @@ public class TransactionTestV2 {
         JsonNode encodeResult = new ObjectMapper().readTree(encodedOutputToClient);
         byte[] encodedTransactionClient = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData clientSignedData = org.fisco.bcos.web3j.crypto.Sign
-            .getSignInterface().signMessage(encodedTransactionClient, ecKeyPair);
+        RsvSignature clientSignedData = DataToolUtils.signToRsvSignature(encodedTransactionClient.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String base64SignedMsg = new String(
-            DataToolUtils.base64Encode(TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
+            DataToolUtils.base64Encode(TransactionEncoderUtilV2.goSignatureSerialization(clientSignedData)));
         // 5. server receives the signed data
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData clientSignedData2 = TransactionEncoderUtilV2
+        RsvSignature clientSignedData2 = TransactionEncoderUtilV2
             .simpleSignatureDeserialization(DataToolUtils.base64Decode(base64SignedMsg.getBytes()), SignType.RSV);
         byte[] encodedSignedMsg = TransactionEncoderUtilV2.encode(rawTransaction, clientSignedData2);
         String txnHex = Numeric.toHexString(encodedSignedMsg);
-        SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
-            .get(WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT, TimeUnit.SECONDS);
+        SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex);
+        /*SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
+            .get(WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT, TimeUnit.SECONDS);*/
         Optional<TransactionReceipt> receiptOptional =
             TransactionEncoderUtilV2.getTransactionReceiptRequest(sendTransaction.getTransactionHash());
         if (receiptOptional.isPresent()) {
             TransactionReceipt receipt = receiptOptional.get();
             WeIdContract weIdContract = WeIdContract.load(to, web3j,
-                org.fisco.bcos.web3j.crypto.gm.GenCredential.create(),
-                new StaticGasProvider(WeIdConstant.GAS_PRICE, WeIdConstant.GAS_LIMIT));
-            List<WeIdAttributeChangedEventResponse> response =
-                weIdContract.getWeIdAttributeChangedEvents(receipt);
+                DataToolUtils.cryptoSuite.getCryptoKeyPair());
+            List<WeIdContract.UpdateWeIdEventResponse> response =
+                weIdContract.getUpdateWeIdEvents(receipt);
             Assert.assertNotNull(response);
             Assert.assertNotNull(response.get(0));
         }
@@ -367,38 +366,38 @@ public class TransactionTestV2 {
         fiscoConfig.load();
         String to = fiscoConfig.getIssuerAddress();
         // all steps:
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair = org.fisco.bcos.web3j.crypto.Keys.createEcKeyPair();
-        org.fisco.bcos.web3j.crypto.Credentials credentials = org.fisco.bcos.web3j.crypto.Credentials.create(ecKeyPair);
-        String newPublicKey = ecKeyPair.getPublicKey().toString();
-        String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        String weId = WeIdUtils.convertPublicKeyToWeId(DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey()));
         String addr = WeIdUtils.convertWeIdToAddress(weId);
         // 0. client generate nonce and send to server
         String nonce = TransactionEncoderUtilV2.getNonce().toString();
         // 1. server generate data
         // 下面为组装inputParameter
-        org.fisco.bcos.web3j.abi.datatypes.Function function = new org.fisco.bcos.web3j.abi.datatypes.Function(
+        Function function = new Function(
             "removeAuthorityIssuer",
-            Arrays.<Type>asList(new org.fisco.bcos.web3j.abi.datatypes.Address(addr)),
+            Arrays.<Type>asList(new Address(addr)),
             Collections.<TypeReference<?>>emptyList());
-        String data = org.fisco.bcos.web3j.abi.FunctionEncoder.encode(function);
+        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
-        Web3j web3j = (Web3j) BaseService.getWeb3j();
+        Client web3j = (Client) BaseService.getClient();
         BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+        RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             fiscoConfig.getGroupId(), data, to, blocklimit);
         // 3. server sends everything back to client in encoded base64 manner
         // 这一步先忽略
         // 4. client signs and sends back to send raw txn
-        byte[] signedMessage = ExtendedTransactionEncoder.signMessage(rawTransaction, credentials);
-        String txnHex = Numeric.toHexString(signedMessage);
-        SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
-            .get(WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT, TimeUnit.SECONDS);
+        TransactionEncoderService transactionEncoder = new TransactionEncoderService(DataToolUtils.cryptoSuite);
+        String txnHex = transactionEncoder.encodeAndSign(rawTransaction, DataToolUtils.cryptoSuite.getCryptoKeyPair());
+        //String txnHex = Numeric.toHexString(signedMessage);
+        /*SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
+            .get(WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT, TimeUnit.SECONDS);*/
+        SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex);
         Optional<TransactionReceipt> receiptOptional =
             TransactionEncoderUtilV2.getTransactionReceiptRequest(sendTransaction.getTransactionHash());
         TransactionReceipt receipt = receiptOptional.get();
         AuthorityIssuerController authorityIssuerController = AuthorityIssuerController.load(to, web3j,
-            org.fisco.bcos.web3j.crypto.gm.GenCredential.create(),
-            new StaticGasProvider(WeIdConstant.GAS_PRICE, WeIdConstant.GAS_LIMIT));
+                DataToolUtils.cryptoSuite.getCryptoKeyPair());
         List<AuthorityIssuerRetLogEventResponse> response =
             authorityIssuerController.getAuthorityIssuerRetLogEvents(receipt);
         Assert.assertNotNull(response);
