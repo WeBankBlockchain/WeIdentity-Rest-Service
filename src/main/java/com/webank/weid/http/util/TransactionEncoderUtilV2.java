@@ -16,13 +16,19 @@ import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
+import com.webank.weid.protocol.base.AuthenticationProperty;
 import com.webank.weid.protocol.base.CredentialPojo;
+import com.webank.weid.protocol.base.ServiceProperty;
 import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.service.BaseService;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.CredentialUtils;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
+import com.webank.weid.util.Multibase.Multibase;
+import com.webank.weid.util.Multicodec.Multicodec;
+import com.webank.weid.util.Multicodec.MulticodecEncoder;
 import com.webank.weid.util.TransactionUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.io.IOException;
@@ -39,25 +45,23 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.abi.FunctionEncoder;
-import org.fisco.bcos.web3j.abi.TypeReference;
-import org.fisco.bcos.web3j.abi.datatypes.Address;
-import org.fisco.bcos.web3j.abi.datatypes.DynamicBytes;
-import org.fisco.bcos.web3j.abi.datatypes.Function;
-import org.fisco.bcos.web3j.abi.datatypes.generated.Bytes32;
-import org.fisco.bcos.web3j.abi.datatypes.generated.Int256;
-import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray128;
-import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray16;
-import org.fisco.bcos.web3j.abi.datatypes.generated.StaticArray8;
-import org.fisco.bcos.web3j.abi.datatypes.generated.Uint8;
-import org.fisco.bcos.web3j.crypto.ExtendedRawTransaction;
-import org.fisco.bcos.web3j.crypto.Sign;
-import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
-import org.fisco.bcos.web3j.protocol.Web3j;
-import org.fisco.bcos.web3j.protocol.core.methods.response.NodeVersion;
-import org.fisco.bcos.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.fisco.bcos.web3j.rlp.RlpType;
-import org.fisco.bcos.web3j.utils.Numeric;
+import org.fisco.bcos.sdk.abi.FunctionEncoder;
+import org.fisco.bcos.sdk.abi.TypeReference;
+import org.fisco.bcos.sdk.abi.Utils;
+import org.fisco.bcos.sdk.abi.datatypes.*;
+import org.fisco.bcos.sdk.abi.datatypes.generated.*;
+import org.fisco.bcos.sdk.client.Client;
+import org.fisco.bcos.sdk.model.CryptoType;
+import org.fisco.bcos.sdk.model.NodeVersion;
+import org.fisco.bcos.sdk.model.TransactionReceipt;
+import org.fisco.bcos.sdk.rlp.RlpEncoder;
+import org.fisco.bcos.sdk.rlp.RlpList;
+import org.fisco.bcos.sdk.rlp.RlpString;
+import org.fisco.bcos.sdk.rlp.RlpType;
+import org.fisco.bcos.sdk.transaction.builder.TransactionBuilderService;
+import org.fisco.bcos.sdk.transaction.model.po.RawTransaction;
+import org.fisco.bcos.sdk.utils.ByteUtils;
+import org.fisco.bcos.sdk.utils.Numeric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,20 +124,33 @@ public class TransactionEncoderUtilV2 {
             logger.error("[createWeId]: input parameter publickey is invalid.");
             return null;
         }
-        String auth = new StringBuffer()
-            .append(publicKey)
-            .append(WeIdConstant.SEPARATOR)
-            .append(addr)
-            .toString();
+        String created = String.valueOf(System.currentTimeMillis());
+        AuthenticationProperty authenticationProperty = new AuthenticationProperty();
+        //在创建weid时默认添加一个id为#keys-[hash(publicKey)]的verification method
+        authenticationProperty.setId(weId + "#keys-" + DataToolUtils.hash(publicKey).substring(58));
+        //verification method controller默认为自己
+        authenticationProperty.setController(weId);
+        //这里把publicKey用multicodec编码，然后使用Multibase格式化，国密和非国密使用不同的编码
+        byte[] publicKeyEncode = MulticodecEncoder.encode(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE? Multicodec.ED25519_PUB:Multicodec.SM2_PUB,
+                publicKey.getBytes(StandardCharsets.UTF_8));
+        authenticationProperty.setPublicKeyMultibase(Multibase.encode(Multibase.Base.Base58BTC, publicKeyEncode));
+        List<String> authList = new ArrayList<>();
+        authList.add(authenticationProperty.toString());
+        List<String> serviceList = new ArrayList<>();
+        ServiceProperty serviceProperty = new ServiceProperty();
+        serviceProperty.setServiceEndpoint("https://github.com/WeBankBlockchain/WeIdentity");
+        serviceProperty.setType("WeIdentity");
+        serviceProperty.setId(authenticationProperty.getController() + '#' + DataToolUtils.hash(serviceProperty.getServiceEndpoint()).substring(58));
+        serviceList.add(serviceProperty.toString());
         return new Function(
             WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
-            Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
-                new Address(addr),
-                new DynamicBytes(DataToolUtils.stringToByteArray(auth)),
-                new DynamicBytes(DataToolUtils.stringToByteArray(DateUtils.getNoMillisecondTimeStampString())),
-                new Int256(BigInteger.valueOf(DateUtils.getNoMillisecondTimeStamp()))
-            ),
-            Collections.<TypeReference<?>>emptyList());
+                Arrays.<Type>asList(new Address(addr),
+                        new Utf8String(created),
+                        new DynamicArray<Utf8String>(
+                                Utils.typeMap(authList, Utf8String.class)),
+                        new DynamicArray<Utf8String>(
+                                Utils.typeMap(serviceList, Utf8String.class))),
+                Collections.<TypeReference<?>>emptyList());
     }
 
     public static Function buildRegisterAuthorityIssuerFunction(String inputParam, String functionName) {
@@ -169,16 +186,16 @@ public class TransactionEncoderUtilV2 {
         String accValue = "1";
         return new Function(
             WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
-            Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
+            Arrays.<Type>asList(
                 new Address(weAddress),
                 new StaticArray16<Bytes32>(
-                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                    Utils.typeMap(
                         DataToolUtils.bytesArrayListToBytes32ArrayList(
                             stringAttributes,
                             WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
                         ), Bytes32.class)),
                 new StaticArray16<Int256>(
-                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                    Utils.typeMap(
                         DataToolUtils.listToListBigInteger(
                             longAttributes,
                             WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
@@ -232,7 +249,7 @@ public class TransactionEncoderUtilV2 {
             logger.error("Input cpt signature invalid: {}", cptSignature);
             return null;
         }
-        SignatureData signatureData =
+        RsvSignature signatureData =
             simpleSignatureDeserialization(
                 DataToolUtils.base64Decode(cptSignature.getBytes()), 
                 signType
@@ -244,29 +261,29 @@ public class TransactionEncoderUtilV2 {
         List<byte[]> byteArray = new ArrayList<>();
         return new Function(
             WeIdentityFunctionNames.FUNCNAME_CALL_MAP_V2.get(functionName),
-            Arrays.<org.fisco.bcos.web3j.abi.datatypes.Type>asList(
+            Arrays.<Type>asList(
                 new Address(weAddress),
                 new StaticArray8<Int256>(
-                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                    Utils.typeMap(
                         DataToolUtils.listToListBigInteger(
                             DataToolUtils.getParamCreatedList(WeIdConstant.CPT_LONG_ARRAY_LENGTH),
                             WeIdConstant.CPT_LONG_ARRAY_LENGTH
                         ), Int256.class)),
                 new StaticArray8<Bytes32>(
-                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                    Utils.typeMap(
                         DataToolUtils.bytesArrayListToBytes32ArrayList(
                             byteArray,
                             WeIdConstant.CPT_STRING_ARRAY_LENGTH
                         ), Bytes32.class)),
                 new StaticArray128<Bytes32>(
-                    org.fisco.bcos.web3j.abi.Utils.typeMap(
+                    Utils.typeMap(
                         DataToolUtils.stringToByte32ArrayList(
                             cptJsonSchemaNew,
                             WeIdConstant.JSON_SCHEMA_ARRAY_LENGTH
                         ), Bytes32.class)),
-                new Uint8((long) Integer.valueOf(signatureData.getV())),
-                new Bytes32(signatureData.getR()),
-                new Bytes32(signatureData.getS())
+                    signatureData.getV(),
+                    signatureData.getR(),
+                    signatureData.getS()
             ),
             Collections.<TypeReference<?>>emptyList());
     }
@@ -279,11 +296,11 @@ public class TransactionEncoderUtilV2 {
         String blockLimit,
         SignType signType
     ) {
-        SignatureData sigData = TransactionEncoderUtilV2
+        RsvSignature sigData = TransactionEncoderUtilV2
             .simpleSignatureDeserialization(DataToolUtils.base64Decode(encodedSig.getBytes()), signType);
         FiscoConfig fiscoConfig = new FiscoConfig();
         fiscoConfig.load();
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+        RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             fiscoConfig.getGroupId(), data, to, new BigInteger(blockLimit));
         byte[] encodedSignedTxn = TransactionEncoderUtilV2.encode(rawTransaction, sigData);
         return Numeric.toHexString(encodedSignedTxn);
@@ -291,14 +308,15 @@ public class TransactionEncoderUtilV2 {
 
     public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
         // 1. encode the Function
-        String data = FunctionEncoder.encode(function);
+        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        String data = functionEncoder.encode(function);
         return createClientEncodeResult(data, nonce, to, groupId);
     }
     
     public static String createClientEncodeResult(String functionEncode, String nonce, String to, String groupId) {
         BigInteger blockLimit = getBlocklimitV2();
         // 2. server generate encodedTransaction
-        ExtendedRawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
+        RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             groupId, functionEncode, to, blockLimit);
         byte[] encodedTransaction = TransactionEncoderUtilV2.encode(rawTransaction);
         // 3. server sends encodeTransaction (in base64) and data back to client
@@ -311,70 +329,61 @@ public class TransactionEncoderUtilV2 {
         return randomid;
     }
 
-    public static byte[] encode(ExtendedRawTransaction rawTransaction) {
+    public static byte[] encode(RawTransaction rawTransaction) {
         return encode(rawTransaction, null);
     }
 
     public static byte[] encode(
-        ExtendedRawTransaction rawTransaction, Sign.SignatureData signatureData) {
+            RawTransaction rawTransaction, RsvSignature signatureData) {
         List<RlpType> values = asRlpValues(rawTransaction, signatureData);
-        org.fisco.bcos.web3j.rlp.RlpList rlpList = new org.fisco.bcos.web3j.rlp.RlpList(values);
-        return org.fisco.bcos.web3j.rlp.RlpEncoder.encode(rlpList);
+        RlpList rlpList = new RlpList(values);
+        return RlpEncoder.encode(rlpList);
     }
 
-    static List<org.fisco.bcos.web3j.rlp.RlpType> asRlpValues(
-        ExtendedRawTransaction rawTransaction, Sign.SignatureData signatureData) {
-        List<org.fisco.bcos.web3j.rlp.RlpType> result = new ArrayList<>();
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getRandomid()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGasPrice()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGasLimit()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getBlockLimit()));
+    static List<RlpType> asRlpValues(
+        RawTransaction rawTransaction, RsvSignature signatureData) {
+        List<RlpType> result = new ArrayList<>();
+        result.add(RlpString.create(rawTransaction.getRandomid()));
+        result.add(RlpString.create(rawTransaction.getGasPrice()));
+        result.add(RlpString.create(rawTransaction.getGasLimit()));
+        result.add(RlpString.create(rawTransaction.getBlockLimit()));
         // an empty to address (contract creation) should not be encoded as a numeric 0 value
         String to = rawTransaction.getTo();
         if (to != null && to.length() > 0) {
             // addresses that start with zeros should be encoded with the zeros included, not
             // as numeric values
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(to)));
+            result.add(RlpString.create(Numeric.hexStringToByteArray(to)));
         } else {
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(""));
+            result.add(RlpString.create(""));
         }
 
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getValue()));
+        result.add(RlpString.create(rawTransaction.getValue()));
 
         // value field will already be hex encoded, so we need to convert into binary first
-        byte[] data = org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(rawTransaction.getData());
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(data));
+        byte[] data = Numeric.hexStringToByteArray(rawTransaction.getData());
+        result.add(RlpString.create(data));
 
         // add extra data!!!
 
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getFiscoChainId()));
-        result.add(org.fisco.bcos.web3j.rlp.RlpString.create(rawTransaction.getGroupId()));
+        result.add(RlpString.create(rawTransaction.getFiscoChainId()));
+        result.add(RlpString.create(rawTransaction.getGroupId()));
         if (rawTransaction.getExtraData() == null) {
-            result.add(org.fisco.bcos.web3j.rlp.RlpString.create(""));
+            result.add(RlpString.create(""));
         } else {
             result.add(
-                org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Numeric.hexStringToByteArray(rawTransaction.getExtraData())));
+                RlpString.create(Numeric.hexStringToByteArray(rawTransaction.getExtraData())));
         }
         if (signatureData != null) {
-            if (org.fisco.bcos.web3j.crypto.EncryptType.encryptType == 1) {
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getPub())));
-                // logger.debug("RLP-Pub:{},RLP-PubLen:{}",Hex.toHexString(signatureData.getPub()),signatureData.getPub().length);
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())));
-                // logger.debug("RLP-R:{},RLP-RLen:{}",Hex.toHexString(signatureData.getR()),signatureData.getR().length);
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
-                // logger.debug("RLP-S:{},RLP-SLen:{}",Hex.toHexString(signatureData.getS()),signatureData.getS().length);
-            } else {
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(signatureData.getV()));
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())));
-                result.add(org.fisco.bcos.web3j.rlp.RlpString.create(org.fisco.bcos.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
-            }
+            result.add(RlpString.create(String.valueOf(signatureData.getV()).getBytes(StandardCharsets.UTF_8)));
+            result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getR().getValue())));
+            result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getS().getValue())));
         }
         return result;
     }
 
-    public static ExtendedRawTransaction buildRawTransaction(String nonce, String groupId, String data, String to, BigInteger blockLimit) {
-        ExtendedRawTransaction rawTransaction =
-            ExtendedRawTransaction.createTransaction(
+    public static RawTransaction buildRawTransaction(String nonce, String groupId, String data, String to, BigInteger blockLimit) {
+        RawTransaction rawTransaction =
+                RawTransaction.createTransaction(
                 new BigInteger(nonce),
                 new BigInteger("99999999999"),
                 new BigInteger("99999999999"),
@@ -388,17 +397,17 @@ public class TransactionEncoderUtilV2 {
         return rawTransaction;
     }
 
-    public static byte[] simpleSignatureSerialization(Sign.SignatureData signatureData) {
+    public static byte[] simpleSignatureSerialization(RsvSignature signatureData) {
         byte[] serializedSignatureData = new byte[65];
-        serializedSignatureData[0] = signatureData.getV();
+        serializedSignatureData[0] = signatureData.getV().getValue().byteValue();
         System.arraycopy(signatureData.getR(), 0, serializedSignatureData, 1, 32);
         System.arraycopy(signatureData.getS(), 0, serializedSignatureData, 33, 32);
         return serializedSignatureData;
     }
 
-    public static byte[] goSignatureSerialization(Sign.SignatureData signatureData) {
+    public static byte[] goSignatureSerialization(RsvSignature signatureData) {
         byte[] serializedSignatureData = new byte[65];
-        serializedSignatureData[64] = (byte) (new Byte(signatureData.getV()).intValue() - 27);
+        serializedSignatureData[64] = (byte) (signatureData.getV().getValue().byteValue() - 27);
         System.arraycopy(signatureData.getR(), 0, serializedSignatureData, 0, 32);
         System.arraycopy(signatureData.getS(), 0, serializedSignatureData, 32, 32);
         return serializedSignatureData;
@@ -406,7 +415,7 @@ public class TransactionEncoderUtilV2 {
 
     public static String convertIfGoSigToWeIdJavaSdkSig(String goSig) {
         byte[] serializedSig = DataToolUtils.base64Decode(goSig.getBytes(StandardCharsets.UTF_8));
-        Sign.SignatureData sigData = simpleSignatureDeserialization(serializedSig, SignType.VSR);
+        RsvSignature sigData = simpleSignatureDeserialization(serializedSig, SignType.VSR);
         if (sigData == null) {
             return StringUtils.EMPTY;
         }
@@ -414,34 +423,63 @@ public class TransactionEncoderUtilV2 {
             StandardCharsets.UTF_8);
     }
 
-    public static Sign.SignatureData simpleSignatureDeserialization(
+    public static RsvSignature simpleSignatureDeserialization(
         byte[] serializedSignatureData,
         SignType signType
     ) {
-        if (65 != serializedSignatureData.length) {
+        if (65 != serializedSignatureData.length || 64 != serializedSignatureData.length) {
             return null;
         }
-        // Determine signature type
-        Byte javav = serializedSignatureData[0];
-        Byte lwcv = serializedSignatureData[64];
-        byte[] r = new byte[32];
-        byte[] s = new byte[32];
-        Sign.SignatureData signatureData = null;
-        if (signType == SignType.RSV) {
-            // this is the signature from java client
-            logger.info("Java Client signature checked.");
-            System.arraycopy(serializedSignatureData, 1, r, 0, 32);
-            System.arraycopy(serializedSignatureData, 33, s, 0, 32);
-            signatureData = new Sign.SignatureData(javav, r, s);
-        } else if (signType == SignType.VSR) {
-            // this is the standard raw ecdsa sig method (go version client uses this)
-            logger.info("Standard Client signature checked.");
-            lwcv = (byte) (lwcv.intValue() + 27);
-            System.arraycopy(serializedSignatureData, 0, r, 0, 32);
-            System.arraycopy(serializedSignatureData, 32, s, 0, 32);
-            signatureData = new Sign.SignatureData(lwcv, r, s);
+        if(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
+            // Determine signature type
+            Byte javav = serializedSignatureData[0];
+            Byte lwcv = serializedSignatureData[64];
+            byte[] r = new byte[32];
+            byte[] s = new byte[32];
+            RsvSignature signatureData = new RsvSignature();
+            if (signType == SignType.RSV) {
+                // this is the signature from java client
+                logger.info("Java Client signature checked.");
+                System.arraycopy(serializedSignatureData, 1, r, 0, 32);
+                System.arraycopy(serializedSignatureData, 33, s, 0, 32);
+                signatureData.setS(new Bytes32(s));
+                signatureData.setR(new Bytes32(r));
+                signatureData.setV(new Uint8(javav));
+            } else if (signType == SignType.VSR) {
+                // this is the standard raw ecdsa sig method (go version client uses this)
+                logger.info("Standard Client signature checked.");
+                lwcv = (byte) (lwcv.intValue() + 27);
+                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                signatureData.setS(new Bytes32(s));
+                signatureData.setR(new Bytes32(r));
+                signatureData.setV(new Uint8(lwcv));
+            }
+            return signatureData;
+        } else {
+            // Determine signature type
+            byte[] r = new byte[32];
+            byte[] s = new byte[32];
+            RsvSignature signatureData = new RsvSignature();
+            if (signType == SignType.RSV) {
+                // this is the signature from java client
+                logger.info("Java Client signature checked.");
+                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                signatureData.setS(new Bytes32(s));
+                signatureData.setR(new Bytes32(r));
+                signatureData.setV(new Uint8(0));
+            } else if (signType == SignType.VSR) {
+                // this is the standard raw ecdsa sig method (go version client uses this)
+                logger.info("Standard Client signature checked.");
+                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                signatureData.setS(new Bytes32(s));
+                signatureData.setR(new Bytes32(r));
+                signatureData.setV(new Uint8(0));
+            }
+            return signatureData;
         }
-        return signatureData;
     }
 
     /**
@@ -451,9 +489,9 @@ public class TransactionEncoderUtilV2 {
      */
     public static BigInteger getChainIdV2() {
         try {
-            NodeVersion.Version nodeVersion = ((org.fisco.bcos.web3j.protocol.Web3j) BaseService
-                .getWeb3j()).getNodeVersion().send().getNodeVersion();
-            String chainId = nodeVersion.getChainID();
+            Client web3j = (Client) BaseService.getClient();
+            NodeVersion.ClientVersion nodeVersion = web3j.getNodeVersion().getNodeVersion();
+            String chainId = nodeVersion.getChainId();
             return new BigInteger(chainId);
         } catch (Exception e) {
             return BigInteger.ONE;
@@ -463,12 +501,12 @@ public class TransactionEncoderUtilV2 {
     /**
      * Get the Blocklimit for FISCO-BCOS v2.0 blockchain. This already adds 600 to block height.
      *
-     * @return chainId in BigInt.
+     * @return Blocklimit in BigInt.
      */
     public static BigInteger getBlocklimitV2() {
         try {
-            return ((org.fisco.bcos.web3j.protocol.Web3j) BaseService.getWeb3j())
-                .getBlockNumberCache();
+            Client web3j = (Client) BaseService.getClient();
+            return web3j.getBlockLimit();
         } catch (Exception e) {
             return null;
         }
@@ -476,17 +514,17 @@ public class TransactionEncoderUtilV2 {
 
     public static Optional<TransactionReceipt> getTransactionReceiptRequest(String transactionHash) {
         Optional<TransactionReceipt> receiptOptional = Optional.empty();
-        Web3j web3j = (Web3j) BaseService.getWeb3j();
+        Client web3j = (Client) BaseService.getClient();
         try {
             for (int i = 0; i < 5; i++) {
-                receiptOptional = web3j.getTransactionReceipt(transactionHash).send().getTransactionReceipt();
+                receiptOptional = web3j.getTransactionReceipt(transactionHash).getTransactionReceipt();
                 if (!receiptOptional.isPresent()) {
                     Thread.sleep(1000);
                 } else {
                     return receiptOptional;
                 }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
             System.out.println();
         }
         return receiptOptional;

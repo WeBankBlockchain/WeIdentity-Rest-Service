@@ -22,9 +22,7 @@ package com.webank.weid.http;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.Sign;
-import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
+import com.webank.weid.protocol.response.RsvSignature;
 import org.junit.After;
 import org.junit.Before;
 
@@ -103,16 +101,16 @@ public abstract class BaseTest {
     }
     
     protected static String sign(
-        ECKeyPair createEcKeyPair, 
+        String privateKey,
         Map<String, Object> map
     ) throws Exception {
       byte[] encodedTransaction = DataToolUtils
           .base64Decode(map.get("encodedTransaction").toString().getBytes());
-      SignatureData clientSignedData = Sign.getSignInterface().signMessage(
-          encodedTransaction, createEcKeyPair);
+      RsvSignature clientSignedData = DataToolUtils.signToRsvSignature(
+          encodedTransaction.toString(), privateKey);
       String base64SignedMsg = new String(
           DataToolUtils.base64Encode(
-              TransactionEncoderUtilV2.simpleSignatureSerialization(clientSignedData)));
+              TransactionEncoderUtilV2.goSignatureSerialization(clientSignedData)));
       return base64SignedMsg;
     }
 }

@@ -36,7 +36,6 @@ import com.webank.weid.http.service.InvokerEvidenceService;
 import com.webank.weid.http.service.InvokerWeIdService;
 import com.webank.weid.http.service.TransactionService;
 import com.webank.weid.http.util.JsonUtil;
-import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 
 import java.util.LinkedHashMap;
@@ -65,6 +64,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
 
     /**
      * Create an Encoded Transaction.
+     * Only use for function: createWeId, registerAuthorityIssuer, registerCpt
      *
      * @param encodeTransactionJsonArgs json format args. It should contain 4 keys: functionArgs (including all business related params),
      * transactionArgs, functionName and apiVersion. Hereafter, functionName will decide which WeID SDK method to engage, and assemble all input
@@ -76,7 +76,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
         String encodeTransactionJsonArgs) {
 		Object loopBack = null;
         try {
-            HttpResponseData<InputArg> resp = TransactionEncoderUtil
+            HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
                 .buildInputArg(encodeTransactionJsonArgs);
             InputArg inputArg = resp.getRespBody();
             if (inputArg == null) {
@@ -141,7 +141,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     public HttpResponseData<Object> sendTransaction(String sendTransactionJsonArgs) {
         Object loopBack = null;
         try {
-            HttpResponseData<InputArg> resp = TransactionEncoderUtil
+            HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
                 .buildInputArg(sendTransactionJsonArgs);
             InputArg inputArg = resp.getRespBody();
             if (inputArg == null) {
@@ -229,7 +229,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
 	 */
 	@Override
     public HttpResponseData<Object> invokeFunction(String invokeFunctionJsonArgs) {
-        HttpResponseData<InputArg> resp = TransactionEncoderUtil
+        HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
                 .buildInputArg(invokeFunctionJsonArgs);
         InputArg inputArg = resp.getRespBody();
         if (inputArg == null) {

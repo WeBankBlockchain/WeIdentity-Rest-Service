@@ -33,15 +33,18 @@ import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.fisco.bcos.web3j.crypto.ECDSASign;
+
+import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
 import org.junit.Test;
 
 public class CredentialTest extends BaseTest {
@@ -147,13 +150,10 @@ public class CredentialTest extends BaseTest {
         System.out.println(base64EncRawData);
         String rawData = new String(DataToolUtils.base64Decode(base64EncRawData.getBytes()));
         System.out.println(rawData);
-        org.fisco.bcos.web3j.crypto.ECKeyPair ecKeyPair2 =
-            org.fisco.bcos.web3j.crypto.ECKeyPair.create(new BigInteger(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey()));
-        ECDSASign ecdsaSign = new ECDSASign();
-        org.fisco.bcos.web3j.crypto.Sign.SignatureData sigData = ecdsaSign
-            .secp256SignMessage(rawData.getBytes(), ecKeyPair2);
-        String signature = DataToolUtils.secp256k1SigBase64Serialization(sigData);
-        proofMap.put("signatureValue", signature);
+        CryptoKeyPair keyPair = DataToolUtils.cryptoSuite.createKeyPair(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
+        RsvSignature sigData = DataToolUtils.signToRsvSignature(rawData, DataToolUtils.hexStr2DecStr(keyPair.getHexPrivateKey()));
+        byte[] signature = DataToolUtils.base64Encode(DataToolUtils.SigBase64Serialization(sigData).getBytes(StandardCharsets.UTF_8));
+        proofMap.put("signatureValue", signature.toString());
         credMap.put("proof", proofMap);
         CredentialPojo credentialPojo = DataToolUtils
             .deserialize(DataToolUtils.mapToCompactJson(credMap), CredentialPojo.class);

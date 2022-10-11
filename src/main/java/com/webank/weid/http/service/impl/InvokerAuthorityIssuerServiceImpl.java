@@ -22,6 +22,7 @@ package com.webank.weid.http.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.util.DataToolUtils;
+import com.webank.weid.util.WeIdUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,7 +240,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
             if (StringUtils.isEmpty(weIdPrivKey)) {
                 return new HttpResponseData<>(null, HttpReturnCode.INVOKER_ILLEGAL);
             }
-            String issuer = DataToolUtils.convertPrivateKeyToDefaultWeId(weIdPrivKey);
+            String issuer = WeIdUtils.getWeIdFromPrivateKey(weIdPrivKey);
             WeIdAuthentication callerAuth = new WeIdAuthentication(issuer, weIdPrivKey);
             ResponseData<Boolean> response = authorityIssuerService.addIssuerIntoIssuerType(callerAuth, whiteListNameNode.textValue(), weIdNode.textValue());
             return new HttpResponseData<>(response.getResult(), response.getErrorCode(),response.getErrorMessage());

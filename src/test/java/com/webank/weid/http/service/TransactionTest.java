@@ -31,18 +31,15 @@ import com.webank.weid.http.util.JsonUtil;
 import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
+import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.fisco.bcos.web3j.crypto.Credentials;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.Keys;
-import org.fisco.bcos.web3j.crypto.Sign;
-import org.fisco.bcos.web3j.crypto.Sign.SignatureData;
-import org.fisco.bcos.web3j.crypto.gm.GenCredential;
+import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,8 +53,8 @@ public class TransactionTest extends BaseTest {
         if (!TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
-        ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-        String newPublicKey = ecKeyPair.getPublicKey().toString();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        String newPublicKey = DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey());
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
         Assert.assertFalse(invokerWeIdService.isWeIdExist(weId).getResult());
         String nonceVal = TransactionEncoderUtil.getNonce().toString();
@@ -82,9 +79,9 @@ public class TransactionTest extends BaseTest {
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        RsvSignature bodySigned = DataToolUtils.signToRsvSignature(encodedTransaction.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String signedMsg = new String(
-            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
+            DataToolUtils.base64Encode(DataToolUtils.SigBase64Serialization(bodySigned).getBytes(StandardCharsets.UTF_8)));
 
         funcArgMap = new LinkedHashMap<>();
         txnArgMap = new LinkedHashMap<>();
@@ -152,17 +149,16 @@ public class TransactionTest extends BaseTest {
         // note that the authorityIssuer creation can only be done by god account - for now
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        BigInteger decValue = new BigInteger(adminPrivKey, 10);
-        Credentials credentials = GenCredential.create(decValue.toString(16));
-        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        RsvSignature bodySigned = DataToolUtils.signToRsvSignature(encodedTransaction.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String signedMsg = new String(
-            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
+                DataToolUtils.base64Encode(DataToolUtils.SigBase64Serialization(bodySigned).getBytes(StandardCharsets.UTF_8)));
+
         System.out.println("step 2 done, sig: " + signedMsg);
 
         // step 4: send
@@ -234,17 +230,16 @@ public class TransactionTest extends BaseTest {
         // let us use god account for low-bit cptId for good
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        BigInteger decValue = new BigInteger(adminPrivKey, 10);
-        Credentials credentials = GenCredential.create(decValue.toString(16));
-        ECKeyPair ecKeyPair = credentials.getEcKeyPair();
+        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
         byte[] encodedTransaction = DataToolUtils
             .base64Decode(encodeResult.get("encodedTransaction").textValue().getBytes());
-        SignatureData bodySigned = Sign.getSignInterface().signMessage(encodedTransaction, ecKeyPair);
+        RsvSignature bodySigned = DataToolUtils.signToRsvSignature(encodedTransaction.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
         String signedMsg = new String(
-            DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(bodySigned)));
+                DataToolUtils.base64Encode(DataToolUtils.SigBase64Serialization(bodySigned).getBytes(StandardCharsets.UTF_8)));
+
         System.out.println("step 2 done, sig: " + signedMsg);
 
         // step 4: send
