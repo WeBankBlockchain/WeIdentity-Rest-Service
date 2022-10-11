@@ -21,6 +21,7 @@ package com.webank.weid.http.util;
 
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
+import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,9 +34,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.fisco.bcos.web3j.abi.datatypes.Address;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,12 +219,10 @@ public class KeyUtil {
             logger.error("Private key format or size illegal.");
             return null;
         }
-        ECKeyPair keyPair = ECKeyPair.create(new BigInteger(privateKey));
-        String keyWeId = WeIdUtils
-            .convertAddressToWeId(new Address(Keys.getAddress(keyPair)).toString());
+        String keyWeId = WeIdUtils.getWeIdFromPrivateKey(privateKey);
         WeIdAuthentication weIdAuthentication = new WeIdAuthentication();
         weIdAuthentication.setWeId(keyWeId);
-        weIdAuthentication.setWeIdPublicKeyId(keyWeId + "#keys-0");
+        weIdAuthentication.setAuthenticationMethodId(keyWeId + "#keys-" + DataToolUtils.publicKeyStrFromPrivate(new BigInteger(privateKey)));
         WeIdPrivateKey weIdPrivateKey = new WeIdPrivateKey();
         weIdPrivateKey.setPrivateKey(privateKey);
         weIdAuthentication.setWeIdPrivateKey(weIdPrivateKey);
@@ -255,8 +251,8 @@ public class KeyUtil {
         return secretKey.length == 32 && secretKey[0] != 0;
     }
 
-    public static boolean isKeyPairValid(ECKeyPair ecKeyPair) {
-        return isSecretKeyValid(ecKeyPair.getPrivateKey().toByteArray())
-            && isPubkeyBytesValid(ecKeyPair.getPublicKey().toByteArray());
+    public static boolean isKeyPairValid(String privateKey, String publicKey) {
+        return isSecretKeyValid(privateKey.getBytes(StandardCharsets.UTF_8))
+            && isPubkeyBytesValid(publicKey.getBytes(StandardCharsets.UTF_8));
     }
 }

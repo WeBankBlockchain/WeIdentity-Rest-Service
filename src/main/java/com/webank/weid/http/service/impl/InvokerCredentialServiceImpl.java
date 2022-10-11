@@ -61,9 +61,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
-import org.fisco.bcos.web3j.crypto.ECKeyPair;
-import org.fisco.bcos.web3j.crypto.tool.ECCDecrypt;
-import org.fisco.bcos.web3j.crypto.tool.ECCEncrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -475,22 +472,24 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         ResponseData<CredentialPojo> createResp = credentialPojoService.createCredential(args);
         CredentialPojo credentialPojo = createResp.getResult();
         logger.info("Thumbprint without sig: ", getLiteCredentialThumbprintWithoutSig(credentialPojo));
-        logger.info("Hash: " + DataToolUtils.sha3(getLiteCredentialThumbprintWithoutSig(credentialPojo)));
+        logger.info("Hash: " + DataToolUtils.hash(getLiteCredentialThumbprintWithoutSig(credentialPojo)));
 
         String toBeEncryptedCredentialPojo = credentialPojo.toJson();
         System.out.println("Lite Credential toJson: " + toBeEncryptedCredentialPojo);
         logger.info("Lite CredentialPojo Json: ", toBeEncryptedCredentialPojo);
-        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
+        //TODO:encrypt the data
+        /*ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
         try {
             byte[] encryptData = encrypt.encrypt(toBeEncryptedCredentialPojo.getBytes("utf-8"));
             String hexEncryptedData = Hex.toHexString(encryptData);
-            return new HttpResponseData<>(hexEncryptedData, HttpReturnCode.SUCCESS);
+            return new HttpResponseData<>(toBeEncryptedCredentialPojo, HttpReturnCode.SUCCESS);
         } catch (Exception e) {
             logger.error("Error when creating credential and encode: ", e.getMessage());
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 e.getMessage());
-        }
+        }*/
+        return new HttpResponseData<>(toBeEncryptedCredentialPojo, HttpReturnCode.SUCCESS);
     }
 
     @Override
@@ -515,7 +514,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             logger.error("[createCredentialPojoInvoke]: input args error: {}", encryptFuncArgs, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
-        String privateKey = KeyUtil
+        //TODO:encrypt the data
+        /*String privateKey = KeyUtil
             .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
         ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey));
         ECCEncrypt encrypt = new ECCEncrypt(ecKeyPair.getPublicKey());
@@ -534,7 +534,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
         } catch (Exception e) {
             logger.error("Error encrypt: " + e.getMessage());
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(), e.getMessage());
-        }
+        }*/
+        return new HttpResponseData<>(dataNode.textValue(), HttpReturnCode.SUCCESS);
     }
 
     @Override
@@ -558,7 +559,7 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             logger.error("[createCredentialPojoInvoke]: input args error: {}", decryptFuncArgs, e);
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
-        String privateKey = KeyUtil
+        /*String privateKey = KeyUtil
             .getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH, keyIndexNode.textValue());
         logger.info("Privatekey: " + privateKey);
         System.out.println(privateKey);
@@ -581,7 +582,8 @@ public class InvokerCredentialServiceImpl extends BaseService implements Invoker
             logger.error("Error decrypt: " + e.getMessage());
             return new HttpResponseData<>(null, HttpReturnCode.UNKNOWN_ERROR.getCode(),
                 e.getMessage());
-        }
+        }*/
+        return new HttpResponseData<>(dataNode.textValue(), HttpReturnCode.SUCCESS);
     }
 
     @Override
