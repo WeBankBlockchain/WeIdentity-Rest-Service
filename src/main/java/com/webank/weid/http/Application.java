@@ -20,18 +20,24 @@
 package com.webank.weid.http;
 
 import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.util.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.ComponentScan;
+
+import java.io.InputStream;
+import java.net.URL;
 
 @SpringBootApplication(
     exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class}
 )
-@ComponentScan
+@ComponentScan("com.webank.weid")
+@ServletComponentScan("com.webank.weid")
 public class Application {
     private static Logger logger = LoggerFactory.getLogger(Application.class);
 

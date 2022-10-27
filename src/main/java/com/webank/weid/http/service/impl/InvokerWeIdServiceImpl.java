@@ -328,17 +328,22 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
     @Override
     public HttpResponseData<Object> createWeIdWithPubKey(InputArg arg) {
         try {
-            JsonNode publicKeySecpNode = new ObjectMapper()
+            JsonNode publicKeyNode = new ObjectMapper()
                 .readTree(arg.getFunctionArg())
-                .get(WeIdentityParamKeyConstant.PUBKEY_SECP);
+                .get(WeIdentityParamKeyConstant.PUBKEY_ECDSA);
             JsonNode txnArgNode = new ObjectMapper()
                 .readTree(arg.getTransactionArg());
             JsonNode keyIndexNode = txnArgNode.get(WeIdentityParamKeyConstant.KEY_INDEX);
-            if (publicKeySecpNode == null || StringUtils.isEmpty(publicKeySecpNode.textValue())
+            if(publicKeyNode == null || StringUtils.isEmpty(publicKeyNode.textValue())){
+                publicKeyNode = new ObjectMapper()
+                        .readTree(arg.getFunctionArg())
+                        .get(WeIdentityParamKeyConstant.PUBKEY_SM2);
+            }
+            if (publicKeyNode == null || StringUtils.isEmpty(publicKeyNode.textValue())
                 || keyIndexNode == null || StringUtils.isEmpty(keyIndexNode.textValue())) {
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_NULL);
             }
-            if (!DataToolUtils.isValidBase64String(publicKeySecpNode.textValue())) {
+            if (!DataToolUtils.isValidBase64String(publicKeyNode.textValue())) {
                 logger.error("Public key secp256k1 format illegal: not Base64 encoded.");
                 return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                     HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": not Base64");
@@ -347,7 +352,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
 //                return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
 //                    HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + ": public key security risk");
 //            }
-            String publicKeySecp = new BigInteger(1, Base64.decodeBase64(publicKeySecpNode
+            String publicKeySecp = new BigInteger(1, Base64.decodeBase64(publicKeyNode
                     .textValue())).toString(10);
             String weId = WeIdUtils.convertPublicKeyToWeId(publicKeySecp);
             WeIdPublicKey weIdPublicKey = new WeIdPublicKey();
@@ -370,13 +375,13 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
             }
 
             // Proceed on RSA public key
-            JsonNode publicKeyRsaNode;
+            JsonNode publicKeySM2Node;
             String publicKeyRsa;
             try {
-                publicKeyRsaNode = new ObjectMapper()
+                publicKeySM2Node = new ObjectMapper()
                     .readTree(arg.getFunctionArg())
-                    .get(WeIdentityParamKeyConstant.PUBKEY_RSA);
-                publicKeyRsa = publicKeyRsaNode.textValue();
+                    .get(WeIdentityParamKeyConstant.PUBKEY_SM2);
+                publicKeyRsa = publicKeySM2Node.textValue();
                 if (!DataToolUtils.isValidBase64String(publicKeyRsa)) {
                     logger.info("Public key RSA secp256k1 format illegal: not Base64 encoded.");
                     return new HttpResponseData<>(StringUtils.EMPTY, HttpReturnCode.INPUT_ILLEGAL.getCode(),

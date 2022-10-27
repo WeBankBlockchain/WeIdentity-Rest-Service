@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f8c538d0-70cb-4777-a24f-b6d947639596",
+		"_postman_id": "ece24ef5-e5ed-41eb-99ce-9b9f23145f72",
 		"name": "invoke",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -593,6 +593,68 @@
 						"weid",
 						"api",
 						"transact"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createEvidence",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"id\": \"31c38f4c-4d12-40fd-92c4-4d9f1dce0135\",\n        \"hash\": \"0x6726391a7fa259470c26a2e9c9467ddbb1f1e7108eeb6f279248b70bb91f8205\",\n        \"proof\": \"3divzA7mgEv3774UtZRIxjUeQP0IEzMv/FfnRE6RgMjN1lMuyRJNvHF+N8NJjVydRmC9cWffKJjE30W8Vbk+MwA=\",\n        \"log\": \"temp\"\n    },\n    \"transactionArg\": {\n    \t\"groupId\": 1\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"createEvidence\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getEvidence",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"functionArg\": {\n        \"hashValue\": \"0x6726391a7fa259470c26a2e9c9467ddbb1f1e7108eeb6f279248b70bb91f8205\"\n    },\n    \"transactionArg\": {\n    \t\"groupId\": 1\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"getEvidence\"\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"port": "{{httpport}}",
+					"path": [
+						"weid",
+						"api",
+						"invoke"
 					]
 				}
 			},
