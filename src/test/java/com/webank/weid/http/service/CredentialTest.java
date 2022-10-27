@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
 import org.junit.Test;
 
 public class CredentialTest extends BaseTest {
@@ -59,7 +58,7 @@ public class CredentialTest extends BaseTest {
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("cptId", "10");
         funcArgMap.put("issuer", "did:weid:0x865f29d2407e91a8be0d5811c6156b6f1c845f41");
-        funcArgMap.put("expirationDate", "2020-11-18T21:12:33Z");
+        funcArgMap.put("expirationDate", "2022-11-18T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
         claimMap.put("acc", "10001");
         claimMap.put("name", "ppp");
@@ -150,8 +149,7 @@ public class CredentialTest extends BaseTest {
         System.out.println(base64EncRawData);
         String rawData = new String(DataToolUtils.base64Decode(base64EncRawData.getBytes()));
         System.out.println(rawData);
-        CryptoKeyPair keyPair = DataToolUtils.cryptoSuite.createKeyPair(createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
-        RsvSignature sigData = DataToolUtils.signToRsvSignature(rawData, DataToolUtils.hexStr2DecStr(keyPair.getHexPrivateKey()));
+        RsvSignature sigData = DataToolUtils.signToRsvSignature(rawData, createWeIdDataResult.getUserWeIdPrivateKey().getPrivateKey());
         byte[] signature = DataToolUtils.base64Encode(DataToolUtils.SigBase64Serialization(sigData).getBytes(StandardCharsets.UTF_8));
         proofMap.put("signatureValue", signature.toString());
         credMap.put("proof", proofMap);

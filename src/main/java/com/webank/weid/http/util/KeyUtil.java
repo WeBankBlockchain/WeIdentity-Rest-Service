@@ -42,7 +42,7 @@ import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
 /**
  * the util of the private key.
  *
- * @author v_wbgyang
+ * @author afeexian
  */
 public class KeyUtil {
 
@@ -251,8 +251,8 @@ public class KeyUtil {
         return secretKey.length == 32 && secretKey[0] != 0;
     }
 
-    public static boolean isKeyPairValid(String privateKey, String publicKey) {
-        return isSecretKeyValid(privateKey.getBytes(StandardCharsets.UTF_8))
-            && isPubkeyBytesValid(publicKey.getBytes(StandardCharsets.UTF_8));
+    public static boolean isKeyPairValid(byte[] privateKey, byte[] publicKey) {
+        return isSecretKeyValid(privateKey)
+            && isPubkeyBytesValid(publicKey);
     }
 }
