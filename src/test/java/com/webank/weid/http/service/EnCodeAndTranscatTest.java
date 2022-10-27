@@ -12,7 +12,7 @@ import com.webank.weid.http.BaseTest;
 
 public class EnCodeAndTranscatTest extends BaseTest {
   
-    @Test
+    /*@Test
     public void testCreateWeId() throws Exception {
         CryptoKeyPair createEcKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
         String nonce = String.valueOf(System.currentTimeMillis());
@@ -34,5 +34,5 @@ public class EnCodeAndTranscatTest extends BaseTest {
         );
         Integer code = send("weid", buildSend).getErrorCode();
         Assert.assertEquals(0, code.intValue());
-    }
+    }*/
 }
