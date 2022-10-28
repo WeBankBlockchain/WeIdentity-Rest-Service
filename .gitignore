@@ -195,5 +195,5 @@ doc/bak/
 .settings/
 .project
 .classpath
-resources/
 keys/
+/resources/
