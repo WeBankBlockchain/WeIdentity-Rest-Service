@@ -14,6 +14,8 @@ WeIdentity Restful HTTP Service提供了简化的WeIdentity集成方式与访问
 
 详细的设计及使用说明，请参见 [WeIdentity RestService文档](https://weidentity.readthedocs.io/zh_CN/latest/docs/weidentity-rest.html)
 
+WeIdentity及其组件的[兼容版本说明文档](https://weidentity.readthedocs.io/zh_CN/develop/docs/compatibility.html) 请查看！
+
 ## 联系我们
 
 邮箱：weidentity@webank.com
