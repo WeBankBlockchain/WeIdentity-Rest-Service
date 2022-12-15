@@ -23,7 +23,7 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.protocol.request.TransactionArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.PropertiesUtil;
-import com.webank.weid.rpc.WeIdService;
+import com.webank.weid.service.rpc.WeIdService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 
-public abstract class BaseService extends com.webank.weid.service.BaseService {
+public abstract class BaseService extends com.webank.weid.blockchain.service.fisco.BaseServiceFisco {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseService.class);
 
