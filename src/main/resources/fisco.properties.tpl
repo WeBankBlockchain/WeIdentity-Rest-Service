@@ -2,7 +2,7 @@
 
 #######################################################################################################
 #                                                                                                     #
-#         fisco bcos 2 or 3 version config                                                                   #
+#         fisco bcos version config                                                                   #
 #                                                                                                     #
 #######################################################################################################
 # Version
@@ -21,9 +21,9 @@ issuer.contractaddress=
 evidence.contractaddress=
 specificissuer.contractaddress=
 
-# This variable is used to distinguish the environment. You can use "dev" to set the development environment, 
+# This variable is used to distinguish the environment. You can use "dev" to set the development environment,
 # "stg" to set the test environment, "prd" to set the production environment,
-# If you do not set it, the system will use allOrg as the environment by default. 
+# If you do not set it, the system will use allOrg as the environment by default.
 # It is not recommended. Production use default configuration
 cns.profile.active=${CNS_PROFILE_ACTIVE}
 
@@ -53,8 +53,8 @@ group.id=1
 #         fisco bcos node cert related config                                                         #
 #                                                                                                     #
 #######################################################################################################
-# Fisco-Bcos sdk SSL encrypt type, false:ECDSA, true:SaM2
-sdk.sm-crypto=${SDK_SM_CRYPTO}
+# Fisco-Bcos sdk SSL encrypt type, false:ECDSA, true:SM2
+sdk.sm-crypto=false
 # fisco-bcos sdk cert path contains[ca.crt,sdk.crt,sdk.key]
 # if sdk.sm-crypto is true, contains [gm] directory, and gm dir contains [gmca.crt,gmsdk.crt,gmsdk.key,gmensdk.crt,gmensdk.key]
 sdk.cert-path=conf

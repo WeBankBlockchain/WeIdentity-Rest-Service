@@ -46,10 +46,10 @@ import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.AuthorityIssuerService;
-import com.webank.weid.rpc.RawTransactionService;
+import com.webank.weid.service.rpc.AuthorityIssuerService;
+import com.webank.weid.blockchain.rpc.RawTransactionService;
 import com.webank.weid.service.impl.AuthorityIssuerServiceImpl;
-import com.webank.weid.service.impl.RawTransactionServiceImpl;
+import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 
 @Component
 public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
@@ -135,7 +135,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
     public HttpResponseData<String> registerAuthorityIssuerWithTransactionHex(
         String transactionHex) {
         try {
-            ResponseData<String> responseData = rawTransactionService
+            com.webank.weid.blockchain.protocol.response.ResponseData<String> responseData = rawTransactionService
                 .registerAuthorityIssuer(transactionHex);
             if (responseData.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
                 logger.error("[registerCpt]: error occurred: {}, {}", responseData.getErrorCode(),
