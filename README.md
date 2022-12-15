@@ -20,4 +20,4 @@ WeIdentity Restful HTTP Service提供了简化的WeIdentity集成方式与访问
 
 ## License
 
-This project is released under [LGPLv3.0](https://opensource.org/licenses/LGPL-3.0)
+This project is released under [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0).
