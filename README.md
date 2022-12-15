@@ -22,4 +22,4 @@ WeIdentity及其组件的[兼容版本说明文档](https://weidentity.readthedo
 
 ## License
 
-This project is released under [LGPLv3.0](https://opensource.org/licenses/LGPL-3.0)
+This project is released under [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0).

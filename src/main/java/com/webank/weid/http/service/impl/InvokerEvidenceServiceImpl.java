@@ -3,7 +3,7 @@ package com.webank.weid.http.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.blockchain.config.FiscoConfig;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.ProcessingMode;
 import com.webank.weid.constant.WeIdConstant;
@@ -20,10 +20,10 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.EvidenceService;
+import com.webank.weid.service.rpc.EvidenceService;
 import com.webank.weid.service.impl.EvidenceServiceImpl;
-import com.webank.weid.service.impl.engine.EngineFactory;
-import com.webank.weid.service.impl.engine.EvidenceServiceEngine;
+import com.webank.weid.blockchain.service.fisco.engine.EngineFactoryFisco;
+import com.webank.weid.blockchain.service.fisco.engine.EvidenceServiceEngineFisco;
 import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.WeIdUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,7 +52,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
     }
     // A map to store group ID and evidence service instances
     Map<Integer, EvidenceService> evidenceServiceInstances = new ConcurrentHashMap<>();
-    Map<Integer, EvidenceServiceEngine> evidenceServiceEngineInstances = new ConcurrentHashMap<>();
+    Map<Integer, EvidenceServiceEngineFisco> evidenceServiceEngineInstances = new ConcurrentHashMap<>();
 
     /**
      * A lazy initialization to create evidence service impl instance.
@@ -367,7 +367,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
         return new HttpResponseData<>(true, HttpReturnCode.SUCCESS);
     }
     
-    private EvidenceServiceEngine getEvidenceServiceEngine(InputArg args) throws Exception {
+    private EvidenceServiceEngineFisco getEvidenceServiceEngine(InputArg args) throws Exception {
         JsonNode groupIdNode;
         JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
         groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
@@ -387,9 +387,9 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.error("Group Id illegal: {}", groupId);
             return null;
         }
-        EvidenceServiceEngine evidenceServiceEngine = evidenceServiceEngineInstances.get(groupId);
+        EvidenceServiceEngineFisco evidenceServiceEngine = evidenceServiceEngineInstances.get(groupId);
         if (evidenceServiceEngine == null) {
-            evidenceServiceEngine = EngineFactory.createEvidenceServiceEngine(String.valueOf(groupId));
+            evidenceServiceEngine = EngineFactoryFisco.createEvidenceServiceEngine(String.valueOf(groupId));
             evidenceServiceEngineInstances.put(groupId, evidenceServiceEngine);
         }
         return evidenceServiceEngine;
@@ -447,7 +447,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             signers.add(issuer);
         }
 
-        EvidenceServiceEngine createEvidenceServiceEngine;
+        EvidenceServiceEngineFisco createEvidenceServiceEngine;
         try {
             createEvidenceServiceEngine = getEvidenceServiceEngine(args);
             if (createEvidenceServiceEngine == null) {
@@ -463,7 +463,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
-        ResponseData<List<Boolean>> response = createEvidenceServiceEngine.batchCreateEvidence(
+        com.webank.weid.blockchain.protocol.response.ResponseData<List<Boolean>> response = createEvidenceServiceEngine.batchCreateEvidence(
             hashValues, 
             signatures, 
             logs, 

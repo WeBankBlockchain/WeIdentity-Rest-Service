@@ -42,9 +42,9 @@ import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.RawTransactionService;
-import com.webank.weid.rpc.WeIdService;
-import com.webank.weid.service.impl.RawTransactionServiceImpl;
+import com.webank.weid.blockchain.rpc.RawTransactionService;
+import com.webank.weid.service.rpc.WeIdService;
+import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.service.impl.WeIdServiceImpl;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
@@ -123,7 +123,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
      */
     public HttpResponseData<String> createWeIdWithTransactionHex(String transactionHex) {
         try {
-            ResponseData<String> responseData = rawTransactionService.createWeId(transactionHex);
+            com.webank.weid.blockchain.protocol.response.ResponseData<String> responseData = rawTransactionService.createWeId(transactionHex);
             if (responseData.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
                 logger.error("[createWeId]: error occurred: {}, {}", responseData.getErrorCode(),
                     responseData.getErrorMessage());

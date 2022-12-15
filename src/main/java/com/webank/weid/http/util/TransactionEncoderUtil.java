@@ -21,7 +21,7 @@ package com.webank.weid.http.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.blockchain.config.FiscoConfig;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -29,9 +29,9 @@ import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.EncodedTransactionWrapper;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.service.BaseService;
+import com.webank.weid.blockchain.service.fisco.BaseServiceFisco;
 import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.TransactionUtils;
+import com.webank.weid.blockchain.util.TransactionUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -147,7 +147,7 @@ public class TransactionEncoderUtil {
      */
     private static BigInteger getBlockLimit() {
         try {
-            return BigInteger.valueOf(BaseService.getBlockNumber());
+            return BigInteger.valueOf(BaseServiceFisco.getBlockNumber());
         } catch (IOException e) {
             logger.error("get BlockNumber error.", e);
         }

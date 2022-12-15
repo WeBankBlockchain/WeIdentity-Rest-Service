@@ -22,10 +22,10 @@ package com.webank.weid.http.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.webank.weid.rpc.AuthorityIssuerService;
-import com.webank.weid.rpc.CptService;
-import com.webank.weid.rpc.CredentialService;
-import com.webank.weid.rpc.WeIdService;
+import com.webank.weid.service.rpc.AuthorityIssuerService;
+import com.webank.weid.service.rpc.CptService;
+import com.webank.weid.service.rpc.CredentialService;
+import com.webank.weid.service.rpc.WeIdService;
 import com.webank.weid.service.impl.AuthorityIssuerServiceImpl;
 import com.webank.weid.service.impl.CptServiceImpl;
 import com.webank.weid.service.impl.CredentialServiceImpl;

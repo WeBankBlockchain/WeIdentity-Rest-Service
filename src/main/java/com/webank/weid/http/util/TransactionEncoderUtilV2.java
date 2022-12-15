@@ -4,7 +4,8 @@ import static com.webank.weid.service.impl.CredentialPojoServiceImpl.generateSal
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.blockchain.config.FiscoConfig;
+import com.webank.weid.blockchain.service.fisco.CryptoFisco;
 import com.webank.weid.constant.CredentialConstant;
 import com.webank.weid.constant.CredentialConstant.CredentialProofType;
 import com.webank.weid.constant.ErrorCode;
@@ -21,7 +22,7 @@ import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.ServiceProperty;
 import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
 import com.webank.weid.protocol.response.RsvSignature;
-import com.webank.weid.service.BaseService;
+import com.webank.weid.blockchain.service.fisco.BaseServiceFisco;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.CredentialUtils;
 import com.webank.weid.util.DataToolUtils;
@@ -29,7 +30,7 @@ import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.Multibase.Multibase;
 import com.webank.weid.util.Multicodec.Multicodec;
 import com.webank.weid.util.Multicodec.MulticodecEncoder;
-import com.webank.weid.util.TransactionUtils;
+import com.webank.weid.blockchain.util.TransactionUtils;
 import com.webank.weid.util.WeIdUtils;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -131,7 +132,7 @@ public class TransactionEncoderUtilV2 {
         //verification method controller默认为自己
         authenticationProperty.setController(weId);
         //这里把publicKey用multicodec编码，然后使用Multibase格式化，国密和非国密使用不同的编码
-        byte[] publicKeyEncode = MulticodecEncoder.encode(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE? Multicodec.ED25519_PUB:Multicodec.SM2_PUB,
+        byte[] publicKeyEncode = MulticodecEncoder.encode(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE? Multicodec.ED25519_PUB:Multicodec.SM2_PUB,
                 publicKey.getBytes(StandardCharsets.UTF_8));
         authenticationProperty.setPublicKeyMultibase(Multibase.encode(Multibase.Base.Base58BTC, publicKeyEncode));
         List<String> authList = new ArrayList<>();
@@ -308,7 +309,7 @@ public class TransactionEncoderUtilV2 {
 
     public static String createClientEncodeResult(Function function, String nonce, String to, String groupId) {
         // 1. encode the Function
-        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        FunctionEncoder functionEncoder = new FunctionEncoder(CryptoFisco.cryptoSuite);
         String data = functionEncoder.encode(function);
         return createClientEncodeResult(data, nonce, to, groupId);
     }
@@ -430,7 +431,7 @@ public class TransactionEncoderUtilV2 {
         if (65 != serializedSignatureData.length || 64 != serializedSignatureData.length) {
             return null;
         }
-        if(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
+        if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
             // Determine signature type
             Byte javav = serializedSignatureData[0];
             Byte lwcv = serializedSignatureData[64];
@@ -489,7 +490,7 @@ public class TransactionEncoderUtilV2 {
      */
     public static BigInteger getChainIdV2() {
         try {
-            Client web3j = (Client) BaseService.getClient();
+            Client web3j = (Client) BaseServiceFisco.getClient();
             NodeVersion.ClientVersion nodeVersion = web3j.getNodeVersion().getNodeVersion();
             String chainId = nodeVersion.getChainId();
             return new BigInteger(chainId);
@@ -505,7 +506,7 @@ public class TransactionEncoderUtilV2 {
      */
     public static BigInteger getBlocklimitV2() {
         try {
-            Client web3j = (Client) BaseService.getClient();
+            Client web3j = (Client) BaseServiceFisco.getClient();
             return web3j.getBlockLimit();
         } catch (Exception e) {
             return null;
@@ -514,7 +515,7 @@ public class TransactionEncoderUtilV2 {
 
     public static Optional<TransactionReceipt> getTransactionReceiptRequest(String transactionHash) {
         Optional<TransactionReceipt> receiptOptional = Optional.empty();
-        Client web3j = (Client) BaseService.getClient();
+        Client web3j = (Client) BaseServiceFisco.getClient();
         try {
             for (int i = 0; i < 5; i++) {
                 receiptOptional = web3j.getTransactionReceipt(transactionHash).getTransactionReceipt();

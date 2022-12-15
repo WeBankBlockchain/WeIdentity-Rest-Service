@@ -2,7 +2,8 @@ package com.webank.weid.http.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.config.FiscoConfig;
+import com.webank.weid.blockchain.config.FiscoConfig;
+import com.webank.weid.blockchain.service.fisco.CryptoFisco;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.contract.v2.AuthorityIssuerController;
 import com.webank.weid.contract.v2.AuthorityIssuerController.AuthorityIssuerRetLogEventResponse;
@@ -19,7 +20,7 @@ import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.http.util.TransactionEncoderUtil;
 import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import com.webank.weid.protocol.response.RsvSignature;
-import com.webank.weid.service.BaseService;
+import com.webank.weid.blockchain.service.fisco.BaseServiceFisco;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
 import com.webank.weid.util.WeIdUtils;
@@ -56,7 +57,7 @@ public class TransactionTestV2 {
         }
 
         // simulate client key-pair creation
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
         String newPublicKey = DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey());
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
         String nonce = TransactionEncoderUtilV2.getNonce().toString();
@@ -110,7 +111,7 @@ public class TransactionTestV2 {
 
     //@Test
     public void testClientSign() {
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair("1113");
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair("1113");
         String rawData = "+QGYiAoqvdSrq50MhRdIduf/hRdIduf/ggQglFl9kvCEDRPm7TPTzjYkiy3r5p5JgLkBZGvzCg0AAAAAAAAAAAAAAAASqNtWmYMdG8x4pGCkn3Z0a0trLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAXkT+MQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB5MTA4MTkzNTI4NjAyODUxMzgxMzc3NjA4NDQ0MjE3NDI4ODEwMjAzOTIxODc4OTEyMjk2ODE1MDI0MDQ5MjA3NDUwMjYwNzA1NTA0OTM4LzB4MTJhOGRiNTY5OTgzMWQxYmNjNzhhNDYwYTQ5Zjc2NzQ2YjRiNmIyYwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACjE1ODE1Nzk4MjUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQGA";
         byte[] encodedTransactionClient = Base64.decode(rawData.getBytes());
         RsvSignature clientSignedData = DataToolUtils.signToRsvSignature(encodedTransactionClient.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()));
@@ -150,7 +151,7 @@ public class TransactionTestV2 {
         // note that the authorityIssuer creation can only be done by deployer
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
@@ -234,7 +235,7 @@ public class TransactionTestV2 {
         // let us use god account for low-bit cptId for good
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
@@ -291,7 +292,7 @@ public class TransactionTestV2 {
         fiscoConfig.load();
         String to = fiscoConfig.getWeIdAddress();
         // all steps:
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
         String weId = WeIdUtils.convertPublicKeyToWeId(DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey()));
         String addr = WeIdUtils.convertWeIdToAddress(weId);
         // 0. client generate nonce and send to server
@@ -319,7 +320,7 @@ public class TransactionTestV2 {
                         new DynamicArray<Utf8String>(
                                 Utils.typeMap(service, org.fisco.bcos.sdk.abi.datatypes.Utf8String.class))),
                 Collections.<TypeReference<?>>emptyList());
-        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        FunctionEncoder functionEncoder = new FunctionEncoder(CryptoFisco.cryptoSuite);
         String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Client web3j = (Client) BaseService.getClient();
@@ -349,7 +350,7 @@ public class TransactionTestV2 {
         if (receiptOptional.isPresent()) {
             TransactionReceipt receipt = receiptOptional.get();
             WeIdContract weIdContract = WeIdContract.load(to, web3j,
-                DataToolUtils.cryptoSuite.getCryptoKeyPair());
+                    CryptoFisco.cryptoSuite.getCryptoKeyPair());
             List<WeIdContract.UpdateWeIdEventResponse> response =
                 weIdContract.getUpdateWeIdEvents(receipt);
             Assert.assertNotNull(response);
@@ -366,7 +367,7 @@ public class TransactionTestV2 {
         fiscoConfig.load();
         String to = fiscoConfig.getIssuerAddress();
         // all steps:
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
         String weId = WeIdUtils.convertPublicKeyToWeId(DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey()));
         String addr = WeIdUtils.convertWeIdToAddress(weId);
         // 0. client generate nonce and send to server
@@ -377,7 +378,7 @@ public class TransactionTestV2 {
             "removeAuthorityIssuer",
             Arrays.<Type>asList(new Address(addr)),
             Collections.<TypeReference<?>>emptyList());
-        FunctionEncoder functionEncoder = new FunctionEncoder(DataToolUtils.cryptoSuite);
+        FunctionEncoder functionEncoder = new FunctionEncoder(CryptoFisco.cryptoSuite);
         String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
         Client web3j = (Client) BaseService.getClient();
@@ -387,8 +388,8 @@ public class TransactionTestV2 {
         // 3. server sends everything back to client in encoded base64 manner
         // 这一步先忽略
         // 4. client signs and sends back to send raw txn
-        TransactionEncoderService transactionEncoder = new TransactionEncoderService(DataToolUtils.cryptoSuite);
-        String txnHex = transactionEncoder.encodeAndSign(rawTransaction, DataToolUtils.cryptoSuite.getCryptoKeyPair());
+        TransactionEncoderService transactionEncoder = new TransactionEncoderService(CryptoFisco.cryptoSuite);
+        String txnHex = transactionEncoder.encodeAndSign(rawTransaction, CryptoFisco.cryptoSuite.getCryptoKeyPair());
         //String txnHex = Numeric.toHexString(signedMessage);
         /*SendTransaction sendTransaction = web3j.sendRawTransaction(txnHex).sendAsync()
             .get(WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT, TimeUnit.SECONDS);*/
@@ -397,7 +398,7 @@ public class TransactionTestV2 {
             TransactionEncoderUtilV2.getTransactionReceiptRequest(sendTransaction.getTransactionHash());
         TransactionReceipt receipt = receiptOptional.get();
         AuthorityIssuerController authorityIssuerController = AuthorityIssuerController.load(to, web3j,
-                DataToolUtils.cryptoSuite.getCryptoKeyPair());
+                CryptoFisco.cryptoSuite.getCryptoKeyPair());
         List<AuthorityIssuerRetLogEventResponse> response =
             authorityIssuerController.getAuthorityIssuerRetLogEvents(receipt);
         Assert.assertNotNull(response);

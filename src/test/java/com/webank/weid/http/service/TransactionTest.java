@@ -21,6 +21,7 @@ package com.webank.weid.http.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.blockchain.service.fisco.CryptoFisco;
 import com.webank.weid.http.BaseTest;
 import com.webank.weid.http.constant.WeIdentityFunctionNames;
 import com.webank.weid.http.constant.WeIdentityParamKeyConstant;
@@ -53,7 +54,7 @@ public class TransactionTest extends BaseTest {
         if (!TransactionEncoderUtil.isFiscoBcosV1()) {
             return;
         }
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
         String newPublicKey = DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPublicKey());
         String weId = WeIdUtils.convertPublicKeyToWeId(newPublicKey);
         Assert.assertFalse(invokerWeIdService.isWeIdExist(weId).getResult());
@@ -149,7 +150,7 @@ public class TransactionTest extends BaseTest {
         // note that the authorityIssuer creation can only be done by god account - for now
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
@@ -230,7 +231,7 @@ public class TransactionTest extends BaseTest {
         // let us use god account for low-bit cptId for good
         String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(adminPrivKey);
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair(adminPrivKey);
         JsonNode encodeResult = new ObjectMapper()
             .readTree(JsonUtil.objToJsonStr(resp1.getRespBody()));
         String data = encodeResult.get("data").textValue();
