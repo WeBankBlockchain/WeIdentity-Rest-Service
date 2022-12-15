@@ -10,7 +10,7 @@ import com.webank.weid.http.service.rpc.RpcConnectionHandler;
 import com.webank.weid.http.util.EndpointDataUtil;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.CredentialPojoService;
+import com.webank.weid.service.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;
 import java.net.URI;

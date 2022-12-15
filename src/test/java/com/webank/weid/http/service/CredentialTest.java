@@ -34,7 +34,7 @@ import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.protocol.response.RsvSignature;
-import com.webank.weid.rpc.CredentialPojoService;
+import com.webank.weid.service.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.DateUtils;
@@ -58,7 +58,7 @@ public class CredentialTest extends BaseTest {
         Map<String, Object> funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("cptId", "10");
         funcArgMap.put("issuer", "did:weid:0x865f29d2407e91a8be0d5811c6156b6f1c845f41");
-        funcArgMap.put("expirationDate", "2022-11-18T21:12:33Z");
+        funcArgMap.put("expirationDate", "2042-11-18T21:12:33Z");
         Map<String, Object> claimMap = new LinkedHashMap<>();
         claimMap.put("acc", "10001");
         claimMap.put("name", "ppp");
