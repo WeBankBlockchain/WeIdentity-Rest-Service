@@ -42,10 +42,10 @@ import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CptStringArgs;
 import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.rpc.CptService;
-import com.webank.weid.rpc.RawTransactionService;
+import com.webank.weid.service.rpc.CptService;
+import com.webank.weid.blockchain.rpc.RawTransactionService;
 import com.webank.weid.service.impl.CptServiceImpl;
-import com.webank.weid.service.impl.RawTransactionServiceImpl;
+import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 
 @Component
 public class InvokerCptServiceImpl extends BaseService implements InvokerCptService {
@@ -124,7 +124,7 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
      */
     public HttpResponseData<String> registerCptWithTransactionHex(String transactionHex) {
         try {
-            ResponseData<String> responseData = rawTransactionService.registerCpt(transactionHex);
+            com.webank.weid.blockchain.protocol.response.ResponseData<String> responseData = rawTransactionService.registerCpt(transactionHex);
             if (responseData.getErrorCode() != ErrorCode.SUCCESS.getCode()) {
                 logger.error("[registerCpt]: error occurred: {}, {}", responseData.getErrorCode(),
                     responseData.getErrorMessage());

@@ -19,6 +19,7 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.blockchain.service.fisco.CryptoFisco;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.http.BaseTest;
@@ -445,7 +446,7 @@ public class PureInvokerTest extends BaseTest {
             .getCredentialThumbprintWithoutSig(tempCred, tempCred.getSalt(), null);
         byte[] rawDataBytes = DataToolUtils.base64Decode(DataToolUtils.base64Encode(rawDataStr.getBytes(StandardCharsets.UTF_8)));
         BigInteger db = new BigInteger(weIdPrivKey, 10);
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair(db.toString(16));
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair(db.toString(16));
         String signedSig2 = new String(DataToolUtils.base64Encode(DataToolUtils
             .SigBase64Serialization(DataToolUtils.signToRsvSignature(DataToolUtils.hash(rawDataBytes).toString(), DataToolUtils.hexStr2DecStr(ecKeyPair.getHexPrivateKey()))).getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
         System.out.println(signedSig2);
@@ -482,7 +483,7 @@ public class PureInvokerTest extends BaseTest {
         // step 1: client do base64 decode
         byte[] rawData = DataToolUtils.base64Decode(sig.getBytes(StandardCharsets.UTF_8));
         // step 2: client do sign
-        CryptoKeyPair ecKeyPair2 = DataToolUtils.cryptoSuite.createKeyPair(db.toString(16));
+        CryptoKeyPair ecKeyPair2 = CryptoFisco.cryptoSuite.createKeyPair(db.toString(16));
         RsvSignature sigData = DataToolUtils
             .signToRsvSignature(rawData.toString(), DataToolUtils.hexStr2DecStr(ecKeyPair2.getHexPrivateKey()));
         String signedSig = DataToolUtils.SigBase64Serialization(sigData);
@@ -510,10 +511,10 @@ public class PureInvokerTest extends BaseTest {
         int failed = 0;
         int totalRuns = 1000;
         for (int i = 0; i < totalRuns; i++) {
-            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+            ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
             int times = 0;
             while (!KeyUtil.isKeyPairValid(Numeric.hexStringToByteArray(ecKeyPair.getHexPrivateKey()), Numeric.hexStringToByteArray(ecKeyPair.getHexPublicKey()))) {
-                ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+                ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
                 times++;
             }
             System.out.println("Regenerate a valid one after times: " + times);
@@ -526,9 +527,9 @@ public class PureInvokerTest extends BaseTest {
 
     @Test
     public void testKeyValidity() {
-        CryptoKeyPair ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
         while (!KeyUtil.isKeyPairValid(Numeric.hexStringToByteArray(ecKeyPair.getHexPrivateKey()), Numeric.hexStringToByteArray(ecKeyPair.getHexPublicKey()))) {
-            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+            ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
             System.out.println("Re-generating key pair..");
         }
     }
@@ -539,7 +540,7 @@ public class PureInvokerTest extends BaseTest {
         CryptoKeyPair ecKeyPair;
         byte[] pubkeybytes = new byte[64];
         while (!KeyUtil.isPubkeyBytesValid(pubkeybytes)) {
-            ecKeyPair = DataToolUtils.cryptoSuite.createKeyPair();
+            ecKeyPair = CryptoFisco.cryptoSuite.createKeyPair();
             pubkeybytes = Numeric.hexStringToByteArray(ecKeyPair.getHexPublicKey());
             System.out.println("Re-generating public key..");
         }
@@ -723,14 +724,14 @@ public class PureInvokerTest extends BaseTest {
         byte[] hashBytes = DataToolUtils.hash(msg.getBytes());
         String hash = Numeric.toHexString(hashBytes);
         System.out.println("Converted hash: " + hash);
-        if(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.SM_TYPE){
+        if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.SM_TYPE){
         Assert.assertTrue(hash.equals(WeIdConstant.HEX_PREFIX + txHashSM2));}else {
             Assert.assertTrue(hash.equals(WeIdConstant.HEX_PREFIX + txHashECDSA));
         }
 
         // recover txsign
         byte[] txSigByte = Hex.decode(txSigECDSA);
-        if(DataToolUtils.cryptoSuite.getCryptoTypeConfig() == CryptoType.SM_TYPE){
+        if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.SM_TYPE){
             txSigByte = Hex.decode(txSigSM2);}
         RsvSignature txSigData = new RsvSignature();
         Assert.assertEquals(txSigByte.length, 65);
@@ -742,7 +743,7 @@ public class PureInvokerTest extends BaseTest {
         txSigData.setS(new Bytes32(s));
         txSigData.setV(new Uint8(txSigByte[64]));
         //String trunctedTxPubkey = txHexPubKey.substring(2);
-        CryptoKeyPair keyPair = DataToolUtils.cryptoSuite.createKeyPair(txHexPrivKey);
+        CryptoKeyPair keyPair = CryptoFisco.cryptoSuite.createKeyPair(txHexPrivKey);
         //BigInteger txPubKeyBi = new BigInteger(trunctedTxPubkey, 16);
         BigInteger txPubKeyBi = new BigInteger(keyPair.getHexPublicKey(), 16);
         RsvSignature rsvSignature = DataToolUtils.signToRsvSignature(msg, DataToolUtils.hexStr2DecStr(txHexPrivKey));
@@ -756,7 +757,7 @@ public class PureInvokerTest extends BaseTest {
         Assert.assertTrue(result);
 
         // send to txsign to verify
-        CryptoKeyPair keyPair2 = DataToolUtils.cryptoSuite.createKeyPair(txHexPrivKey);
+        CryptoKeyPair keyPair2 = CryptoFisco.cryptoSuite.createKeyPair(txHexPrivKey);
         RsvSignature sigData = DataToolUtils.signToRsvSignature(msg, DataToolUtils.hexStr2DecStr(keyPair2.getHexPrivateKey()));
         byte[] serializedSignatureData = new byte[65];
         serializedSignatureData[64] = sigData.getV().getValue().byteValue();
@@ -773,14 +774,14 @@ public class PureInvokerTest extends BaseTest {
 
         String priv = "109133513592087805746587031475659996081883766162039886922465775418059633608266";
         BigInteger bi = new BigInteger(priv, 10);
-        CryptoKeyPair keyPair3 = DataToolUtils.cryptoSuite.createKeyPair(bi.toString(16));
+        CryptoKeyPair keyPair3 = CryptoFisco.cryptoSuite.createKeyPair(bi.toString(16));
         System.out.println(DataToolUtils.hexStr2DecStr(keyPair3.getHexPublicKey()));
         System.out.println(DataToolUtils.hexStr2DecStr(keyPair3.getHexPrivateKey()));
     }
 
     @Test
     public void testHexBase64BigInt() throws Exception {
-        CryptoKeyPair keyPair2 = DataToolUtils.cryptoSuite.createKeyPair();
+        CryptoKeyPair keyPair2 = CryptoFisco.cryptoSuite.createKeyPair();
         byte[] correctEncodedBase64Str = DataToolUtils.base64Encode(Hex.decode(keyPair2.getHexPublicKey()));
         System.out.println("直接获取hex " + keyPair2.getHexPublicKey());
         System.out.println("转换decima " + DataToolUtils.hexStr2DecStr(keyPair2.getHexPublicKey()));
