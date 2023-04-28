@@ -323,7 +323,7 @@ public class TransactionTestV2 {
         FunctionEncoder functionEncoder = new FunctionEncoder(CryptoFisco.cryptoSuite);
         String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
-        Client web3j = (Client) BaseService.getClient();
+        Client web3j = (Client) com.webank.weid.blockchain.service.fisco.BaseServiceFisco.getClient();
         BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             fiscoConfig.getGroupId(), data, to, blocklimit);
@@ -381,7 +381,7 @@ public class TransactionTestV2 {
         FunctionEncoder functionEncoder = new FunctionEncoder(CryptoFisco.cryptoSuite);
         String data = functionEncoder.encode(function);
         // 2. server generate encodedTransaction
-        Client web3j = (Client) BaseService.getClient();
+        Client web3j = (Client) com.webank.weid.blockchain.service.fisco.BaseServiceFisco.getClient();
         BigInteger blocklimit = TransactionEncoderUtilV2.getBlocklimitV2();
         RawTransaction rawTransaction = TransactionEncoderUtilV2.buildRawTransaction(nonce,
             fiscoConfig.getGroupId(), data, to, blocklimit);

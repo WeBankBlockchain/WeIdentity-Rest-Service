@@ -21,14 +21,8 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.util.DataToolUtils;
-import com.webank.weid.util.WeIdUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.blockchain.constant.ErrorCode;
+import com.webank.weid.blockchain.protocol.response.ResponseData;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.exception.InitWeb3jException;
@@ -45,11 +39,13 @@ import com.webank.weid.protocol.base.AuthorityIssuer;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.RegisterAuthorityIssuerArgs;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.service.rpc.AuthorityIssuerService;
-import com.webank.weid.blockchain.rpc.RawTransactionService;
 import com.webank.weid.service.impl.AuthorityIssuerServiceImpl;
-import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
+import com.webank.weid.service.rpc.AuthorityIssuerService;
+import com.webank.weid.util.WeIdUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
@@ -59,7 +55,7 @@ public class InvokerAuthorityIssuerServiceImpl extends BaseService implements
 
     private AuthorityIssuerService authorityIssuerService = new AuthorityIssuerServiceImpl();
 
-    private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
+    //private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
 
     /**
      * Register a new Authority Issuer on Chain via Invoke function.

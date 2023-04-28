@@ -293,7 +293,7 @@ public class PureInvokerTest extends BaseTest {
         // test pure encrypt and decrypt
         data = "{\"name\":\"mark\",\"a\":10}";
         txnArgMap = new LinkedHashMap<>();
-        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "ecdsa_key");
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "private_key");
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("data", data);
         inputParamMap = new LinkedHashMap<>();
@@ -310,7 +310,7 @@ public class PureInvokerTest extends BaseTest {
 
         data = (String) resp14.getRespBody();
         txnArgMap = new LinkedHashMap<>();
-        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "ecdsa_key");
+        txnArgMap.put(WeIdentityParamKeyConstant.KEY_INDEX, "private_key");
         funcArgMap = new LinkedHashMap<>();
         funcArgMap.put("data", data);
         inputParamMap = new LinkedHashMap<>();

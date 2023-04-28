@@ -128,6 +128,11 @@ public enum HttpReturnCode {
     SIGN_TYPE_ILLEGAL(201019, "SignType value illegal. "),
 
     /**
+     * WeIdentity deploy style(database) not support send rawTransaction.
+     */
+    WEIDENTITY_DEPLOY_NOT_SUPPORT(201019, "WeIdentity deploy style(database) not support send rawTransaction. "),
+
+    /**
      * getWeIdListByPubKeyList interface error
      */
     GET_WEID_LIST_BY_PUBKEY_LIST_ERROR(500100, "Get weId list by pubKeyList error. "),

@@ -45,7 +45,7 @@ public final class WeIdentityParamKeyConstant {
     public static final String LIST = "list";
 
     public static final String DEFAULT_API_VERSION = "1.0.0";
-    public static final String DEFAULT_PRIVATE_KEY_FILE_NAME = "ecdsa_key";
+    public static final String DEFAULT_PRIVATE_KEY_FILE_NAME = "private_key";
 
     public static final String AUTHO_TOKEN = "authToken";
     public static final String AUTHO_SIGNED_NONCE = "signedNonce";
