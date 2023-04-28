@@ -19,11 +19,14 @@
 
 package com.webank.weid.http.service;
 
+import com.webank.weid.blockchain.rpc.RawTransactionService;
+import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.http.protocol.request.TransactionArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.http.util.PropertiesUtil;
 import com.webank.weid.service.rpc.WeIdService;
+import com.webank.weid.util.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +42,7 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 
-public abstract class BaseService extends com.webank.weid.blockchain.service.fisco.BaseServiceFisco {
+public abstract class BaseService {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseService.class);
 
@@ -47,6 +50,13 @@ public abstract class BaseService extends com.webank.weid.blockchain.service.fis
      * spring context.
      */
     protected static final ApplicationContext context;
+
+    public static RawTransactionService rawTransactionService;
+    static {
+        if (PropertyUtils.getProperty("deploy.style").equals("blockchain")) {
+            rawTransactionService = new RawTransactionServiceImpl();
+        }
+    }
 
     static {
         // initializing spring containers
@@ -85,7 +95,7 @@ public abstract class BaseService extends com.webank.weid.blockchain.service.fis
     }
 
     protected HttpResponseData<Object> checkWeIdExist(WeIdService weIdService, String weId) {
-        com.webank.weid.protocol.response.ResponseData<Boolean> weIdExist = weIdService.isWeIdExist(weId);
+        com.webank.weid.blockchain.protocol.response.ResponseData<Boolean> weIdExist = weIdService.isWeIdExist(weId);
         if (!weIdExist.getResult()) {
             return new HttpResponseData<>(
                     weIdExist.getResult(),

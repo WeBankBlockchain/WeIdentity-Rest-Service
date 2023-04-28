@@ -16,7 +16,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
-version = "1.6.0"
+version = "1.7.0"
 
 // Specify JDK version - may vary in different scenarios
 sourceCompatibility = 1.8
@@ -88,8 +88,8 @@ List json = [
 ]
 
 List weid = [
-        'com.webank:weid-java-sdk:3.0.0-rc.1',
-        "com.webank:weid-kit:3.0.0-rc.1"
+        'com.webank:weid-java-sdk:3.1.0-rc.1',
+        "com.webank:weid-kit:3.1.0-rc.1"
 ]
 
 // In this section you declare the dependencies for your production and test code

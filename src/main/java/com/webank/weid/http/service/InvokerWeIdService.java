@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import com.webank.weid.http.protocol.request.InputArg;
 import com.webank.weid.http.protocol.response.HttpResponseData;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
-import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.blockchain.protocol.response.ResponseData;
 
 @Service
 public interface InvokerWeIdService {

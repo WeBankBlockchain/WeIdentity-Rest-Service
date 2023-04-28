@@ -21,6 +21,8 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.weid.blockchain.config.FiscoConfig;
+import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
 import com.webank.weid.http.constant.SignType;
@@ -40,6 +42,8 @@ import com.webank.weid.http.util.TransactionEncoderUtilV2;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.webank.weid.util.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +57,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TransactionServiceImpl extends BaseService implements TransactionService {
 
-    private Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+    private static Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     private InvokerAuthorityIssuerService invokerAuthorityIssuerService =
         new InvokerAuthorityIssuerServiceImpl();
@@ -61,6 +65,14 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     private InvokerCptService invokerCptService = new InvokerCptServiceImpl();
     private InvokerCredentialService invokerCredentialService = new InvokerCredentialServiceImpl();
     private InvokerEvidenceService invokerEvidenceService = new InvokerEvidenceServiceImpl();
+    private static final FiscoConfig fiscoConfig;
+    static {
+        fiscoConfig = new FiscoConfig();
+        if (!fiscoConfig.load()) {
+            logger.error("[TransactionServiceImpl] Failed to load Fisco-BCOS blockchain node information.");
+            System.exit(1);
+        }
+    }
 
     /**
      * Create an Encoded Transaction.
@@ -139,6 +151,11 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
      */
     @Override
     public HttpResponseData<Object> sendTransaction(String sendTransactionJsonArgs) {
+        //如果是database方式部署，直接给前端返回错误
+        if (PropertyUtils.getProperty("deploy.style").equals("database")) {
+            logger.error("WeIdentity deploy style(database) not support send rawTransaction.");
+            return new HttpResponseData<>(null, null, HttpReturnCode.WEIDENTITY_DEPLOY_NOT_SUPPORT);
+        }
         Object loopBack = null;
         try {
             HttpResponseData<InputArg> resp = TransactionEncoderUtilV2
@@ -160,6 +177,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             JsonNode dataNode = txnArgNode.get(WeIdentityParamKeyConstant.TRANSACTION_DATA);
             JsonNode signedMessageNode = txnArgNode
                 .get(WeIdentityParamKeyConstant.SIGNED_MESSAGE);
+
             if (nonceNode == null || StringUtils.isEmpty(nonceNode.textValue())) {
                 logger.error("Null input within: {}", txnArgNode.toString());
                 return new HttpResponseData<>(null, loopBack, HttpReturnCode.NONCE_ILLEGAL);
