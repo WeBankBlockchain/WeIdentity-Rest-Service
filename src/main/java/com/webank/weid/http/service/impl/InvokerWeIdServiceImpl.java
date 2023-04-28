@@ -21,7 +21,8 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.blockchain.constant.ErrorCode;
+import com.webank.weid.blockchain.protocol.response.ResponseData;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
@@ -41,11 +42,8 @@ import com.webank.weid.protocol.base.WeIdDocumentMetadata;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.base.WeIdPublicKey;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.blockchain.rpc.RawTransactionService;
-import com.webank.weid.service.rpc.WeIdService;
-import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.service.impl.WeIdServiceImpl;
+import com.webank.weid.service.rpc.WeIdService;
 import com.webank.weid.util.DataToolUtils;
 import com.webank.weid.util.WeIdUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,7 +64,7 @@ public class InvokerWeIdServiceImpl extends BaseService implements InvokerWeIdSe
 
     private WeIdService weIdService = new WeIdServiceImpl();
 
-    private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
+    //private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
 
 
     /**

@@ -191,13 +191,13 @@ public class TransactionEncoderUtilV2 {
                 new Address(weAddress),
                 new StaticArray16<Bytes32>(
                     Utils.typeMap(
-                        DataToolUtils.bytesArrayListToBytes32ArrayList(
+                            com.webank.weid.blockchain.util.DataToolUtils.bytesArrayListToBytes32ArrayList(
                             stringAttributes,
                             WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
                         ), Bytes32.class)),
                 new StaticArray16<Int256>(
                     Utils.typeMap(
-                        DataToolUtils.listToListBigInteger(
+                            com.webank.weid.blockchain.util.DataToolUtils.listToListBigInteger(
                             longAttributes,
                             WeIdConstant.AUTHORITY_ISSUER_ARRAY_LEGNTH
                         ),
@@ -266,19 +266,19 @@ public class TransactionEncoderUtilV2 {
                 new Address(weAddress),
                 new StaticArray8<Int256>(
                     Utils.typeMap(
-                        DataToolUtils.listToListBigInteger(
+                            com.webank.weid.blockchain.util.DataToolUtils.listToListBigInteger(
                             DataToolUtils.getParamCreatedList(WeIdConstant.CPT_LONG_ARRAY_LENGTH),
                             WeIdConstant.CPT_LONG_ARRAY_LENGTH
                         ), Int256.class)),
                 new StaticArray8<Bytes32>(
                     Utils.typeMap(
-                        DataToolUtils.bytesArrayListToBytes32ArrayList(
+                            com.webank.weid.blockchain.util.DataToolUtils.bytesArrayListToBytes32ArrayList(
                             byteArray,
                             WeIdConstant.CPT_STRING_ARRAY_LENGTH
                         ), Bytes32.class)),
                 new StaticArray128<Bytes32>(
                     Utils.typeMap(
-                        DataToolUtils.stringToByte32ArrayList(
+                            com.webank.weid.blockchain.util.DataToolUtils.stringToByte32ArrayList(
                             cptJsonSchemaNew,
                             WeIdConstant.JSON_SCHEMA_ARRAY_LENGTH
                         ), Bytes32.class)),

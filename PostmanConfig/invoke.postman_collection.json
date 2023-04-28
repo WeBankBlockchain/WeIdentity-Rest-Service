@@ -142,7 +142,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"name\": \"Administration Office\"\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"ecdsa_key\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerAuthorityIssuer\"\n}"
+					"raw": "{\n    \"functionArg\": {\n        \"weId\": \"did:weid:0x5774e89d8e7fc8ffc1b7fff4b1019a22ac7140fb\",\n        \"name\": \"Administration Office\"\n    },\n    \"transactionArg\": {\n    \t\"invokerWeId\": \"private_key\"\n    },\n    \"v\": \"1.0.0\",\n    \"functionName\": \"registerAuthorityIssuer\"\n}"
 				},
 				"url": {
 					"raw": "http://{{host}}:{{httpport}}/weid/api/invoke",

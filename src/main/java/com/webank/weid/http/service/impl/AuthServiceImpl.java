@@ -9,7 +9,7 @@ import com.webank.weid.http.service.BaseService;
 import com.webank.weid.http.service.rpc.RpcConnectionHandler;
 import com.webank.weid.http.util.EndpointDataUtil;
 import com.webank.weid.protocol.base.CredentialPojo;
-import com.webank.weid.protocol.response.ResponseData;
+import com.webank.weid.blockchain.protocol.response.ResponseData;
 import com.webank.weid.service.rpc.CredentialPojoService;
 import com.webank.weid.service.impl.CredentialPojoServiceImpl;
 import com.webank.weid.util.DataToolUtils;

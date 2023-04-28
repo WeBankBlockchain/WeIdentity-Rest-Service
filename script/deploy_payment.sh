@@ -7,7 +7,7 @@ if [ -f conf/payment.properties ];then
     exit 1
 fi
 
-key=$(cat keys/priv/ecdsa_key)
+key=$(cat keys/priv/private_key)
 
 ${JAVA_HOME}/bin/java -classpath "./conf:./lib/*" com.webank.payment.contract.deploy.DeployService ${key}
 if [[ $? -ne 0 ]];then
@@ -18,5 +18,5 @@ fi
 if [ -f payment.properties ];then
     cp payment.properties ./conf/
     rm payment.properties
-    rm ecdsa_key
+    rm private_key
 fi

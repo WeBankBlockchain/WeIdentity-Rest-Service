@@ -21,12 +21,8 @@ package com.webank.weid.http.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import com.webank.weid.constant.ErrorCode;
+import com.webank.weid.blockchain.constant.ErrorCode;
+import com.webank.weid.blockchain.protocol.response.ResponseData;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.exception.InitWeb3jException;
 import com.webank.weid.exception.LoadContractException;
@@ -41,11 +37,12 @@ import com.webank.weid.http.util.KeyUtil;
 import com.webank.weid.protocol.base.WeIdAuthentication;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.request.CptStringArgs;
-import com.webank.weid.protocol.response.ResponseData;
-import com.webank.weid.service.rpc.CptService;
-import com.webank.weid.blockchain.rpc.RawTransactionService;
 import com.webank.weid.service.impl.CptServiceImpl;
-import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
+import com.webank.weid.service.rpc.CptService;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class InvokerCptServiceImpl extends BaseService implements InvokerCptService {
@@ -54,7 +51,7 @@ public class InvokerCptServiceImpl extends BaseService implements InvokerCptServ
 
     private CptService cptService = new CptServiceImpl();
 
-    private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
+    //private RawTransactionService rawTransactionService = new RawTransactionServiceImpl();
 
     /**
      * Register a new CPT to blockchain via Invoke function.
