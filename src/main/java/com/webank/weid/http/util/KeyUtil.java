@@ -52,7 +52,13 @@ public class KeyUtil {
      * SDK private key storage path.
      */
     public static final String SDK_PRIVKEY_PATH =
-        PropertiesUtil.getProperty("admin.privKeyPath");
+        PropertiesUtil.getProperty("weid.keys.dir");
+
+    /**
+     * SDK private key storage path.
+     */
+    public static final String ADMIN_PRIVKEY_PATH =
+            PropertiesUtil.getProperty("admin.privKeyPath");
 
     /**
      * slash.
@@ -114,6 +120,7 @@ public class KeyUtil {
         String passphrase = PropertiesUtil.getProperty("default.passphrase");
         if (fileName.equalsIgnoreCase(passphrase)) {
             fileName = WeIdentityParamKeyConstant.DEFAULT_PRIVATE_KEY_FILE_NAME;
+            path = ADMIN_PRIVKEY_PATH;
         }
 
         // check whether the path exists or not, then create the path and return.
