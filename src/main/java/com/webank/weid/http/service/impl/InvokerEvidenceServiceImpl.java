@@ -163,7 +163,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
-        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.ADMIN_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
         if (StringUtils.isEmpty(adminPrivKey)) {
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
@@ -340,7 +340,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
                 HttpReturnCode.INPUT_ILLEGAL.getCodeDesc() + "(Group ID illegal)");
         }
-        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.ADMIN_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
         if (StringUtils.isEmpty(adminPrivKey)) {
             return new HttpResponseData<>(false, HttpReturnCode.INPUT_ILLEGAL.getCode(),
@@ -412,7 +412,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             return new HttpResponseData<>(null, HttpReturnCode.VALUE_FORMAT_ILLEGAL);
         }
 
-        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.SDK_PRIVKEY_PATH,
+        String adminPrivKey = KeyUtil.getPrivateKeyByWeId(KeyUtil.ADMIN_PRIVKEY_PATH,
             PropertiesUtil.getProperty("default.passphrase"));
         if (StringUtils.isEmpty(adminPrivKey)) {
             return new HttpResponseData<>(null, HttpReturnCode.INPUT_ILLEGAL.getCode(),
