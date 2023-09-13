@@ -23,6 +23,8 @@ import com.webank.weid.protocol.base.ServiceProperty;
 import com.webank.weid.protocol.request.CreateCredentialPojoArgs;
 import com.webank.weid.protocol.response.RsvSignature;
 import com.webank.weid.blockchain.service.fisco.BaseServiceFisco;
+import com.webank.weid.service.impl.WeIdServiceImpl;
+import com.webank.weid.service.rpc.WeIdService;
 import com.webank.weid.util.CredentialPojoUtils;
 import com.webank.weid.util.CredentialUtils;
 import com.webank.weid.util.DataToolUtils;
@@ -52,6 +54,8 @@ import org.fisco.bcos.sdk.abi.Utils;
 import org.fisco.bcos.sdk.abi.datatypes.*;
 import org.fisco.bcos.sdk.abi.datatypes.generated.*;
 import org.fisco.bcos.sdk.client.Client;
+import org.fisco.bcos.sdk.crypto.signature.ECDSASignatureResult;
+import org.fisco.bcos.sdk.crypto.signature.SM2SignatureResult;
 import org.fisco.bcos.sdk.model.CryptoType;
 import org.fisco.bcos.sdk.model.NodeVersion;
 import org.fisco.bcos.sdk.model.TransactionReceipt;
@@ -375,9 +379,19 @@ public class TransactionEncoderUtilV2 {
                 RlpString.create(Numeric.hexStringToByteArray(rawTransaction.getExtraData())));
         }
         if (signatureData != null) {
-            result.add(RlpString.create(String.valueOf(signatureData.getV()).getBytes(StandardCharsets.UTF_8)));
-            result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getR().getValue())));
-            result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getS().getValue())));
+            if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
+                ECDSASignatureResult signatureResult = new ECDSASignatureResult(
+                        signatureData.getV().getValue().byteValueExact(),
+                        signatureData.getR().getValue(),
+                        signatureData.getS().getValue());
+                result.addAll(signatureResult.encode());
+            } else {
+                result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getR().getValue())));
+                result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getS().getValue())));
+            }
+            //result.add(RlpString.create(String.valueOf(signatureData.getV()).getBytes(StandardCharsets.UTF_8)));
+            //result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getR().getValue())));
+            //result.add(RlpString.create(ByteUtils.trimLeadingZeroes(signatureData.getS().getValue())));
         }
         return result;
     }
@@ -428,59 +442,59 @@ public class TransactionEncoderUtilV2 {
         byte[] serializedSignatureData,
         SignType signType
     ) {
-        if (65 != serializedSignatureData.length || 64 != serializedSignatureData.length) {
-            return null;
-        }
-        if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
-            // Determine signature type
-            Byte javav = serializedSignatureData[0];
-            Byte lwcv = serializedSignatureData[64];
-            byte[] r = new byte[32];
-            byte[] s = new byte[32];
-            RsvSignature signatureData = new RsvSignature();
-            if (signType == SignType.RSV) {
-                // this is the signature from java client
-                logger.info("Java Client signature checked.");
-                System.arraycopy(serializedSignatureData, 1, r, 0, 32);
-                System.arraycopy(serializedSignatureData, 33, s, 0, 32);
-                signatureData.setS(new Bytes32(s));
-                signatureData.setR(new Bytes32(r));
-                signatureData.setV(new Uint8(javav));
-            } else if (signType == SignType.VSR) {
-                // this is the standard raw ecdsa sig method (go version client uses this)
-                logger.info("Standard Client signature checked.");
-                lwcv = (byte) (lwcv.intValue() + 27);
-                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
-                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
-                signatureData.setS(new Bytes32(s));
-                signatureData.setR(new Bytes32(r));
-                signatureData.setV(new Uint8(lwcv));
+        if (65 == serializedSignatureData.length || 64 == serializedSignatureData.length) {
+            if(CryptoFisco.cryptoSuite.getCryptoTypeConfig() == CryptoType.ECDSA_TYPE){
+                // Determine signature type
+                Byte javav = serializedSignatureData[0];
+                Byte lwcv = serializedSignatureData[64];
+                byte[] r = new byte[32];
+                byte[] s = new byte[32];
+                RsvSignature signatureData = new RsvSignature();
+                if (signType == SignType.RSV) {
+                    // this is the signature from java client
+                    logger.info("Java Client signature checked.");
+                    System.arraycopy(serializedSignatureData, 1, r, 0, 32);
+                    System.arraycopy(serializedSignatureData, 33, s, 0, 32);
+                    signatureData.setS(new Bytes32(s));
+                    signatureData.setR(new Bytes32(r));
+                    signatureData.setV(new Uint8(javav));
+                } else if (signType == SignType.VSR) {
+                    // this is the standard raw ecdsa sig method (go version client uses this)
+                    logger.info("Standard Client signature checked.");
+                    lwcv = (byte) (lwcv.intValue());
+                    System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                    System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                    signatureData.setS(new Bytes32(s));
+                    signatureData.setR(new Bytes32(r));
+                    signatureData.setV(new Uint8(lwcv));
+                }
+                return signatureData;
+            } else {
+                // Determine signature type
+                byte[] r = new byte[32];
+                byte[] s = new byte[32];
+                RsvSignature signatureData = new RsvSignature();
+                if (signType == SignType.RSV) {
+                    // this is the signature from java client
+                    logger.info("Java Client signature checked.");
+                    System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                    System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                    signatureData.setS(new Bytes32(s));
+                    signatureData.setR(new Bytes32(r));
+                    signatureData.setV(new Uint8(0));
+                } else if (signType == SignType.VSR) {
+                    // this is the standard raw ecdsa sig method (go version client uses this)
+                    logger.info("Standard Client signature checked.");
+                    System.arraycopy(serializedSignatureData, 0, r, 0, 32);
+                    System.arraycopy(serializedSignatureData, 32, s, 0, 32);
+                    signatureData.setS(new Bytes32(s));
+                    signatureData.setR(new Bytes32(r));
+                    signatureData.setV(new Uint8(0));
+                }
+                return signatureData;
             }
-            return signatureData;
-        } else {
-            // Determine signature type
-            byte[] r = new byte[32];
-            byte[] s = new byte[32];
-            RsvSignature signatureData = new RsvSignature();
-            if (signType == SignType.RSV) {
-                // this is the signature from java client
-                logger.info("Java Client signature checked.");
-                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
-                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
-                signatureData.setS(new Bytes32(s));
-                signatureData.setR(new Bytes32(r));
-                signatureData.setV(new Uint8(0));
-            } else if (signType == SignType.VSR) {
-                // this is the standard raw ecdsa sig method (go version client uses this)
-                logger.info("Standard Client signature checked.");
-                System.arraycopy(serializedSignatureData, 0, r, 0, 32);
-                System.arraycopy(serializedSignatureData, 32, s, 0, 32);
-                signatureData.setS(new Bytes32(s));
-                signatureData.setR(new Bytes32(r));
-                signatureData.setV(new Uint8(0));
-            }
-            return signatureData;
         }
+        return null;
     }
 
     /**

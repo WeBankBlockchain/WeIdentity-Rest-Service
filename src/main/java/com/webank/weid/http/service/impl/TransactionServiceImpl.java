@@ -22,6 +22,7 @@ package com.webank.weid.http.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.weid.blockchain.config.FiscoConfig;
+import com.webank.weid.blockchain.service.fisco.BaseServiceFisco;
 import com.webank.weid.blockchain.service.impl.RawTransactionServiceImpl;
 import com.webank.weid.constant.ParamKeyConstant;
 import com.webank.weid.http.constant.HttpReturnCode;
@@ -43,6 +44,8 @@ import com.webank.weid.http.util.TransactionEncoderUtilV2;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.webank.weid.service.impl.WeIdServiceImpl;
+import com.webank.weid.service.rpc.WeIdService;
 import com.webank.weid.util.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -65,14 +68,6 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
     private InvokerCptService invokerCptService = new InvokerCptServiceImpl();
     private InvokerCredentialService invokerCredentialService = new InvokerCredentialServiceImpl();
     private InvokerEvidenceService invokerEvidenceService = new InvokerEvidenceServiceImpl();
-    private static final FiscoConfig fiscoConfig;
-    static {
-        fiscoConfig = new FiscoConfig();
-        if (!fiscoConfig.load()) {
-            logger.error("[TransactionServiceImpl] Failed to load Fisco-BCOS blockchain node information.");
-            System.exit(1);
-        }
-    }
 
     /**
      * Create an Encoded Transaction.
@@ -127,7 +122,7 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
             String nonce = JsonUtil.removeDoubleQuotes(nonceNode.toString());
             // is FISCO-BCOS v2 blockchain
             httpResponseData = TransactionEncoderUtilV2
-                .createEncoder(fiscoConfig, functionArg, nonce, functionName, signType);
+                .createEncoder(BaseServiceFisco.fiscoConfig, functionArg, nonce, functionName, signType);
             return new HttpResponseData<>(
                 JsonUtil.convertJsonToSortedMap(httpResponseData.getRespBody()),
                 loopBack,
@@ -210,18 +205,18 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
              // is FISCO-BCOS v2
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_CREATE_WEID)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getWeIdAddress(), data, blockLimit, signType);
+                    .createTxnHex(signedMessage, nonce, BaseServiceFisco.fiscoConfig.getWeIdAddress(), data, blockLimit, signType);
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getIssuerAddress(), data, blockLimit, signType);
+                    .createTxnHex(signedMessage, nonce, BaseServiceFisco.fiscoConfig.getIssuerAddress(), data, blockLimit, signType);
                 httpResponseData = invokerAuthorityIssuerService
                     .registerAuthorityIssuerWithTransactionHex(txnHex);
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCCALL_REGISTER_CPT)) {
                 txnHex = TransactionEncoderUtilV2
-                    .createTxnHex(signedMessage, nonce, fiscoConfig.getCptAddress(), data, blockLimit, signType);
+                    .createTxnHex(signedMessage, nonce, BaseServiceFisco.fiscoConfig.getCptAddress(), data, blockLimit, signType);
                 httpResponseData = invokerCptService.registerCptWithTransactionHex(txnHex);
             }
             return new HttpResponseData<>(
