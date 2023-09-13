@@ -88,7 +88,7 @@ List json = [
 ]
 
 List weid = [
-        'com.webank:weid-java-sdk:3.1.0-rc.1',
+        'com.webank:weid-java-sdk:3.1.1-rc.2-SNAPSHOT',
         "com.webank:weid-kit:3.1.0-rc.1"
 ]
 
