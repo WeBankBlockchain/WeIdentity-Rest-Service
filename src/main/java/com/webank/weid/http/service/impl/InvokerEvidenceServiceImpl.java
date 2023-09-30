@@ -40,19 +40,19 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
 
     private static Logger logger = LoggerFactory.getLogger(InvokerEvidenceServiceImpl.class);
     
-    private static Integer masterGroupId;
+    private static String masterGroupId;
     static {
         try {
             FiscoConfig fiscoConfig = new FiscoConfig();
             fiscoConfig.load();
-            masterGroupId = Integer.valueOf(fiscoConfig.getGroupId());
+            masterGroupId = fiscoConfig.getGroupId();
         } catch (Exception e) {
             logger.error("Failed to load Fisco Config.");
         }
     }
     // A map to store group ID and evidence service instances
-    Map<Integer, EvidenceService> evidenceServiceInstances = new ConcurrentHashMap<>();
-    Map<Integer, EvidenceServiceEngineFisco> evidenceServiceEngineInstances = new ConcurrentHashMap<>();
+    Map<String, EvidenceService> evidenceServiceInstances = new ConcurrentHashMap<>();
+    Map<String, EvidenceServiceEngineFisco> evidenceServiceEngineInstances = new ConcurrentHashMap<>();
 
     /**
      * A lazy initialization to create evidence service impl instance.
@@ -60,7 +60,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
      * @param groupId passing-in groupId
      * @return evidence service
      */
-    private EvidenceService lazyInitializeEvidenceServiceImpl(Integer groupId) throws Exception {
+    private EvidenceService lazyInitializeEvidenceServiceImpl(String groupId) throws Exception {
         System.out.println("LAZY GID: " + groupId);
         FiscoConfig fiscoConfig;
         try {
@@ -70,7 +70,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.error("Failed to load Fisco Config.");
             return null;
         }
-        if (groupId == null || groupId == 0) {
+        if (groupId == null) {
             logger.error("Group Id illegal: {}", groupId);
             return null;
         }
@@ -103,7 +103,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.error("Failed to load Fisco Config.");
             return null;
         }
-        Integer masterGroupId = Integer.valueOf(fiscoConfig.getGroupId());
+        String masterGroupId = fiscoConfig.getGroupId();
         System.out.println("LAZY GID MASTER: " + masterGroupId);
         logger.info("Requesting default (master) group id evidence service: {}", masterGroupId);
         EvidenceService evidenceService = evidenceServiceInstances.get(masterGroupId);
@@ -146,8 +146,8 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
                 evidenceService = lazyInitializeEvidenceServiceImpl();
             } else {
-                Integer groupId;
-                groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+                String groupId;
+                groupId = JsonUtil.removeDoubleQuotes(groupIdNode.toString());
                 evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
             }
             if (evidenceService == null) {
@@ -215,8 +215,8 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
                 evidenceService = lazyInitializeEvidenceServiceImpl();
             } else {
-                Integer groupId;
-                groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+                String groupId;
+                groupId = JsonUtil.removeDoubleQuotes(groupIdNode.toString());
                 evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
             }
             if (evidenceService == null) {
@@ -263,8 +263,8 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
                 logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
                 evidenceService = lazyInitializeEvidenceServiceImpl();
             } else {
-                Integer groupId;
-                groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+                String groupId;
+                groupId = JsonUtil.removeDoubleQuotes(groupIdNode.toString());
                 evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
             }
             if (evidenceService == null) {
@@ -296,8 +296,8 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
             evidenceService = lazyInitializeEvidenceServiceImpl();
         } else {
-            Integer groupId;
-            groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+            String groupId;
+            groupId = JsonUtil.removeDoubleQuotes(groupIdNode.toString());
             evidenceService = lazyInitializeEvidenceServiceImpl(groupId);
         }
         return evidenceService;
@@ -371,25 +371,25 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
         JsonNode groupIdNode;
         JsonNode txnArgNode = new ObjectMapper().readTree(args.getTransactionArg());
         groupIdNode = txnArgNode.get(WeIdentityParamKeyConstant.GROUP_ID);
-        Integer groupId;
+        String groupId;
         if (groupIdNode == null || StringUtils.isEmpty(groupIdNode.toString())) {
             logger.info("Cannot find groupId definition, using default.. {}", groupIdNode);
             groupId = masterGroupId;
         } else {
-            groupId = Integer.valueOf(JsonUtil.removeDoubleQuotes(groupIdNode.toString()));
+            groupId = JsonUtil.removeDoubleQuotes(groupIdNode.toString());
             if (groupId == masterGroupId) {
                 logger.info("Requesting master group id evidence service.., {}", groupId);
             } else {
                 logger.info("Requesting evidence subgroup id instance.. {}", groupId);
             }
         }
-        if (groupId == null || groupId == 0) {
+        if (groupId == null) {
             logger.error("Group Id illegal: {}", groupId);
             return null;
         }
         EvidenceServiceEngineFisco evidenceServiceEngine = evidenceServiceEngineInstances.get(groupId);
         if (evidenceServiceEngine == null) {
-            evidenceServiceEngine = EngineFactoryFisco.createEvidenceServiceEngine(String.valueOf(groupId));
+            evidenceServiceEngine = EngineFactoryFisco.createEvidenceServiceEngine(groupId);
             evidenceServiceEngineInstances.put(groupId, evidenceServiceEngine);
         }
         return evidenceServiceEngine;
