@@ -207,6 +207,11 @@ public class TransactionServiceImpl extends BaseService implements TransactionSe
                 txnHex = TransactionEncoderUtilV2
                     .createTxnHex(signedMessage, nonce, BaseServiceFisco.fiscoConfig.getWeIdAddress(), data, blockLimit, signType);
                 httpResponseData = invokerWeIdService.createWeIdWithTransactionHex(txnHex);
+                return new HttpResponseData<>(
+                        httpResponseData.getRespBody(),
+                        loopBack,
+                        httpResponseData.getErrorCode(),
+                        httpResponseData.getErrorMessage());
             }
             if (functionName.equalsIgnoreCase(WeIdentityFunctionNames.FUNCNAME_REGISTER_AUTHORITY_ISSUER)) {
                 txnHex = TransactionEncoderUtilV2
