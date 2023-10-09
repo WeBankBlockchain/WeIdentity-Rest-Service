@@ -74,7 +74,7 @@ public class InvokerEvidenceServiceImpl extends BaseService implements
             logger.error("Group Id illegal: {}", groupId);
             return null;
         }
-        if (groupId.equals(Integer.valueOf(fiscoConfig.getGroupId()))) {
+        if (groupId.equals(fiscoConfig.getGroupId())) {
             // this is master group
             logger.info("Requesting master group id evidence service.., {}", groupId);
             EvidenceService evidenceService = evidenceServiceInstances.get(groupId);
